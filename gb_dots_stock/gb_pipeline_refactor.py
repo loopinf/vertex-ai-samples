@@ -268,6 +268,7 @@ def get_univ_for_price(
   import pandas as pd
   import pickle
   import logging
+  import json
   logger = logging.getLogger(__name__)
   logger.setLevel(logging.DEBUG)
   # console handler
@@ -297,31 +298,61 @@ def get_univ_for_price(
     l_bro = df_ed2[(df_ed2.date == date) & 
                   (df_ed2.source.isin(l_top30))].source.unique().tolist()
 
-    dic_univ[date] = set(l_top30 + l_bro )
-  
+    dic_univ[date] = list(set(l_top30 + l_bro ))
 
-  with open(univ_dataset.path, 'wb') as f:
-    pickle.dump(dic_univ, f)
-
-
+  with open(univ_dataset.path, 'w', encoding='utf8') as f:
+    json.dump(dic_univ, f)
 
 @component(
     base_image="gcr.io/dots-stock/python-img-v5.2",
     # packages_to_install = ["tables", "pandas_gbq", "finance-datareader", "bs4", "pickle5"]   # add 20210715 FIX pipeline
 )
-def get_df_target(
-  dic_univ_dataset: Input[Dataset]
+def get_adj_prices(
+  today: str,
+  dic_univ_dataset: Input[Dataset],
+  adj_price_dataset: Output[Dataset]
   ) -> str:
+  import json
+  import FinanceDataReader as fdr
+  from ae_module.ae_logger import ae_log
+  import pandas as pd
+  # with open(dic_univ_dataset.path, 'rb') as f:
+  #   dic_univ = pickle.load(f)
+  with open(dic_univ_dataset.path, 'r') as f:
+    dic_univ = json.load(f)
 
-  # Imports
-  # import pickle5 as pickle
-  import pickle
+  codes_stock = []
+  for v in dic_univ.values():
+    codes_stock.extend(v)
 
-  with open(dic_univ_dataset.path, 'rb') as f:
-    dic_univ = pickle.load(f)
+  def get_price_adj(code, start, end):
+    return fdr.DataReader(code, start=start, end=end)
 
-  print(dic_univ.keys())
-  return dic_univ.keys()
+  def get_price(l_univ, date_start, date_end):
+    df_price = pd.DataFrame()
+    for code in l_univ :
+      df_ = get_price_adj(code, date_start, date_end)
+      df_['code'] = code
+      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
+      df_price = df_price.append(df_)
+    return df_price
+
+  ae_log.debug(f'codes_stock {codes_stock.__len__()}')
+  date_start = '20210101'
+  date_end = today
+  df_adj_price = get_price(codes_stock, date_start=date_start, date_end=today)
+
+  df_adj_price.to_csv(adj_price_dataset.path)
+
+  ae_log.debug(df_adj_price.shape)
+
+  return 'good'
+
+@component(
+    base_image="gcr.io/dots-stock/python-img-v5.2",
+)
+def get_target():
+  pass
   # import os
   # import pandas as pd
   # import FinanceDataReader as fdr
@@ -333,17 +364,6 @@ def get_df_target(
 
   # # functions
   # #-----------------------------------------------------------------------------
-  # def get_price_adj(code, start):
-  #   return fdr.DataReader(code, start=start)
-
-  # def get_price(l_univ, date_start):
-  #   df_price = pd.DataFrame()
-  #   for code in l_univ :
-  #     df_ = get_price_adj(code, date_start)
-  #     df_['code'] = code
-  #     # df_['price'] = df_['Close'] / df_.Close.iloc[0]
-  #     df_price = df_price.append(df_)
-  #   return df_price
 
   # def make_target(df):
 
@@ -483,7 +503,11 @@ def intro_pipeline():
     op_get_base_item.outputs['base_item_dataset'],
     op_get_bros.outputs['bros_univ_dataset'],
   )
-  get_df_target(op_get_univ.outputs['univ_dataset'])
+  op_get_adj_price = get_adj_prices(
+    today=str_today,
+    dic_univ_dataset=op_get_univ.outputs['univ_dataset'],
+    )
+  
 # 
 compiler.Compiler().compile(
   pipeline_func=intro_pipeline,
