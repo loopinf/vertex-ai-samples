@@ -200,11 +200,23 @@ def get_bros(
     return df
 
   def find_bros(date_ref, period):
-    '''bros with cliuqe '''
+    '''clique over 3 nodes '''
     df_edgelist = get_corr_pairs_gbq(date_ref, period)
     g = nx.from_pandas_edgelist(df_edgelist, edge_attr=True)
-    bros = list(nx.find_cliques(g)) # clique 있는 종목들만 bro임
-    return bros
+    bros_ = nx.find_cliques(g)
+    bros_3 = [bros for bros in bros_ if len(bros) >=3]
+    set_bros =  set([i for l_i in bros_3 for i in l_i])
+    g_gang = g.subgraph(set_bros)
+
+    df_gangs_edgelist = nx.to_pandas_edgelist(g_gang)
+    return df_gangs_edgelist
+
+  def find_gang(date_ref):
+    df_gang = pd.DataFrame()
+    for period in [20, 40, 60, 90, 120]:
+      df_ = find_bros(date, period=period)
+      df_gang = df_gang.append(df_)
+    return df_gang
 
   def get_bros_univ(date_ref):
 
@@ -229,10 +241,7 @@ def get_bros(
   dates = get_krx_on_dates_n_days_ago(date_ref=today, n_days=n_days)
   df_bros = pd.DataFrame()
   for date in dates:
-    df = pd.DataFrame()
-    bros = get_bros_univ(date_ref=today)  
-    df['bros'] = bros
-    df['date_ref'] = date
+    df = find_gang(date_ref=date)  
     df_bros = df_bros.append(df)
 
   df_bros.to_csv(bros_univ_dataset.path)
@@ -251,176 +260,212 @@ def get_target():
     base_image="gcr.io/dots-stock/python-img-v5.2",
 )
 def get_univ_for_price(
-  date_ref: str,
-  top30s_dataset: Input[Dataset],
+  # date_ref: str,
+  base_item_dataset: Input[Dataset],
   bros_dataset: Input[Dataset],
   univ_dataset: Output[Dataset],
 ):
   import pandas as pd
+  import pickle
+  import logging
+  logger = logging.getLogger(__name__)
+  logger.setLevel(logging.DEBUG)
+  # console handler
+  ch = logging.StreamHandler()
+  ch.setLevel(logging.DEBUG)
+  # create formatter
+  formatter = logging.Formatter(
+      '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+  ch.setFormatter(formatter)
+  # add ch to logger
+  logger.addHandler(ch)
 
-  df_top30s = pd.read_csv(top30s_dataset.path)
-  df_bros = pd.read_csv(bros_dataset.path)
-  l_univ = df_top30s.종목코드.unique().tolist() + df_bros.bros.unique().tolist()
-  univ_dataset.path
-  # with open(univ_dataset.path, 'w')
+  df_top30s = pd.read_csv(base_item_dataset.path)
+  df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
 
+  df_ed_r = df_ed.copy() 
+  print(f'test : {df_ed_r.columns}')
+  df_ed_r.columns = ['target', 'source', 'date', 'corr_value','period']
+  df_ed2 = df_ed.append(df_ed_r)
+  df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
+
+  dic_univ = {}
+  for date, df in df_top30s.groupby('날짜'):
+    logger.debug(f'date: {date}')
+    l_top30 = df.종목코드.to_list()
+
+    l_bro = df_ed2[(df_ed2.date == date) & 
+                  (df_ed2.source.isin(l_top30))].source.unique().tolist()
+
+    dic_univ[date] = set(l_top30 + l_bro )
   
 
-  pass
+  with open(univ_dataset.path, 'wb') as f:
+    pickle.dump(dic_univ, f)
+
 
 
 @component(
     base_image="gcr.io/dots-stock/python-img-v5.2",
     # packages_to_install = ["tables", "pandas_gbq", "finance-datareader", "bs4", "pickle5"]   # add 20210715 FIX pipeline
 )
-def get_df_target(today: str) -> str :
+def get_df_target(
+  dic_univ_dataset: Input[Dataset]
+  ) -> str:
 
   # Imports
   # import pickle5 as pickle
-  import os
-  import pandas as pd
-  import FinanceDataReader as fdr
-  import numpy as np
+  import pickle
 
-  # Preference
-  date_start = '20210101'
+  with open(dic_univ_dataset.path, 'rb') as f:
+    dic_univ = pickle.load(f)
 
-  # functions
-  #-----------------------------------------------------------------------------
-  def get_price_adj(code, start):
-    return fdr.DataReader(code, start=start)
+  print(dic_univ.keys())
+  return dic_univ.keys()
+  # import os
+  # import pandas as pd
+  # import FinanceDataReader as fdr
+  # import numpy as np
 
-  def get_price(l_univ, date_start):
-    df_price = pd.DataFrame()
-    for code in l_univ :
-      df_ = get_price_adj(code, date_start)
-      df_['code'] = code
-      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
-      df_price = df_price.append(df_)
-    return df_price
 
-  def make_target(df):
+  # # Preference
+  # date_start = '20210101'
 
-    df_ = df.copy()
+  # # functions
+  # #-----------------------------------------------------------------------------
+  # def get_price_adj(code, start):
+  #   return fdr.DataReader(code, start=start)
 
-    df_.sort_values(by='date', inplace=True)
-    df_['high_p1'] = df_.high.shift(-1)
-    df_['high_p2'] = df_.high.shift(-2)
-    df_['high_p3'] = df_.high.shift(-3)
+  # def get_price(l_univ, date_start):
+  #   df_price = pd.DataFrame()
+  #   for code in l_univ :
+  #     df_ = get_price_adj(code, date_start)
+  #     df_['code'] = code
+  #     # df_['price'] = df_['Close'] / df_.Close.iloc[0]
+  #     df_price = df_price.append(df_)
+  #   return df_price
 
-    df_['close_p1'] = df_.close.shift(-1)
-    df_['close_p2'] = df_.close.shift(-2)
-    df_['close_p3'] = df_.close.shift(-3)
+  # def make_target(df):
 
-    df_['change_p1'] = (df_.close_p1 - df_.close) / df_.close
-    df_['change_p2'] = (df_.close_p2 - df_.close) / df_.close
-    df_['change_p3'] = (df_.close_p3 - df_.close) / df_.close
+  #   df_ = df.copy()
 
-    df_['change_p1_over5'] = df_['change_p1'] > 0.05
-    df_['change_p2_over5'] = df_['change_p2'] > 0.05
-    df_['change_p3_over5'] = df_['change_p3'] > 0.05
+  #   df_.sort_values(by='date', inplace=True)
+  #   df_['high_p1'] = df_.high.shift(-1)
+  #   df_['high_p2'] = df_.high.shift(-2)
+  #   df_['high_p3'] = df_.high.shift(-3)
 
-    df_['change_p1_over10'] = df_['change_p1'] > 0.1
-    df_['change_p2_over10'] = df_['change_p2'] > 0.1
-    df_['change_p3_over10'] = df_['change_p3'] > 0.1
+  #   df_['close_p1'] = df_.close.shift(-1)
+  #   df_['close_p2'] = df_.close.shift(-2)
+  #   df_['close_p3'] = df_.close.shift(-3)
 
-    df_['close_high_1'] = (df_.high_p1 - df_.close) / df_.close
-    df_['close_high_2'] = (df_.high_p2 - df_.close) / df_.close
-    df_['close_high_3'] = (df_.high_p3 - df_.close) / df_.close
+  #   df_['change_p1'] = (df_.close_p1 - df_.close) / df_.close
+  #   df_['change_p2'] = (df_.close_p2 - df_.close) / df_.close
+  #   df_['change_p3'] = (df_.close_p3 - df_.close) / df_.close
 
-    df_['close_high_1_over10'] = df_['close_high_1'] > 0.1
-    df_['close_high_2_over10'] = df_['close_high_2'] > 0.1
-    df_['close_high_3_over10'] = df_['close_high_3'] > 0.1
+  #   df_['change_p1_over5'] = df_['change_p1'] > 0.05
+  #   df_['change_p2_over5'] = df_['change_p2'] > 0.05
+  #   df_['change_p3_over5'] = df_['change_p3'] > 0.05
 
-    df_['close_high_1_over5'] = df_['close_high_1'] > 0.05
-    df_['close_high_2_over5'] = df_['close_high_2'] > 0.05
-    df_['close_high_3_over5'] = df_['close_high_3'] > 0.05
+  #   df_['change_p1_over10'] = df_['change_p1'] > 0.1
+  #   df_['change_p2_over10'] = df_['change_p2'] > 0.1
+  #   df_['change_p3_over10'] = df_['change_p3'] > 0.1
+
+  #   df_['close_high_1'] = (df_.high_p1 - df_.close) / df_.close
+  #   df_['close_high_2'] = (df_.high_p2 - df_.close) / df_.close
+  #   df_['close_high_3'] = (df_.high_p3 - df_.close) / df_.close
+
+  #   df_['close_high_1_over10'] = df_['close_high_1'] > 0.1
+  #   df_['close_high_2_over10'] = df_['close_high_2'] > 0.1
+  #   df_['close_high_3_over10'] = df_['close_high_3'] > 0.1
+
+  #   df_['close_high_1_over5'] = df_['close_high_1'] > 0.05
+  #   df_['close_high_2_over5'] = df_['close_high_2'] > 0.05
+  #   df_['close_high_3_over5'] = df_['close_high_3'] > 0.05
     
-    df_['target_over10'] = np.logical_or.reduce([
-                                  df_.close_high_1_over10,
-                                  df_.close_high_2_over10,
-                                  df_.close_high_3_over10])
+  #   df_['target_over10'] = np.logical_or.reduce([
+  #                                 df_.close_high_1_over10,
+  #                                 df_.close_high_2_over10,
+  #                                 df_.close_high_3_over10])
     
-    df_['target_over5'] = np.logical_or.reduce([
-                                  df_.close_high_1_over5,
-                                  df_.close_high_2_over5,
-                                  df_.close_high_3_over5])
+  #   df_['target_over5'] = np.logical_or.reduce([
+  #                                 df_.close_high_1_over5,
+  #                                 df_.close_high_2_over5,
+  #                                 df_.close_high_3_over5])
     
-    df_['target_close_over_10'] = np.logical_or.reduce([
-                                  df_.change_p1_over10,
-                                  df_.change_p2_over10,
-                                  df_.change_p3_over10])  
+  #   df_['target_close_over_10'] = np.logical_or.reduce([
+  #                                 df_.change_p1_over10,
+  #                                 df_.change_p2_over10,
+  #                                 df_.change_p3_over10])  
     
-    df_['target_close_over_5'] = np.logical_or.reduce([
-                                  df_.change_p1_over5,
-                                  df_.change_p2_over5,
-                                  df_.change_p3_over5])  
+  #   df_['target_close_over_5'] = np.logical_or.reduce([
+  #                                 df_.change_p1_over5,
+  #                                 df_.change_p2_over5,
+  #                                 df_.change_p3_over5])  
                                   
-    df_['target_mclass_close_over10_under5'] = \
-        np.where(df_['change_p1'] > 0.1, 
-                1,  np.where(df_['change_p1'] > -0.05, 0, -1))                               
+  #   df_['target_mclass_close_over10_under5'] = \
+  #       np.where(df_['change_p1'] > 0.1, 
+  #               1,  np.where(df_['change_p1'] > -0.05, 0, -1))                               
 
-    df_['target_mclass_close_p2_over10_under5'] = \
-        np.where(df_['change_p2'] > 0.1, 
-                1,  np.where(df_['change_p2'] > -0.05, 0, -1))                               
+  #   df_['target_mclass_close_p2_over10_under5'] = \
+  #       np.where(df_['change_p2'] > 0.1, 
+  #               1,  np.where(df_['change_p2'] > -0.05, 0, -1))                               
                 
-    df_['target_mclass_close_p3_over10_under5'] = \
-        np.where(df_['change_p3'] > 0.1, 
-                1,  np.where(df_['change_p3'] > -0.05, 0, -1))                               
-    df_.dropna(subset=['high_p3'], inplace=True)                               
+  #   df_['target_mclass_close_p3_over10_under5'] = \
+  #       np.where(df_['change_p3'] > 0.1, 
+  #               1,  np.where(df_['change_p3'] > -0.05, 0, -1))                               
+  #   df_.dropna(subset=['high_p3'], inplace=True)                               
     
-    return df_
-  #-----------------------------------------------------------------------------
+  #   return df_
+  # #-----------------------------------------------------------------------------
 
-  #-----------------------------------------------------------------------------
-  def get_target_df(s_univ, date_start):
+  # #-----------------------------------------------------------------------------
+  # def get_target_df(s_univ, date_start):
 
-    df_price = get_price(s_univ, date_start)
+  #   df_price = get_price(s_univ, date_start)
     
-    df_price.reset_index(inplace=True)
-    df_price.columns = df_price.columns.str.lower()
+  #   df_price.reset_index(inplace=True)
+  #   df_price.columns = df_price.columns.str.lower()
 
-    df_target = df_price.groupby('code').apply(lambda df: make_target(df))
-    df_target = df_target.reset_index(drop=True)
-    df_target['date'] = df_target.date.dt.strftime('%Y%m%d')
+  #   df_target = df_price.groupby('code').apply(lambda df: make_target(df))
+  #   df_target = df_target.reset_index(drop=True)
+  #   df_target['date'] = df_target.date.dt.strftime('%Y%m%d')
 
-    return df_target
-  #-----------------------------------------------------------------------------
+  #   return df_target
+  # #-----------------------------------------------------------------------------
 
   
-  if today != 'holiday' :
-    print(today)
+  # if today != 'holiday' :
+  #   print(today)
     
-    file_path = "/gcs/pipeline-dots-stock/s_univ_top30_theDay_and_bros"
-    file_name = f"s_univ_top30_theDay_and_bros_{today}.pickle"
-    full_path = os.path.join(file_path, file_name)
+  #   file_path = "/gcs/pipeline-dots-stock/s_univ_top30_theDay_and_bros"
+  #   file_name = f"s_univ_top30_theDay_and_bros_{today}.pickle"
+  #   full_path = os.path.join(file_path, file_name)
 
-    with open(full_path, 'rb') as f:
-      dict_s_univ = pickle.load(f)
+  #   with open(full_path, 'rb') as f:
+  #     dict_s_univ = pickle.load(f)
 
-    s_univ_all = set()
+  #   s_univ_all = set()
 
-    for s_univ in  dict_s_univ.values():
+  #   for s_univ in  dict_s_univ.values():
 
-      s_univ_all = s_univ_all | s_univ
+  #     s_univ_all = s_univ_all | s_univ
 
-    print("s_univ_all size: ",s_univ_all.__len__())
+  #   print("s_univ_all size: ",s_univ_all.__len__())
 
-    df_target = get_target_df(s_univ_all, date_start)
+  #   df_target = get_target_df(s_univ_all, date_start)
     
-    print('df_target_code_size', set(df_target.code).__len__())
+  #   print('df_target_code_size', set(df_target.code).__len__())
 
 
-    file_path_target = "/gcs/pipeline-dots-stock/df_target_v01"
-    file_name_target = f"df_target_v01_{today}.pkl"
-    full_path_target = os.path.join(file_path_target, file_name_target)
+  #   file_path_target = "/gcs/pipeline-dots-stock/df_target_v01"
+  #   file_name_target = f"df_target_v01_{today}.pkl"
+  #   full_path_target = os.path.join(file_path_target, file_name_target)
 
-    df_target.to_pickle(full_path_target)
+  #   df_target.to_pickle(full_path_target)
 
-    return today
+  #   return today
 
-  else :
-    return 'holiday'
+  # else :
 
 
 job_file_name='market-data.json'
@@ -432,8 +477,13 @@ def intro_pipeline():
   str_today = '20210811'
   period = 2
   get_market_info_op = get_market_info(today=str_today, n_days=period)
-  get_base_item(get_market_info_op.outputs['market_info_dataset'])
-  # get_bros(today=str_today, n_days=period)
+  op_get_base_item = get_base_item(get_market_info_op.outputs['market_info_dataset'])
+  op_get_bros = get_bros(today=str_today, n_days=period)
+  op_get_univ = get_univ_for_price(
+    op_get_base_item.outputs['base_item_dataset'],
+    op_get_bros.outputs['bros_univ_dataset'],
+  )
+  get_df_target(op_get_univ.outputs['univ_dataset'])
 # 
 compiler.Compiler().compile(
   pipeline_func=intro_pipeline,
