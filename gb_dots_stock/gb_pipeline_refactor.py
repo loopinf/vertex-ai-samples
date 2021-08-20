@@ -252,12 +252,8 @@ def get_bros(
 def get_features():
   pass
 
-@component()
-def get_target():
-  pass
-
 @component(
-    base_image="gcr.io/dots-stock/python-img-v5.2",
+    base_image="amancevice/pandas:1.3.2-slim"
 )
 def get_univ_for_price(
   # date_ref: str,
@@ -270,33 +266,28 @@ def get_univ_for_price(
   import logging
   import json
   logger = logging.getLogger(__name__)
+  FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+  logging.basicConfig(format=FORMAT)
   logger.setLevel(logging.DEBUG)
-  # console handler
-  ch = logging.StreamHandler()
-  ch.setLevel(logging.DEBUG)
-  # create formatter
-  formatter = logging.Formatter(
-      '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-  ch.setFormatter(formatter)
-  # add ch to logger
-  logger.addHandler(ch)
 
-  df_top30s = pd.read_csv(base_item_dataset.path)
+  # base item
+  df_top30s = pd.read_csv(base_item_dataset.path, 
+                       index_col=0, 
+                       dtype={'날짜': str}).reset_index(drop=True)
+
+  # load edge_list to make bros
   df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
-
   df_ed_r = df_ed.copy() 
-  print(f'test : {df_ed_r.columns}')
-  df_ed_r.columns = ['target', 'source', 'date', 'corr_value','period']
-  df_ed2 = df_ed.append(df_ed_r)
+  df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
+  df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
   dic_univ = {}
   for date, df in df_top30s.groupby('날짜'):
     logger.debug(f'date: {date}')
     l_top30 = df.종목코드.to_list()
-
     l_bro = df_ed2[(df_ed2.date == date) & 
-                  (df_ed2.source.isin(l_top30))].source.unique().tolist()
+                  (df_ed2.source.isin(l_top30))].target.unique().tolist()
 
     dic_univ[date] = list(set(l_top30 + l_bro ))
 
@@ -428,36 +419,20 @@ def get_target(
         np.where(df_['change_p3'] > 0.1, 
                 1,  np.where(df_['change_p3'] > -0.05, 0, -1))                               
     df_.dropna(subset=['high_p3'], inplace=True)                               
-    
     return df_
 
   def get_target_df(df_price):
-
     df_price.reset_index(inplace=True)
     df_price.columns = df_price.columns.str.lower()
-
     df_target = df_price.groupby('code').apply(lambda df: make_target(df))
     df_target = df_target.reset_index(drop=True)
     # df_target['date'] = df_target.date.str.replace('-', '')
-
     return df_target
 
   df_price = pd.read_csv(df_price_dataset.path)
   df_target = get_target_df(df_price=df_price)
 
   df_target.to_csv(df_target_dataset.path)
-
-  #   return today
-
-  # else :
-  # TECHNICAL_INDICATORS_LIST = ['macd',
-  #   'boll_ub',
-  #   'boll_lb',
-  #   'rsi_30',
-  #   'dx_30',
-  #   'close_30_sma',
-  #   'close_60_sma']
-    
 
 @component(
     base_image="gcr.io/deeplearning-platform-release/sklearn-cpu",
