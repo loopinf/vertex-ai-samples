@@ -356,7 +356,6 @@ def get_target(
   df_price_dataset: Input[Dataset],
   df_target_dataset: Output[Dataset]
 ):
-  pass
   import pandas as pd
   import numpy as np
 
