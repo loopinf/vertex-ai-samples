@@ -349,143 +349,116 @@ def get_adj_prices(
   return 'good'
 
 @component(
-    base_image="gcr.io/dots-stock/python-img-v5.2",
+    # base_image="gcr.io/deeplearning-platform-release/sklearn-cpu"
+    base_image="amancevice/pandas:1.3.2-slim"
 )
-def get_target():
+def get_target(
+  df_price_dataset: Input[Dataset],
+  df_target_dataset: Output[Dataset]
+):
   pass
-  # import os
-  # import pandas as pd
-  # import FinanceDataReader as fdr
-  # import numpy as np
+  import pandas as pd
+  import numpy as np
 
+  def make_target(df):
 
-  # # Preference
-  # date_start = '20210101'
+    df_ = df.copy()
 
-  # # functions
-  # #-----------------------------------------------------------------------------
+    df_.sort_values(by='date', inplace=True)
+    df_['high_p1'] = df_.high.shift(-1)
+    df_['high_p2'] = df_.high.shift(-2)
+    df_['high_p3'] = df_.high.shift(-3)
 
-  # def make_target(df):
+    df_['close_p1'] = df_.close.shift(-1)
+    df_['close_p2'] = df_.close.shift(-2)
+    df_['close_p3'] = df_.close.shift(-3)
 
-  #   df_ = df.copy()
+    df_['change_p1'] = (df_.close_p1 - df_.close) / df_.close
+    df_['change_p2'] = (df_.close_p2 - df_.close) / df_.close
+    df_['change_p3'] = (df_.close_p3 - df_.close) / df_.close
 
-  #   df_.sort_values(by='date', inplace=True)
-  #   df_['high_p1'] = df_.high.shift(-1)
-  #   df_['high_p2'] = df_.high.shift(-2)
-  #   df_['high_p3'] = df_.high.shift(-3)
+    df_['change_p1_over5'] = df_['change_p1'] > 0.05
+    df_['change_p2_over5'] = df_['change_p2'] > 0.05
+    df_['change_p3_over5'] = df_['change_p3'] > 0.05
 
-  #   df_['close_p1'] = df_.close.shift(-1)
-  #   df_['close_p2'] = df_.close.shift(-2)
-  #   df_['close_p3'] = df_.close.shift(-3)
+    df_['change_p1_over10'] = df_['change_p1'] > 0.1
+    df_['change_p2_over10'] = df_['change_p2'] > 0.1
+    df_['change_p3_over10'] = df_['change_p3'] > 0.1
 
-  #   df_['change_p1'] = (df_.close_p1 - df_.close) / df_.close
-  #   df_['change_p2'] = (df_.close_p2 - df_.close) / df_.close
-  #   df_['change_p3'] = (df_.close_p3 - df_.close) / df_.close
+    df_['close_high_1'] = (df_.high_p1 - df_.close) / df_.close
+    df_['close_high_2'] = (df_.high_p2 - df_.close) / df_.close
+    df_['close_high_3'] = (df_.high_p3 - df_.close) / df_.close
 
-  #   df_['change_p1_over5'] = df_['change_p1'] > 0.05
-  #   df_['change_p2_over5'] = df_['change_p2'] > 0.05
-  #   df_['change_p3_over5'] = df_['change_p3'] > 0.05
+    df_['close_high_1_over10'] = df_['close_high_1'] > 0.1
+    df_['close_high_2_over10'] = df_['close_high_2'] > 0.1
+    df_['close_high_3_over10'] = df_['close_high_3'] > 0.1
 
-  #   df_['change_p1_over10'] = df_['change_p1'] > 0.1
-  #   df_['change_p2_over10'] = df_['change_p2'] > 0.1
-  #   df_['change_p3_over10'] = df_['change_p3'] > 0.1
-
-  #   df_['close_high_1'] = (df_.high_p1 - df_.close) / df_.close
-  #   df_['close_high_2'] = (df_.high_p2 - df_.close) / df_.close
-  #   df_['close_high_3'] = (df_.high_p3 - df_.close) / df_.close
-
-  #   df_['close_high_1_over10'] = df_['close_high_1'] > 0.1
-  #   df_['close_high_2_over10'] = df_['close_high_2'] > 0.1
-  #   df_['close_high_3_over10'] = df_['close_high_3'] > 0.1
-
-  #   df_['close_high_1_over5'] = df_['close_high_1'] > 0.05
-  #   df_['close_high_2_over5'] = df_['close_high_2'] > 0.05
-  #   df_['close_high_3_over5'] = df_['close_high_3'] > 0.05
+    df_['close_high_1_over5'] = df_['close_high_1'] > 0.05
+    df_['close_high_2_over5'] = df_['close_high_2'] > 0.05
+    df_['close_high_3_over5'] = df_['close_high_3'] > 0.05
     
-  #   df_['target_over10'] = np.logical_or.reduce([
-  #                                 df_.close_high_1_over10,
-  #                                 df_.close_high_2_over10,
-  #                                 df_.close_high_3_over10])
+    df_['target_over10'] = np.logical_or.reduce([
+                                  df_.close_high_1_over10,
+                                  df_.close_high_2_over10,
+                                  df_.close_high_3_over10])
     
-  #   df_['target_over5'] = np.logical_or.reduce([
-  #                                 df_.close_high_1_over5,
-  #                                 df_.close_high_2_over5,
-  #                                 df_.close_high_3_over5])
+    df_['target_over5'] = np.logical_or.reduce([
+                                  df_.close_high_1_over5,
+                                  df_.close_high_2_over5,
+                                  df_.close_high_3_over5])
     
-  #   df_['target_close_over_10'] = np.logical_or.reduce([
-  #                                 df_.change_p1_over10,
-  #                                 df_.change_p2_over10,
-  #                                 df_.change_p3_over10])  
+    df_['target_close_over_10'] = np.logical_or.reduce([
+                                  df_.change_p1_over10,
+                                  df_.change_p2_over10,
+                                  df_.change_p3_over10])  
     
-  #   df_['target_close_over_5'] = np.logical_or.reduce([
-  #                                 df_.change_p1_over5,
-  #                                 df_.change_p2_over5,
-  #                                 df_.change_p3_over5])  
+    df_['target_close_over_5'] = np.logical_or.reduce([
+                                  df_.change_p1_over5,
+                                  df_.change_p2_over5,
+                                  df_.change_p3_over5])  
                                   
-  #   df_['target_mclass_close_over10_under5'] = \
-  #       np.where(df_['change_p1'] > 0.1, 
-  #               1,  np.where(df_['change_p1'] > -0.05, 0, -1))                               
+    df_['target_mclass_close_over10_under5'] = \
+        np.where(df_['change_p1'] > 0.1, 
+                1,  np.where(df_['change_p1'] > -0.05, 0, -1))                               
 
-  #   df_['target_mclass_close_p2_over10_under5'] = \
-  #       np.where(df_['change_p2'] > 0.1, 
-  #               1,  np.where(df_['change_p2'] > -0.05, 0, -1))                               
+    df_['target_mclass_close_p2_over10_under5'] = \
+        np.where(df_['change_p2'] > 0.1, 
+                1,  np.where(df_['change_p2'] > -0.05, 0, -1))                               
                 
-  #   df_['target_mclass_close_p3_over10_under5'] = \
-  #       np.where(df_['change_p3'] > 0.1, 
-  #               1,  np.where(df_['change_p3'] > -0.05, 0, -1))                               
-  #   df_.dropna(subset=['high_p3'], inplace=True)                               
+    df_['target_mclass_close_p3_over10_under5'] = \
+        np.where(df_['change_p3'] > 0.1, 
+                1,  np.where(df_['change_p3'] > -0.05, 0, -1))                               
+    df_.dropna(subset=['high_p3'], inplace=True)                               
     
-  #   return df_
-  # #-----------------------------------------------------------------------------
+    return df_
 
-  # #-----------------------------------------------------------------------------
-  # def get_target_df(s_univ, date_start):
+  def get_target_df(df_price):
 
-  #   df_price = get_price(s_univ, date_start)
-    
-  #   df_price.reset_index(inplace=True)
-  #   df_price.columns = df_price.columns.str.lower()
+    df_price.reset_index(inplace=True)
+    df_price.columns = df_price.columns.str.lower()
 
-  #   df_target = df_price.groupby('code').apply(lambda df: make_target(df))
-  #   df_target = df_target.reset_index(drop=True)
-  #   df_target['date'] = df_target.date.dt.strftime('%Y%m%d')
+    df_target = df_price.groupby('code').apply(lambda df: make_target(df))
+    df_target = df_target.reset_index(drop=True)
+    df_target['date'] = df_target.date.str.replace('-', '')
 
-  #   return df_target
-  # #-----------------------------------------------------------------------------
+    return df_target
 
-  
-  # if today != 'holiday' :
-  #   print(today)
-    
-  #   file_path = "/gcs/pipeline-dots-stock/s_univ_top30_theDay_and_bros"
-  #   file_name = f"s_univ_top30_theDay_and_bros_{today}.pickle"
-  #   full_path = os.path.join(file_path, file_name)
+  df_price = pd.read_csv(df_price_dataset.path)
+  df_target = get_target_df(df_price=df_price)
 
-  #   with open(full_path, 'rb') as f:
-  #     dict_s_univ = pickle.load(f)
-
-  #   s_univ_all = set()
-
-  #   for s_univ in  dict_s_univ.values():
-
-  #     s_univ_all = s_univ_all | s_univ
-
-  #   print("s_univ_all size: ",s_univ_all.__len__())
-
-  #   df_target = get_target_df(s_univ_all, date_start)
-    
-  #   print('df_target_code_size', set(df_target.code).__len__())
-
-
-  #   file_path_target = "/gcs/pipeline-dots-stock/df_target_v01"
-  #   file_name_target = f"df_target_v01_{today}.pkl"
-  #   full_path_target = os.path.join(file_path_target, file_name_target)
-
-  #   df_target.to_pickle(full_path_target)
+  df_target.to_csv(df_target_dataset.path)
 
   #   return today
 
   # else :
+  # TECHNICAL_INDICATORS_LIST = ['macd',
+  #   'boll_ub',
+  #   'boll_lb',
+  #   'rsi_30',
+  #   'dx_30',
+  #   'close_30_sma',
+  #   'close_60_sma']
+    
 
 
 job_file_name='market-data.json'
@@ -507,6 +480,9 @@ def intro_pipeline():
     today=str_today,
     dic_univ_dataset=op_get_univ.outputs['univ_dataset'],
     )
+  op_get_target = get_target(
+    op_get_adj_price.outputs['adj_price_dataset']
+  )
   
 # 
 compiler.Compiler().compile(
