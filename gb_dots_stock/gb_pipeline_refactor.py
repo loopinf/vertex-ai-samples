@@ -603,7 +603,88 @@ def get_techindi(
 
   df_process.to_csv(df_techini_dataset.path)
 
-job_file_name='market-data.json'
+
+@component(
+    base_image="gcr.io/dots-stock/python-img-v5.2",
+    # packages_to_install = ["tables", "pandas_gbq", "finance-datareader", "bs4", "pickle5"]   # add 20210715 FIX pipeline
+)
+def get_features(
+  # today: str,
+  dic_univ_dataset: Input[Dataset],
+  market_info_dataset: Input[Dataset],
+  bros_dataset: Input[Dataset],
+  features_dataset: Output[Dataset]
+  ) -> str:
+  import json
+  import FinanceDataReader as fdr
+  from ae_module.ae_logger import ae_log
+  import pandas as pd
+  import numpy as np
+
+  #dic_univ 가져오기
+  with open(dic_univ_dataset.path, 'r') as f:
+    dic_univ = json.load(f)
+
+  #df_market_info 가져오기
+  df_market = pd.read_csv(market_info_dataset.path)
+
+  #df_ed 가져오기
+  df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
+
+  #functions
+  def get_n_bro_list(code, period, date_ref):
+    l_bros = df_ed[(df_ed.source == code) & (df_ed.date == period) & (df_ed.period == period)].to_list()
+    print('l_bros', l_bros)
+    return l_bros
+
+  def get_up_bro_ratio(code, period, df_, date_ref): # 친구들 중 오른 친구 비율 /  opts =  60일, 90일, 120일
+        
+      l_bros = get_n_bro_list(code, period, date_ref)
+
+      df__ = df_[df_.종목코드.isin(l_bros)].등락률 > 0
+      print('shape_of_friends', df__.shape[0])
+      ratio_up = df__.sum()  /df__.shape[0]
+
+      if np.isnan(ratio_up):
+        return 0
+
+      return ratio_up
+
+  df_feat_s = pd.DataFrame()
+  for date_ref, s_univ in dic_univ.items() :
+
+    df_market_on_date = df_market[df_market.날짜 == date_ref]
+    df_ = df_market_on_date[df_market_on_date.종목코드.isin(s_univ)]
+
+    df_['up_bro_ratio_120'] = df_.apply(lambda row: get_up_bro_ratio(row.종목코드, 120, df_, date_ref), axis=1)
+    # df_['n_bros_120'] = df_.apply(lambda row: get_n_bro(row.종목코드, 120, date_ref), axis=1)
+    # df_['up_bros_mean_120'] = df_.apply(lambda row: get_bro_up_mean(row.종목코드, 120, df_, date_ref), axis=1)
+
+    df_['up_bro_ratio_90'] = df_.apply(lambda row: get_up_bro_ratio(row.종목코드, 90, df_, date_ref), axis=1)
+    # df_['n_bros_90'] = df_.apply(lambda row: get_n_bro(row.종목코드, 90, date_ref), axis=1)
+    # df_['up_bros_mean_90'] = df_.apply(lambda row: get_bro_up_mean(row.종목코드, 90, df_, date_ref), axis=1)
+
+    df_['up_bro_ratio_60'] = df_.apply(lambda row: get_up_bro_ratio(row.종목코드, 60, df_, date_ref), axis=1)
+    # df_['n_bros_60'] = df_.apply(lambda row: get_n_bro(row.종목코드, 60, date_ref), axis=1)
+    # df_['up_bros_mean_60'] = df_.apply(lambda row: get_bro_up_mean(row.종목코드, 60, df_, date_ref), axis=1)
+
+    # df_['h_c_ratio'] = df_.apply(lambda row: high_close_ratio(row), axis=1)
+
+    # df_['bro_earn_avg_120'] = df_.apply(lambda row : bro_earn_avg(row.종목코드, 120, df_, date_ref), axis=1)
+    # df_['bro_earn_avg_90'] = df_.apply(lambda row : bro_earn_avg(row.종목코드, 90, df_, date_ref), axis=1)
+    # df_['bro_earn_avg_60'] = df_.apply(lambda row : bro_earn_avg(row.종목코드, 60, df_, date_ref), axis=1)
+
+    # df_['top30_count_10days'] = df_.apply(lambda row : count_top30_10days(row.종목코드, date_ref), axis=1)
+    # df_['top30_count_5days'] = df_.apply(lambda row : count_top30_5days(row.종목코드, date_ref), axis=1)
+    # df_['volume_change_wrt_10_avg'] = df_.apply(lambda row:get_volume_change_wrt_10_avg(row.종목코드, row.거래량, date_ref), axis=1)
+    # df_['volume_change_wrt_10_max'] = df_.apply(lambda row:get_volume_change_wrt_10_max(row.종목코드, row.거래량, date_ref), axis=1)
+
+    df_feat = df_
+    df_feat_s = df_feat_s.append(df_feat)
+
+  df_feat_s.to_csv(features_dataset.path)
+
+job_file_name='market-data-ksh.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT
@@ -627,6 +708,10 @@ def intro_pipeline():
   )
   op_get_techindi = get_techindi(
     op_get_adj_price.outputs['adj_price_dataset']
+  )
+  op_get_features = get_features(
+    dic_univ_dataset = op_get_univ.outputs['univ_dataset'],
+    market_info_dataset = get_market_info_op.outputs['market_info_dataset']
   )
   
 # 
