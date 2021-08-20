@@ -248,13 +248,13 @@ def get_bros(
 
   return 'OK'
 
-@component()
-def get_features():
-  pass
+# @component()
+# def get_features():
+#   pass
 
-@component()
-def get_target():
-  pass
+# @component()
+# def get_target():
+#   pass
 
 @component(
     base_image="gcr.io/dots-stock/python-img-v5.2",
@@ -286,7 +286,7 @@ def get_univ_for_price(
 
   df_ed_r = df_ed.copy() 
   print(f'test : {df_ed_r.columns}')
-  df_ed_r.columns = ['target', 'source', 'date', 'corr_value','period']
+  df_ed_r.columns = ['target', 'source', 'period', 'date', 'corr_value']
   df_ed2 = df_ed.append(df_ed_r)
   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
@@ -297,6 +297,7 @@ def get_univ_for_price(
 
     l_bro = df_ed2[(df_ed2.date == date) & 
                   (df_ed2.source.isin(l_top30))].source.unique().tolist()
+    print('size', l_top30.__len__(), l_bro.__len__())
 
     dic_univ[date] = list(set(l_top30 + l_bro ))
 
@@ -616,17 +617,19 @@ def get_features(
   features_dataset: Output[Dataset]
   ) -> str:
   import json
-  import FinanceDataReader as fdr
-  from ae_module.ae_logger import ae_log
+  # import FinanceDataReader as fdr
+  # from ae_module.ae_logger import ae_log
   import pandas as pd
   import numpy as np
 
   #dic_univ 가져오기
   with open(dic_univ_dataset.path, 'r') as f:
     dic_univ = json.load(f)
+  print('dic_univ', dic_univ.keys())
 
   #df_market_info 가져오기
   df_market = pd.read_csv(market_info_dataset.path)
+  print('df_market', df_market.shape)
 
   #df_ed 가져오기
   df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
@@ -641,6 +644,7 @@ def get_features(
         
       l_bros = get_n_bro_list(code, period, date_ref)
 
+
       df__ = df_[df_.종목코드.isin(l_bros)].등락률 > 0
       print('shape_of_friends', df__.shape[0])
       ratio_up = df__.sum()  /df__.shape[0]
@@ -654,8 +658,9 @@ def get_features(
   for date_ref, s_univ in dic_univ.items() :
 
     df_market_on_date = df_market[df_market.날짜 == date_ref]
-    df_ = df_market_on_date[df_market_on_date.종목코드.isin(s_univ)]
-
+    _df = df_market_on_date[df_market_on_date.종목코드.isin(s_univ)]
+    df_ = _df
+    print('zzz', df_.head())
     df_['up_bro_ratio_120'] = df_.apply(lambda row: get_up_bro_ratio(row.종목코드, 120, df_, date_ref), axis=1)
     # df_['n_bros_120'] = df_.apply(lambda row: get_n_bro(row.종목코드, 120, date_ref), axis=1)
     # df_['up_bros_mean_120'] = df_.apply(lambda row: get_bro_up_mean(row.종목코드, 120, df_, date_ref), axis=1)
@@ -711,7 +716,8 @@ def intro_pipeline():
   )
   op_get_features = get_features(
     dic_univ_dataset = op_get_univ.outputs['univ_dataset'],
-    market_info_dataset = get_market_info_op.outputs['market_info_dataset']
+    market_info_dataset = get_market_info_op.outputs['market_info_dataset'],
+    bros_dataset = op_get_bros.outputs['bros_univ_dataset'],
   )
   
 # 

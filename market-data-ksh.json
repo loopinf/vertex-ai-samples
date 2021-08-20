@@ -1,0 +1,678 @@
+{
+  "pipelineSpec": {
+    "components": {
+      "comp-get-adj-prices": {
+        "executorLabel": "exec-get-adj-prices",
+        "inputDefinitions": {
+          "artifacts": {
+            "dic_univ_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          },
+          "parameters": {
+            "today": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "adj_price_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          },
+          "parameters": {
+            "Output": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-get-base-item": {
+        "executorLabel": "exec-get-base-item",
+        "inputDefinitions": {
+          "artifacts": {
+            "market_info_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "base_item_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          }
+        }
+      },
+      "comp-get-bros": {
+        "executorLabel": "exec-get-bros",
+        "inputDefinitions": {
+          "parameters": {
+            "n_days": {
+              "type": "INT"
+            },
+            "today": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "bros_univ_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          },
+          "parameters": {
+            "Output": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-get-features": {
+        "executorLabel": "exec-get-features",
+        "inputDefinitions": {
+          "artifacts": {
+            "bros_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            },
+            "dic_univ_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            },
+            "market_info_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "features_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          },
+          "parameters": {
+            "Output": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-get-market-info": {
+        "executorLabel": "exec-get-market-info",
+        "inputDefinitions": {
+          "parameters": {
+            "n_days": {
+              "type": "INT"
+            },
+            "today": {
+              "type": "STRING"
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "market_info_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          },
+          "parameters": {
+            "Output": {
+              "type": "STRING"
+            }
+          }
+        }
+      },
+      "comp-get-target": {
+        "executorLabel": "exec-get-target",
+        "inputDefinitions": {
+          "artifacts": {
+            "df_price_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "df_target_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          }
+        }
+      },
+      "comp-get-techindi": {
+        "executorLabel": "exec-get-techindi",
+        "inputDefinitions": {
+          "artifacts": {
+            "df_price_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "df_techini_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          }
+        }
+      },
+      "comp-get-univ-for-price": {
+        "executorLabel": "exec-get-univ-for-price",
+        "inputDefinitions": {
+          "artifacts": {
+            "base_item_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            },
+            "bros_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          }
+        },
+        "outputDefinitions": {
+          "artifacts": {
+            "univ_dataset": {
+              "artifactType": {
+                "schemaTitle": "system.Dataset"
+              }
+            }
+          }
+        }
+      }
+    },
+    "deploymentSpec": {
+      "executors": {
+        "exec-get-adj-prices": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "get_adj_prices",
+              "--today-output-path",
+              "{{$.inputs.parameters['today']}}",
+              "--dic-univ-dataset-output-path",
+              "{{$.inputs.artifacts['dic_univ_dataset'].path}}",
+              "--adj-price-dataset-output-path",
+              "{{$.outputs.artifacts['adj_price_dataset'].path}}",
+              "--Output",
+              "{{$.outputs.parameters['Output'].output_file}}"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' --user) && \"$0\" \"$@\"",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef get_adj_prices(\n  today: str,\n  dic_univ_dataset: Input[Dataset],\n  adj_price_dataset: Output[Dataset]\n  ) -> str:\n  import json\n  import FinanceDataReader as fdr\n  from ae_module.ae_logger import ae_log\n  import pandas as pd\n  # with open(dic_univ_dataset.path, 'rb') as f:\n  #   dic_univ = pickle.load(f)\n  with open(dic_univ_dataset.path, 'r') as f:\n    dic_univ = json.load(f)\n\n  codes_stock = []\n  for v in dic_univ.values():\n    codes_stock.extend(v)\n\n  def get_price_adj(code, start, end):\n    return fdr.DataReader(code, start=start, end=end)\n\n  def get_price(l_univ, date_start, date_end):\n    df_price = pd.DataFrame()\n    for code in l_univ :\n      df_ = get_price_adj(code, date_start, date_end)\n      df_['code'] = code\n      # df_['price'] = df_['Close'] / df_.Close.iloc[0]\n      df_price = df_price.append(df_)\n    return df_price\n\n  ae_log.debug(f'codes_stock {codes_stock.__len__()}')\n  date_start = '20210101'\n  date_end = today\n  df_adj_price = get_price(codes_stock, date_start=date_start, date_end=today)\n\n  df_adj_price.to_csv(adj_price_dataset.path)\n\n  ae_log.debug(df_adj_price.shape)\n\n  return 'good'\n\n"
+            ],
+            "image": "gcr.io/dots-stock/python-img-v5.2"
+          }
+        },
+        "exec-get-base-item": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "get_base_item",
+              "--market-info-dataset-output-path",
+              "{{$.inputs.artifacts['market_info_dataset'].path}}",
+              "--base-item-dataset-output-path",
+              "{{$.outputs.artifacts['base_item_dataset'].path}}"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' --user) && \"$0\" \"$@\"",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef get_base_item(\n  market_info_dataset: Input[Dataset],\n  base_item_dataset: Output[Dataset]\n):\n  import pandas as pd\n\n  # helper function\n  def get_top30_list(df_market):\n      cols_out = ['\ub0a0\uc9dc','\uc885\ubaa9\ucf54\ub4dc','\uc885\ubaa9\uba85']\n      return (df_market\n              .sort_values(['\ub0a0\uc9dc','\ub4f1\ub77d\ub960'], ascending=False)\n              .groupby('\ub0a0\uc9dc')\n              .head(30)[cols_out])\n\n  df_market = pd.read_csv(market_info_dataset.path)\n  df_base_item = get_top30_list(df_market)\n  df_base_item.to_csv(base_item_dataset.path)\n\n"
+            ],
+            "image": "gcr.io/dots-stock/python-img-v5.2"
+          }
+        },
+        "exec-get-bros": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "get_bros",
+              "--today-output-path",
+              "{{$.inputs.parameters['today']}}",
+              "--n-days-output-path",
+              "{{$.inputs.parameters['n_days']}}",
+              "--bros-univ-dataset-output-path",
+              "{{$.outputs.artifacts['bros_univ_dataset'].path}}",
+              "--Output",
+              "{{$.outputs.parameters['Output'].output_file}}"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' --user) && \"$0\" \"$@\"",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef get_bros(\n    today: str,\n    n_days: int, \n    bros_univ_dataset: Output[Dataset]\n) -> str :\n  '''\n\n  Returns:\n    list\n  '''\n  import pandas as pd\n  import pandas_gbq\n  import networkx as nx\n  from trading_calendars import get_calendar \n  PROJECT_ID = 'dots-stock'\n  cal_KRX = get_calendar('XKRX')\n\n  # helper functions\n  #-----------------------------------------------------------------------------\n  def get_krx_on_dates_start_end(start, end):\n    return [date.strftime('%Y%m%d')\n            for date in pd.bdate_range(start=start, end=end, freq='C', \n        holidays=cal_KRX.precomputed_holidays) ]\n\n  def get_krx_on_dates_n_days_ago(date_ref, n_days=20):\n    return [date.strftime('%Y%m%d')\n            for date in pd.bdate_range(\n        end=date_ref, freq='C', periods=n_days,\n        holidays=cal_KRX.precomputed_holidays) ]\n\n  def get_corr_pairs_gbq(date_ref, period):\n    date_ref_ = pd.Timestamp(date_ref).strftime('%Y-%m-%d')\n    sql = f'''\n    SELECT\n      DISTINCT source,\n      target,\n      corr_value,\n      period,\n      date\n    FROM\n      `dots-stock.krx_dataset.corr_ohlc_part1`\n    WHERE\n      date = \"{date_ref_}\"\n      AND period = {period}\n    ORDER BY\n      corr_value DESC\n    LIMIT\n      1000'''\n\n    df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID)\n    return df\n\n  def find_bros(date_ref, period):\n    '''clique over 3 nodes '''\n    df_edgelist = get_corr_pairs_gbq(date_ref, period)\n    g = nx.from_pandas_edgelist(df_edgelist, edge_attr=True)\n    bros_ = nx.find_cliques(g)\n    bros_3 = [bros for bros in bros_ if len(bros) >=3]\n    set_bros =  set([i for l_i in bros_3 for i in l_i])\n    g_gang = g.subgraph(set_bros)\n\n    df_gangs_edgelist = nx.to_pandas_edgelist(g_gang)\n    return df_gangs_edgelist\n\n  def find_gang(date_ref):\n    df_gang = pd.DataFrame()\n    for period in [20, 40, 60, 90, 120]:\n      df_ = find_bros(date, period=period)\n      df_gang = df_gang.append(df_)\n    return df_gang\n\n  def get_bros_univ(date_ref):\n\n    bros_120 = find_bros(date_ref, 120)\n    bros_90 = find_bros(date_ref, 90)\n    bros_60 = find_bros(date_ref, 60)\n    bros_40 = find_bros(date_ref, 40)\n    bros_20 = find_bros(date_ref, 20)\n\n    set_bros_120 =  set([i for l_i in bros_120 for i in l_i ])\n    set_bros_90 =  set([i for l_i in bros_90 for i in l_i ])\n    set_bros_60 =  set([i for l_i in bros_60 for i in l_i ])\n    set_bros_40 =  set([i for l_i in bros_40 for i in l_i ])\n    set_bros_20 =  set([i for l_i in bros_20 for i in l_i ])\n\n    s_univ = (\n             set_bros_40 | set_bros_20 | set_bros_120 | set_bros_60 | set_bros_90)\n\n    return list(s_univ)\n\n  # jobs\n  dates = get_krx_on_dates_n_days_ago(date_ref=today, n_days=n_days)\n  df_bros = pd.DataFrame()\n  for date in dates:\n    df = find_gang(date_ref=date)  \n    df_bros = df_bros.append(df)\n\n  df_bros.to_csv(bros_univ_dataset.path)\n\n  return 'OK'\n\n"
+            ],
+            "image": "gcr.io/dots-stock/python-img-v5.2"
+          }
+        },
+        "exec-get-features": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "get_features",
+              "--dic-univ-dataset-output-path",
+              "{{$.inputs.artifacts['dic_univ_dataset'].path}}",
+              "--market-info-dataset-output-path",
+              "{{$.inputs.artifacts['market_info_dataset'].path}}",
+              "--bros-dataset-output-path",
+              "{{$.inputs.artifacts['bros_dataset'].path}}",
+              "--features-dataset-output-path",
+              "{{$.outputs.artifacts['features_dataset'].path}}",
+              "--Output",
+              "{{$.outputs.parameters['Output'].output_file}}"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' --user) && \"$0\" \"$@\"",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef get_features(\n  # today: str,\n  dic_univ_dataset: Input[Dataset],\n  market_info_dataset: Input[Dataset],\n  bros_dataset: Input[Dataset],\n  features_dataset: Output[Dataset]\n  ) -> str:\n  import json\n  # import FinanceDataReader as fdr\n  # from ae_module.ae_logger import ae_log\n  import pandas as pd\n  import numpy as np\n\n  #dic_univ \uac00\uc838\uc624\uae30\n  with open(dic_univ_dataset.path, 'r') as f:\n    dic_univ = json.load(f)\n  print('dic_univ', dic_univ.keys())\n\n  #df_market_info \uac00\uc838\uc624\uae30\n  df_market = pd.read_csv(market_info_dataset.path)\n  print('df_market', df_market.shape)\n\n  #df_ed \uac00\uc838\uc624\uae30\n  df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)\n\n  #functions\n  def get_n_bro_list(code, period, date_ref):\n    l_bros = df_ed[(df_ed.source == code) & (df_ed.date == period) & (df_ed.period == period)].to_list()\n    print('l_bros', l_bros)\n    return l_bros\n\n  def get_up_bro_ratio(code, period, df_, date_ref): # \uce5c\uad6c\ub4e4 \uc911 \uc624\ub978 \uce5c\uad6c \ube44\uc728 /  opts =  60\uc77c, 90\uc77c, 120\uc77c\n\n      l_bros = get_n_bro_list(code, period, date_ref)\n\n\n      df__ = df_[df_.\uc885\ubaa9\ucf54\ub4dc.isin(l_bros)].\ub4f1\ub77d\ub960 > 0\n      print('shape_of_friends', df__.shape[0])\n      ratio_up = df__.sum()  /df__.shape[0]\n\n      if np.isnan(ratio_up):\n        return 0\n\n      return ratio_up\n\n  df_feat_s = pd.DataFrame()\n  for date_ref, s_univ in dic_univ.items() :\n\n    df_market_on_date = df_market[df_market.\ub0a0\uc9dc == date_ref]\n    _df = df_market_on_date[df_market_on_date.\uc885\ubaa9\ucf54\ub4dc.isin(s_univ)]\n    df_ = _df\n    print('zzz', df_.head())\n    df_['up_bro_ratio_120'] = df_.apply(lambda row: get_up_bro_ratio(row.\uc885\ubaa9\ucf54\ub4dc, 120, df_, date_ref), axis=1)\n    # df_['n_bros_120'] = df_.apply(lambda row: get_n_bro(row.\uc885\ubaa9\ucf54\ub4dc, 120, date_ref), axis=1)\n    # df_['up_bros_mean_120'] = df_.apply(lambda row: get_bro_up_mean(row.\uc885\ubaa9\ucf54\ub4dc, 120, df_, date_ref), axis=1)\n\n    df_['up_bro_ratio_90'] = df_.apply(lambda row: get_up_bro_ratio(row.\uc885\ubaa9\ucf54\ub4dc, 90, df_, date_ref), axis=1)\n    # df_['n_bros_90'] = df_.apply(lambda row: get_n_bro(row.\uc885\ubaa9\ucf54\ub4dc, 90, date_ref), axis=1)\n    # df_['up_bros_mean_90'] = df_.apply(lambda row: get_bro_up_mean(row.\uc885\ubaa9\ucf54\ub4dc, 90, df_, date_ref), axis=1)\n\n    df_['up_bro_ratio_60'] = df_.apply(lambda row: get_up_bro_ratio(row.\uc885\ubaa9\ucf54\ub4dc, 60, df_, date_ref), axis=1)\n    # df_['n_bros_60'] = df_.apply(lambda row: get_n_bro(row.\uc885\ubaa9\ucf54\ub4dc, 60, date_ref), axis=1)\n    # df_['up_bros_mean_60'] = df_.apply(lambda row: get_bro_up_mean(row.\uc885\ubaa9\ucf54\ub4dc, 60, df_, date_ref), axis=1)\n\n    # df_['h_c_ratio'] = df_.apply(lambda row: high_close_ratio(row), axis=1)\n\n    # df_['bro_earn_avg_120'] = df_.apply(lambda row : bro_earn_avg(row.\uc885\ubaa9\ucf54\ub4dc, 120, df_, date_ref), axis=1)\n    # df_['bro_earn_avg_90'] = df_.apply(lambda row : bro_earn_avg(row.\uc885\ubaa9\ucf54\ub4dc, 90, df_, date_ref), axis=1)\n    # df_['bro_earn_avg_60'] = df_.apply(lambda row : bro_earn_avg(row.\uc885\ubaa9\ucf54\ub4dc, 60, df_, date_ref), axis=1)\n\n    # df_['top30_count_10days'] = df_.apply(lambda row : count_top30_10days(row.\uc885\ubaa9\ucf54\ub4dc, date_ref), axis=1)\n    # df_['top30_count_5days'] = df_.apply(lambda row : count_top30_5days(row.\uc885\ubaa9\ucf54\ub4dc, date_ref), axis=1)\n    # df_['volume_change_wrt_10_avg'] = df_.apply(lambda row:get_volume_change_wrt_10_avg(row.\uc885\ubaa9\ucf54\ub4dc, row.\uac70\ub798\ub7c9, date_ref), axis=1)\n    # df_['volume_change_wrt_10_max'] = df_.apply(lambda row:get_volume_change_wrt_10_max(row.\uc885\ubaa9\ucf54\ub4dc, row.\uac70\ub798\ub7c9, date_ref), axis=1)\n\n    df_feat = df_\n    df_feat_s = df_feat_s.append(df_feat)\n\n  df_feat_s.to_csv(features_dataset.path)\n\n"
+            ],
+            "image": "gcr.io/dots-stock/python-img-v5.2"
+          }
+        },
+        "exec-get-market-info": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "get_market_info",
+              "--today-output-path",
+              "{{$.inputs.parameters['today']}}",
+              "--n-days-output-path",
+              "{{$.inputs.parameters['n_days']}}",
+              "--market-info-dataset-output-path",
+              "{{$.outputs.artifacts['market_info_dataset'].path}}",
+              "--Output",
+              "{{$.outputs.parameters['Output'].output_file}}"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' --user) && \"$0\" \"$@\"",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef get_market_info(\n    # top30_univ_dataset: Output[Dataset], \n    market_info_dataset: Output[Dataset],\n    today: str,\n    n_days: int\n) -> str:\n  import pandas as pd\n  from pandas.tseries.offsets import CustomBusinessDay\n  from trading_calendars import get_calendar\n  import functools\n\n  import pickle\n  import logging\n  import networkx as nx\n  import os\n  from sqlalchemy import create_engine\n\n  # today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')\n  # today = '20210809'\n  cal_KRX = get_calendar('XKRX')\n  custombd_KRX = CustomBusinessDay(holidays=cal_KRX.precomputed_holidays)\n\n  logger = logging.getLogger(__name__)\n  logger.setLevel(logging.DEBUG)\n  # console handler\n  ch = logging.StreamHandler()\n  ch.setLevel(logging.DEBUG)\n  # create formatter\n  formatter = logging.Formatter(\n      '%(asctime)s - %(name)s - %(levelname)s - %(message)s')\n  ch.setFormatter(formatter)\n  # add ch to logger\n  logger.addHandler(ch)\n\n  # Preference\n  #-----------------------------------------------------------------------------\n  AWS_DB_ID = 'gb_master'\n  AWS_DB_PWD = 'qwert12345'\n  AWS_DB_ADDRESS = 'kwdb-daily.cf6e7v8fhede.ap-northeast-2.rds.amazonaws.com'\n  AWS_DB_PORT = '3306'\n  DB_DATABASE_NAME_daily_naver = 'daily_naver'\n  PROJECT_ID = 'dots-stock'\n  db_daily_naver_con = create_engine('mysql+pymysql://{0}:{1}@{2}:{3}/{4}?charset=utf8'\n                                      .format(AWS_DB_ID, AWS_DB_PWD, AWS_DB_ADDRESS, AWS_DB_PORT, DB_DATABASE_NAME_daily_naver),\n                                      encoding='utf8',\n                                      echo=False)\n\n  # @functools.lru_cache()\n  def get_market_from_naver_aws(date_ref):\n      '''\n      daily naver \uc5d0\uc11c db\uac12 \uadf8\ub300\ub85c parsing \ub0b4\uc6a9 \ubc1b\uc544\uc624\uae30\n      '''\n      with db_daily_naver_con.connect() as conn:\n          table_name = f'{date_ref}_daily_allstock_naver'\n          str_sql = f'select * from {table_name} order by \ub4f1\ub77d\ub960 DESC'\n          df = pd.read_sql_query(str_sql, conn)  # self.get_db_daily_naver_con())\n          df = df.reset_index().rename(columns={'index':'\uc21c\uc704_\uc0c1\uc2b9\ub960', 'N':'\uc21c\uc704_\uc2dc\uac00\ucd1d\uc561'})\n          df['\uc21c\uc704_\uc0c1\uc2b9\ub960'] = df.\uc21c\uc704_\uc0c1\uc2b9\ub960 + 1\n      return df\n\n  def get_krx_on_dates_n_days_ago(date_ref, n_days=20):\n      return [date.strftime('%Y%m%d')\n              for date in pd.bdate_range(\n          end=date_ref, freq='C', periods=n_days,\n          holidays=cal_KRX.precomputed_holidays)\n      ]\n  # 1. Market data\n  #------------------------------------------------------------------------------\n  def get_markets_aws(date_ref, n_days):\n      '''\n      \uc7a5\uc911\uc77c\ub54c\ub294 \ud574\ub2f9\ub0a0\uc9dc\ub9cc cache \uc548\ud568\n      '''\n      dates_n_days_ago = get_krx_on_dates_n_days_ago(date_ref, n_days)\n      df_market = pd.DataFrame()\n      for date in dates_n_days_ago:\n          df_ = get_market_from_naver_aws(date)\n          # logger.debug(f'date : {date} and df_.shape {df_.shape}' )\n          df_market  = df_market.append(df_)\n      return df_market\n\n  # def get_top30_list(df_market):\n  #     cols_out = ['\ub0a0\uc9dc','\uc885\ubaa9\ucf54\ub4dc','\uc885\ubaa9\uba85']\n  #     return (df_market\n  #             .sort_values(['\ub0a0\uc9dc','\ub4f1\ub77d\ub960'], ascending=False)\n  #             .groupby('\ub0a0\uc9dc')\n  #             .head(30)[cols_out]\n  #     )\n\n  df_market = get_markets_aws(date_ref=today, n_days=n_days)\n  # df_top30s = get_top30_list(df_market)\n\n  df_market.to_csv(market_info_dataset.path)\n  # df_top30s.to_csv(top30_univ_dataset.path)\n\n  return today\n\n"
+            ],
+            "image": "gcr.io/dots-stock/python-img-v5.2"
+          }
+        },
+        "exec-get-target": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "get_target",
+              "--df-price-dataset-output-path",
+              "{{$.inputs.artifacts['df_price_dataset'].path}}",
+              "--df-target-dataset-output-path",
+              "{{$.outputs.artifacts['df_target_dataset'].path}}"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' --user) && \"$0\" \"$@\"",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef get_target(\n  df_price_dataset: Input[Dataset],\n  df_target_dataset: Output[Dataset]\n):\n  pass\n  import pandas as pd\n  import numpy as np\n\n  def make_target(df):\n\n    df_ = df.copy()\n\n    df_.sort_values(by='date', inplace=True)\n    df_['high_p1'] = df_.high.shift(-1)\n    df_['high_p2'] = df_.high.shift(-2)\n    df_['high_p3'] = df_.high.shift(-3)\n\n    df_['close_p1'] = df_.close.shift(-1)\n    df_['close_p2'] = df_.close.shift(-2)\n    df_['close_p3'] = df_.close.shift(-3)\n\n    df_['change_p1'] = (df_.close_p1 - df_.close) / df_.close\n    df_['change_p2'] = (df_.close_p2 - df_.close) / df_.close\n    df_['change_p3'] = (df_.close_p3 - df_.close) / df_.close\n\n    df_['change_p1_over5'] = df_['change_p1'] > 0.05\n    df_['change_p2_over5'] = df_['change_p2'] > 0.05\n    df_['change_p3_over5'] = df_['change_p3'] > 0.05\n\n    df_['change_p1_over10'] = df_['change_p1'] > 0.1\n    df_['change_p2_over10'] = df_['change_p2'] > 0.1\n    df_['change_p3_over10'] = df_['change_p3'] > 0.1\n\n    df_['close_high_1'] = (df_.high_p1 - df_.close) / df_.close\n    df_['close_high_2'] = (df_.high_p2 - df_.close) / df_.close\n    df_['close_high_3'] = (df_.high_p3 - df_.close) / df_.close\n\n    df_['close_high_1_over10'] = df_['close_high_1'] > 0.1\n    df_['close_high_2_over10'] = df_['close_high_2'] > 0.1\n    df_['close_high_3_over10'] = df_['close_high_3'] > 0.1\n\n    df_['close_high_1_over5'] = df_['close_high_1'] > 0.05\n    df_['close_high_2_over5'] = df_['close_high_2'] > 0.05\n    df_['close_high_3_over5'] = df_['close_high_3'] > 0.05\n\n    df_['target_over10'] = np.logical_or.reduce([\n                                  df_.close_high_1_over10,\n                                  df_.close_high_2_over10,\n                                  df_.close_high_3_over10])\n\n    df_['target_over5'] = np.logical_or.reduce([\n                                  df_.close_high_1_over5,\n                                  df_.close_high_2_over5,\n                                  df_.close_high_3_over5])\n\n    df_['target_close_over_10'] = np.logical_or.reduce([\n                                  df_.change_p1_over10,\n                                  df_.change_p2_over10,\n                                  df_.change_p3_over10])  \n\n    df_['target_close_over_5'] = np.logical_or.reduce([\n                                  df_.change_p1_over5,\n                                  df_.change_p2_over5,\n                                  df_.change_p3_over5])  \n\n    df_['target_mclass_close_over10_under5'] = \\\n        np.where(df_['change_p1'] > 0.1, \n                1,  np.where(df_['change_p1'] > -0.05, 0, -1))                               \n\n    df_['target_mclass_close_p2_over10_under5'] = \\\n        np.where(df_['change_p2'] > 0.1, \n                1,  np.where(df_['change_p2'] > -0.05, 0, -1))                               \n\n    df_['target_mclass_close_p3_over10_under5'] = \\\n        np.where(df_['change_p3'] > 0.1, \n                1,  np.where(df_['change_p3'] > -0.05, 0, -1))                               \n    df_.dropna(subset=['high_p3'], inplace=True)                               \n\n    return df_\n\n  def get_target_df(df_price):\n\n    df_price.reset_index(inplace=True)\n    df_price.columns = df_price.columns.str.lower()\n\n    df_target = df_price.groupby('code').apply(lambda df: make_target(df))\n    df_target = df_target.reset_index(drop=True)\n    # df_target['date'] = df_target.date.str.replace('-', '')\n\n    return df_target\n\n  df_price = pd.read_csv(df_price_dataset.path)\n  df_target = get_target_df(df_price=df_price)\n\n  df_target.to_csv(df_target_dataset.path)\n\n  #   return today\n\n  # else :\n  # TECHNICAL_INDICATORS_LIST = ['macd',\n  #   'boll_ub',\n  #   'boll_lb',\n  #   'rsi_30',\n  #   'dx_30',\n  #   'close_30_sma',\n  #   'close_60_sma']\n\n"
+            ],
+            "image": "amancevice/pandas:1.3.2-slim"
+          }
+        },
+        "exec-get-techindi": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "get_techindi",
+              "--df-price-dataset-output-path",
+              "{{$.inputs.artifacts['df_price_dataset'].path}}",
+              "--df-techini-dataset-output-path",
+              "{{$.outputs.artifacts['df_techini_dataset'].path}}"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'stockstats' 'kfp==1.7.0' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'stockstats' 'kfp==1.7.0' --user) && \"$0\" \"$@\"",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef get_techindi(\n  df_price_dataset: Input[Dataset],\n  df_techini_dataset: Output[Dataset]\n):\n  TECHNICAL_INDICATORS_LIST = ['macd',\n  'boll_ub',\n  'boll_lb',\n  'rsi_30',\n  'dx_30',\n  'close_30_sma',\n  'close_60_sma']\n  from stockstats import StockDataFrame as Sdf\n  from sklearn.preprocessing import MaxAbsScaler\n  import pandas as pd\n  class FeatureEngineer:\n    \"\"\"Provides methods for preprocessing the stock price data\n\n    Attributes\n    ----------\n        use_technical_indicator : boolean\n            we technical indicator or not\n        tech_indicator_list : list\n            a list of technical indicator names (modified from config.py)\n        use_turbulence : boolean\n            use turbulence index or not\n        user_defined_feature:boolean\n            user user defined features or not\n\n    Methods\n    -------\n    preprocess_data()\n        main method to do the feature engineering\n\n    \"\"\"\n\n    def __init__(\n      self,\n      use_technical_indicator=True,\n      tech_indicator_list=TECHNICAL_INDICATORS_LIST,\n      user_defined_feature=False,\n  ):\n      self.use_technical_indicator = use_technical_indicator\n      self.tech_indicator_list = tech_indicator_list\n      self.user_defined_feature = user_defined_feature\n\n    def preprocess_data(self, df):\n      \"\"\"main method to do the feature engineering\n      @:param config: source dataframe\n      @:return: a DataMatrices object\n      \"\"\"\n      #clean data\n      df = self.clean_data(df)\n\n      # add technical indicators using stockstats\n      if self.use_technical_indicator == True:\n        df = self.add_technical_indicator(df)\n        print(\"Successfully added technical indicators\")\n\n      # add user defined feature\n      if self.user_defined_feature == True:\n        df = self.add_user_defined_feature(df)\n        print(\"Successfully added user defined features\")\n\n      # fill the missing values at the beginning and the end\n      df = df.fillna(method=\"bfill\").fillna(method=\"ffill\")\n      return df\n\n    def clean_data(self, data):\n      \"\"\"\n      clean the raw data\n      deal with missing values\n      reasons: stocks could be delisted, not incorporated at the time step \n      :param data: (df) pandas dataframe\n      :return: (df) pandas dataframe\n      \"\"\"\n      df = data.copy()\n      df=df.sort_values(['date','tic'],ignore_index=True)\n      df.index = df.date.factorize()[0]\n      merged_closes = df.pivot_table(index = 'date',columns = 'tic', values = 'close')\n      merged_closes = merged_closes.dropna(axis=1)\n      tics = merged_closes.columns\n      df = df[df.tic.isin(tics)]\n      return df\n\n    def add_technical_indicator(self, data):\n      \"\"\"\n      calculate technical indicators\n      use stockstats package to add technical inidactors\n      :param data: (df) pandas dataframe\n      :return: (df) pandas dataframe\n      \"\"\"\n      df = data.copy()\n      df = df.sort_values(by=['tic','date'])\n      stock = Sdf.retype(df.copy())\n      unique_ticker = stock.tic.unique()\n\n      for indicator in self.tech_indicator_list:\n        indicator_df = pd.DataFrame()\n        for i in range(len(unique_ticker)):\n          try:\n            temp_indicator = stock[stock.tic == unique_ticker[i]][indicator]\n            temp_indicator = pd.DataFrame(temp_indicator)\n            temp_indicator['tic'] = unique_ticker[i]\n            temp_indicator['date'] = df[df.tic == unique_ticker[i]]['date'].to_list()\n            indicator_df = indicator_df.append(\n                temp_indicator, ignore_index=True\n            )\n          except Exception as e:\n            print(e)\n        df = df.merge(indicator_df[['tic','date',indicator]],on=['tic','date'],how='left')\n      df = df.sort_values(by=['date','tic'])\n      return df\n\n    def add_user_defined_feature(self, data):\n        \"\"\"\n        add user defined features\n        :param data: (df) pandas dataframe\n        :return: (df) pandas dataframe\n        \"\"\"\n        df = data.copy()\n        df[\"daily_return\"] = df.close.pct_change(1)\n        df['bb_u_ratio'] = df.boll_ub / df.close\n        df['bb_l_ratio'] = df.boll_lb / df.close\n        df['max_scale_MACD'] = MaxAbsScaler().fit_transform(df[['macd']])\n        # df['return_lag_1']=df.close.pct_change(2)\n        # df['return_lag_2']=df.close.pct_change(3)\n        # df['return_lag_3']=df.close.pct_change(4)\n        # df['return_lag_4']=df.close.pct_change(5)\n        return df\n\n  df_price = pd.read_csv(df_price_dataset.path)\n  df_price.columns = df_price.columns.str.lower()\n  df_price.rename(columns={'code':'tic'}, inplace=True)\n  fe = FeatureEngineer(user_defined_feature=True)\n  df_process = fe.preprocess_data(df_price)\n  df_process.rename(columns={'tic':'code'}, inplace=True)\n\n  df_process.to_csv(df_techini_dataset.path)\n\n"
+            ],
+            "image": "gcr.io/deeplearning-platform-release/sklearn-cpu"
+          }
+        },
+        "exec-get-univ-for-price": {
+          "container": {
+            "args": [
+              "--executor_input",
+              "{{$}}",
+              "--function_to_execute",
+              "get_univ_for_price",
+              "--base-item-dataset-output-path",
+              "{{$.inputs.artifacts['base_item_dataset'].path}}",
+              "--bros-dataset-output-path",
+              "{{$.inputs.artifacts['bros_dataset'].path}}",
+              "--univ-dataset-output-path",
+              "{{$.outputs.artifacts['univ_dataset'].path}}"
+            ],
+            "command": [
+              "sh",
+              "-c",
+              "(PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' || PIP_DISABLE_PIP_VERSION_CHECK=1 python3 -m pip install --quiet                 --no-warn-script-location 'kfp==1.7.0' --user) && \"$0\" \"$@\"",
+              "sh",
+              "-ec",
+              "program_path=$(mktemp -d)\nprintf \"%s\" \"$0\" > \"$program_path/ephemeral_component.py\"\npython3 -m kfp.components.executor_main                         --component_module_path                         \"$program_path/ephemeral_component.py\"                         \"$@\"\n",
+              "\nfrom kfp.v2.dsl import *\nfrom typing import *\n\ndef get_univ_for_price(\n  # date_ref: str,\n  base_item_dataset: Input[Dataset],\n  bros_dataset: Input[Dataset],\n  univ_dataset: Output[Dataset],\n):\n  import pandas as pd\n  import pickle\n  import logging\n  import json\n  logger = logging.getLogger(__name__)\n  logger.setLevel(logging.DEBUG)\n  # console handler\n  ch = logging.StreamHandler()\n  ch.setLevel(logging.DEBUG)\n  # create formatter\n  formatter = logging.Formatter(\n      '%(asctime)s - %(name)s - %(levelname)s - %(message)s')\n  ch.setFormatter(formatter)\n  # add ch to logger\n  logger.addHandler(ch)\n\n  df_top30s = pd.read_csv(base_item_dataset.path)\n  df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)\n\n  df_ed_r = df_ed.copy() \n  print(f'test : {df_ed_r.columns}')\n  df_ed_r.columns = ['target', 'source', 'period', 'date', 'corr_value']\n  df_ed2 = df_ed.append(df_ed_r)\n  df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')\n\n  dic_univ = {}\n  for date, df in df_top30s.groupby('\ub0a0\uc9dc'):\n    logger.debug(f'date: {date}')\n    l_top30 = df.\uc885\ubaa9\ucf54\ub4dc.to_list()\n\n    l_bro = df_ed2[(df_ed2.date == date) & \n                  (df_ed2.source.isin(l_top30))].source.unique().tolist()\n    print('size', l_top30.__len__(), l_bro.__len__())\n\n    dic_univ[date] = list(set(l_top30 + l_bro ))\n\n  with open(univ_dataset.path, 'w', encoding='utf8') as f:\n    json.dump(dic_univ, f)\n\n"
+            ],
+            "image": "gcr.io/dots-stock/python-img-v5.2"
+          }
+        }
+      }
+    },
+    "pipelineInfo": {
+      "name": "market-data-ksh"
+    },
+    "root": {
+      "dag": {
+        "tasks": {
+          "get-adj-prices": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-get-adj-prices"
+            },
+            "dependentTasks": [
+              "get-univ-for-price"
+            ],
+            "inputs": {
+              "artifacts": {
+                "dic_univ_dataset": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "univ_dataset",
+                    "producerTask": "get-univ-for-price"
+                  }
+                }
+              },
+              "parameters": {
+                "today": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "20210811"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "get-adj-prices"
+            }
+          },
+          "get-base-item": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-get-base-item"
+            },
+            "dependentTasks": [
+              "get-market-info"
+            ],
+            "inputs": {
+              "artifacts": {
+                "market_info_dataset": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "market_info_dataset",
+                    "producerTask": "get-market-info"
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "get-base-item"
+            }
+          },
+          "get-bros": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-get-bros"
+            },
+            "inputs": {
+              "parameters": {
+                "n_days": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "2"
+                    }
+                  }
+                },
+                "today": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "20210811"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "get-bros"
+            }
+          },
+          "get-features": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-get-features"
+            },
+            "dependentTasks": [
+              "get-bros",
+              "get-market-info",
+              "get-univ-for-price"
+            ],
+            "inputs": {
+              "artifacts": {
+                "bros_dataset": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "bros_univ_dataset",
+                    "producerTask": "get-bros"
+                  }
+                },
+                "dic_univ_dataset": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "univ_dataset",
+                    "producerTask": "get-univ-for-price"
+                  }
+                },
+                "market_info_dataset": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "market_info_dataset",
+                    "producerTask": "get-market-info"
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "get-features"
+            }
+          },
+          "get-market-info": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-get-market-info"
+            },
+            "inputs": {
+              "parameters": {
+                "n_days": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "intValue": "2"
+                    }
+                  }
+                },
+                "today": {
+                  "runtimeValue": {
+                    "constantValue": {
+                      "stringValue": "20210811"
+                    }
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "get-market-info"
+            }
+          },
+          "get-target": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-get-target"
+            },
+            "dependentTasks": [
+              "get-adj-prices"
+            ],
+            "inputs": {
+              "artifacts": {
+                "df_price_dataset": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "adj_price_dataset",
+                    "producerTask": "get-adj-prices"
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "get-target"
+            }
+          },
+          "get-techindi": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-get-techindi"
+            },
+            "dependentTasks": [
+              "get-adj-prices"
+            ],
+            "inputs": {
+              "artifacts": {
+                "df_price_dataset": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "adj_price_dataset",
+                    "producerTask": "get-adj-prices"
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "get-techindi"
+            }
+          },
+          "get-univ-for-price": {
+            "cachingOptions": {
+              "enableCache": true
+            },
+            "componentRef": {
+              "name": "comp-get-univ-for-price"
+            },
+            "dependentTasks": [
+              "get-base-item",
+              "get-bros"
+            ],
+            "inputs": {
+              "artifacts": {
+                "base_item_dataset": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "base_item_dataset",
+                    "producerTask": "get-base-item"
+                  }
+                },
+                "bros_dataset": {
+                  "taskOutputArtifact": {
+                    "outputArtifactKey": "bros_univ_dataset",
+                    "producerTask": "get-bros"
+                  }
+                }
+              }
+            },
+            "taskInfo": {
+              "name": "get-univ-for-price"
+            }
+          }
+        }
+      }
+    },
+    "schemaVersion": "2.0.0",
+    "sdkVersion": "kfp-1.7.0"
+  },
+  "runtimeConfig": {
+    "gcsOutputDirectory": "gs://pipeline-dots-stock/pipeline_root/shkim01"
+  }
+}
