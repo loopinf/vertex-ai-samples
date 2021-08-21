@@ -26,38 +26,39 @@ from kfp.v2.google.client import AIPlatformClient
 @component(
   base_image="gcr.io/dots-stock/python-img-v5.2",
 )
-def set_defaults() -> NamedTuple(
+def set_defaults()-> NamedTuple(
   'Outputs',
   [
     ('date_ref',str),
     ('n_days', str)
   ]):
 
-  # import pandas as pd
-  # # from pandas.tseries.offsets import CustomBusinessDay
-  # from trading_calendars import get_calendar
+  import pandas as pd
+  from trading_calendars import get_calendar
 
-  # today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')
-  # # today = '20210809'
-  # n_days = '20'
+  today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')
+  # today = '20210809'
+  n_days = '20'
 
-  # cal_KRX = get_calendar('XKRX')
-  # # custombd_KRX = CustomBusinessDay(holidays=cal_KRX.precomputed_holidays)
+  cal_KRX = get_calendar('XKRX')
 
-  # def get_krx_on_dates_start_end(start, end):
+  def get_krx_on_dates_start_end(start, end):
 
-  #     return [date.strftime('%Y%m%d')
-  #             for date in pd.bdate_range(start=start, 
-  #         end=end, freq='C', 
-  #         holidays=cal_KRX.precomputed_holidays)
-  #     ]
+      return [date.strftime('%Y%m%d')
+              for date in pd.bdate_range(start=start, 
+          end=end, freq='C', 
+          holidays=cal_KRX.precomputed_holidays)
+      ]
 
-  # dates_krx_on = get_krx_on_dates_start_end('20210104', today)
+  dates_krx_on = get_krx_on_dates_start_end('20210104', today)
 
-  # date_ref = dates_krx_on[-1]
+  if today in dates_krx_on :
+    date_ref = today
+  else :
+    date_ref = dates_krx_on[-1]
 
-  date_ref = 'a'
-  n_days = 'b'
+  # date_ref = 'a'
+  # n_days = 'b'
   return (date_ref, n_days)
   
 
