@@ -90,8 +90,6 @@ def get_market_info(
   # add ch to logger
   logger.addHandler(ch)
 
-  # Preference
-  #-----------------------------------------------------------------------------
   AWS_DB_ID = 'gb_master'
   AWS_DB_PWD = 'qwert12345'
   AWS_DB_ADDRESS = 'kwdb-daily.cf6e7v8fhede.ap-northeast-2.rds.amazonaws.com'
@@ -209,6 +207,248 @@ def get_bros(
   df_bros.to_csv(bros_univ_dataset.path)
 
   return 'OK'
+
+###############################
+# get adj price 01 ############
+###############################
+@component(
+    base_image="gcr.io/dots-stock/python-img-v5.2",
+)
+def get_adj_prices_01(
+  market_info_dataset: Input[Dataset],
+  adj_price_dataset: Output[Dataset]
+  ):
+
+  import json
+  import FinanceDataReader as fdr
+  from ae_module.ae_logger import ae_log
+  import pandas as pd
+
+  df_market = pd.read_csv(market_info_dataset.path,
+                          index_col=0,
+                          dtype={'날짜':str}
+                          ).reset_index(drop=True)
+
+  date_ref = df_market.날짜.max()
+  date_start = '20210101'
+
+  codes_stock = df_market[df_market.날짜 == date_ref].종목코드.to_list()
+
+  def get_price_adj(code, start, end):
+    return fdr.DataReader(code, start=start, end=end)
+
+  def get_price(l_univ, date_start, date_end):
+    df_price = pd.DataFrame()
+    for code in l_univ :
+      df_ = get_price_adj(code, date_start, date_end)
+      print('size', df_.shape)
+      df_['code'] = code
+      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
+      df_price = df_price.append(df_)
+    return df_price
+
+  codes = codes_stock[0:600]
+  ae_log.debug(f'codes_stock {codes.__len__()}')
+
+  df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
+
+  df_adj_price.to_csv(adj_price_dataset.path)
+
+  ae_log.debug(df_adj_price.shape)
+
+###############################
+# get adj price 02 ############
+###############################
+@component(
+    base_image="gcr.io/dots-stock/python-img-v5.2",
+)
+def get_adj_prices_02(
+  market_info_dataset: Input[Dataset],
+  adj_price_dataset: Output[Dataset]
+  ):
+
+  import json
+  import FinanceDataReader as fdr
+  from ae_module.ae_logger import ae_log
+  import pandas as pd
+
+  df_market = pd.read_csv(market_info_dataset.path,
+                          index_col=0,
+                          dtype={'날짜':str}
+                          ).reset_index(drop=True)
+
+  date_ref = df_market.날짜.max()
+  date_start = '20210101'
+
+  codes_stock = df_market[df_market.날짜 == date_ref].종목코드.to_list()
+
+  def get_price_adj(code, start, end):
+    return fdr.DataReader(code, start=start, end=end)
+
+  def get_price(l_univ, date_start, date_end):
+    df_price = pd.DataFrame()
+    for code in l_univ :
+      df_ = get_price_adj(code, date_start, date_end)
+      print('size', df_.shape)
+      df_['code'] = code
+      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
+      df_price = df_price.append(df_)
+    return df_price
+
+  codes = codes_stock[600:1200]
+  ae_log.debug(f'codes_stock {codes.__len__()}')
+
+  df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
+
+  df_adj_price.to_csv(adj_price_dataset.path)
+
+  ae_log.debug(df_adj_price.shape)
+
+###############################
+# get adj price 03 ############
+###############################
+@component(
+    base_image="gcr.io/dots-stock/python-img-v5.2",
+)
+def get_adj_prices_03(
+  market_info_dataset: Input[Dataset],
+  adj_price_dataset: Output[Dataset]
+  ):
+
+  import json
+  import FinanceDataReader as fdr
+  from ae_module.ae_logger import ae_log
+  import pandas as pd
+
+  df_market = pd.read_csv(market_info_dataset.path,
+                          index_col=0,
+                          dtype={'날짜':str}
+                          ).reset_index(drop=True)
+
+  date_ref = df_market.날짜.max()
+  date_start = '20210101'
+
+  codes_stock = df_market[df_market.날짜 == date_ref].종목코드.to_list()
+
+  def get_price_adj(code, start, end):
+    return fdr.DataReader(code, start=start, end=end)
+
+  def get_price(l_univ, date_start, date_end):
+    df_price = pd.DataFrame()
+    for code in l_univ :
+      df_ = get_price_adj(code, date_start, date_end)
+      print('size', df_.shape)
+      df_['code'] = code
+      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
+      df_price = df_price.append(df_)
+    return df_price
+
+  codes = codes_stock[1200:1800]
+  ae_log.debug(f'codes_stock {codes.__len__()}')
+
+  df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
+
+  df_adj_price.to_csv(adj_price_dataset.path)
+
+  ae_log.debug(df_adj_price.shape)
+
+###############################
+# get adj price 04 ############
+###############################
+@component(
+    base_image="gcr.io/dots-stock/python-img-v5.2",
+)
+def get_adj_prices_04(
+  market_info_dataset: Input[Dataset],
+  adj_price_dataset: Output[Dataset]
+  ):
+
+  import json
+  import FinanceDataReader as fdr
+  from ae_module.ae_logger import ae_log
+  import pandas as pd
+
+  df_market = pd.read_csv(market_info_dataset.path,
+                          index_col=0,
+                          dtype={'날짜':str}
+                          ).reset_index(drop=True)
+
+  date_ref = df_market.날짜.max()
+  date_start = '20210101'
+
+  codes_stock = df_market[df_market.날짜 == date_ref].종목코드.to_list()
+
+  def get_price_adj(code, start, end):
+    return fdr.DataReader(code, start=start, end=end)
+
+  def get_price(l_univ, date_start, date_end):
+    df_price = pd.DataFrame()
+    for code in l_univ :
+      df_ = get_price_adj(code, date_start, date_end)
+      print('size', df_.shape)
+      df_['code'] = code
+      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
+      df_price = df_price.append(df_)
+    return df_price
+
+  codes = codes_stock[1800:2400]
+  ae_log.debug(f'codes_stock {codes.__len__()}')
+
+  df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
+
+  df_adj_price.to_csv(adj_price_dataset.path)
+
+  ae_log.debug(df_adj_price.shape)
+
+###############################
+# get adj price 05 ############
+###############################
+@component(
+    base_image="gcr.io/dots-stock/python-img-v5.2",
+)
+def get_adj_prices_05(
+  market_info_dataset: Input[Dataset],
+  adj_price_dataset: Output[Dataset]
+  ):
+
+  import json
+  import FinanceDataReader as fdr
+  from ae_module.ae_logger import ae_log
+  import pandas as pd
+
+  df_market = pd.read_csv(market_info_dataset.path,
+                          index_col=0,
+                          dtype={'날짜':str}
+                          ).reset_index(drop=True)
+
+  date_ref = df_market.날짜.max()
+  date_start = '20210101'
+
+  codes_stock = df_market[df_market.날짜 == date_ref].종목코드.to_list()
+
+  def get_price_adj(code, start, end):
+    return fdr.DataReader(code, start=start, end=end)
+
+  def get_price(l_univ, date_start, date_end):
+    df_price = pd.DataFrame()
+    for code in l_univ :
+      df_ = get_price_adj(code, date_start, date_end)
+      print('size', df_.shape)
+      df_['code'] = code
+      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
+      df_price = df_price.append(df_)
+    return df_price
+
+  codes = codes_stock[2400:]
+  ae_log.debug(f'codes_stock {codes.__len__()}')
+
+  df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
+
+  df_adj_price.to_csv(adj_price_dataset.path)
+
+  ae_log.debug(df_adj_price.shape)
+  
+
 # @component(
 #    base_image="gcr.io/dots-stock/python-img-v5.2"
 # )
@@ -274,53 +514,7 @@ def get_bros(
 #   with open(univ_dataset.path, 'w', encoding='utf8') as f:
 #     json.dump(dic_univ, f)
 
-# @component(
-#     base_image="gcr.io/dots-stock/python-img-v5.2",
-#     # packages_to_install = ["tables", "pandas_gbq", "finance-datareader", "bs4", "pickle5"]   # add 20210715 FIX pipeline
-# )
-# def get_adj_prices(
-#   today: str,
-#   dic_univ_dataset: Input[Dataset],
-#   adj_price_dataset: Output[Dataset]
-#   ) -> str:
-#   import json
-#   import FinanceDataReader as fdr
-#   from ae_module.ae_logger import ae_log
-#   import pandas as pd
-#   # with open(dic_univ_dataset.path, 'rb') as f:
-#   #   dic_univ = pickle.load(f)
-#   with open(dic_univ_dataset.path, 'r') as f:
-#     dic_univ = json.load(f)
 
-#   codes_stock = []
-#   for v in dic_univ.values():
-#     codes_stock.extend(v)
-
-#   # drop duplicates
-#   codes_stock = list(set(codes_stock))
-
-#   def get_price_adj(code, start, end):
-#     return fdr.DataReader(code, start=start, end=end)
-
-#   def get_price(l_univ, date_start, date_end):
-#     df_price = pd.DataFrame()
-#     for code in l_univ :
-#       df_ = get_price_adj(code, date_start, date_end)
-#       df_['code'] = code
-#       # df_['price'] = df_['Close'] / df_.Close.iloc[0]
-#       df_price = df_price.append(df_)
-#     return df_price
-
-#   ae_log.debug(f'codes_stock {codes_stock.__len__()}')
-#   date_start = '20210101'
-#   date_end = today
-#   df_adj_price = get_price(codes_stock, date_start=date_start, date_end=date_end)
-
-#   df_adj_price.to_csv(adj_price_dataset.path)
-
-#   ae_log.debug(df_adj_price.shape)
-
-#   return 'good'
 
 # @component(
 #     # base_image="gcr.io/deeplearning-platform-release/sklearn-cpu"
@@ -566,24 +760,18 @@ def get_bros(
 #     # packages_to_install = ["tables", "pandas_gbq", "finance-datareader", "bs4", "pickle5"]   # add 20210715 FIX pipeline
 # )
 # def get_features(
-#   # today: str,
-#   dic_univ_dataset: Input[Dataset],
 #   market_info_dataset: Input[Dataset],
 #   bros_dataset: Input[Dataset],
-#   base_item_dataset : Input[Dataset],
 #   features_dataset: Output[Dataset]
 #   ):
 #   import json
-#   # import FinanceDataReader as fdr
-#   # from ae_module.ae_logger import ae_log
 #   import pandas as pd
 #   import numpy as np
 #   from collections import Counter
 #   from pandas.tseries.offsets import CustomBusinessDay
 #   from trading_calendars import get_calendar
-
 #   cal_KRX = get_calendar('XKRX')
-#   custombd_KRX = CustomBusinessDay(holidays=cal_KRX.precomputed_holidays)
+  
 
 #   def get_krx_on_dates_start_end(start, end):
 
@@ -794,6 +982,22 @@ def create_awesome_pipeline():
   op_get_market_info = get_market_info(
     date_ref=op_set_defaults.outputs['date_ref'],
     n_days=op_set_defaults.outputs['n_days']
+  )
+
+  op_get_adj_prices_01 = get_adj_prices_01(
+    market_info_dataset = op_get_market_info.outputs['market_info_dataset']
+  )
+  op_get_adj_prices_02 = get_adj_prices_02(
+    market_info_dataset = op_get_market_info.outputs['market_info_dataset']
+  )
+  op_get_adj_prices_03 = get_adj_prices_03(
+    market_info_dataset = op_get_market_info.outputs['market_info_dataset']
+  )
+  op_get_adj_prices_04 = get_adj_prices_04(
+    market_info_dataset = op_get_market_info.outputs['market_info_dataset']
+  )
+  op_get_adj_prices_05 = get_adj_prices_05(
+    market_info_dataset = op_get_market_info.outputs['market_info_dataset']
   )
 
   
