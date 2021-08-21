@@ -448,6 +448,44 @@ def get_adj_prices_05(
 
   ae_log.debug(df_adj_price.shape)
   
+@component(
+   base_image="gcr.io/dots-stock/python-img-v5.2"
+)
+def get_full_adj_prices(
+  adj_price_dataset01: Input[Dataset],
+  adj_price_dataset02: Input[Dataset],
+  adj_price_dataset03: Input[Dataset],
+  adj_price_dataset04: Input[Dataset],
+  adj_price_dataset05: Input[Dataset],
+  full_adj_prices_dataset: Output[Dataset]
+):
+
+  import pandas as pd
+
+  df_adj_price_01 = pd.read_csv(adj_price_dataset01.path,
+                          index_col=0,
+                          # dtype={'날짜':str}
+                          ).reset_index(drop=True)
+  df_adj_price_02 = pd.read_csv(adj_price_dataset02.path,
+                          index_col=0,
+                          # dtype={'날짜':str}
+                          ).reset_index(drop=True)
+  df_adj_price_03 = pd.read_csv(adj_price_dataset03.path,
+                          index_col=0,
+                          # dtype={'날짜':str}
+                          ).reset_index(drop=True)                      
+  df_adj_price_04 = pd.read_csv(adj_price_dataset04.path,
+                          index_col=0,
+                          # dtype={'날짜':str}
+                          ).reset_index(drop=True)
+  df_adj_price_05 = pd.read_csv(adj_price_dataset05.path,
+                          index_col=0,
+                          # dtype={'날짜':str}
+                          ).reset_index(drop=True)
+
+  df_full_adj_prices = pd.concat(['df_adj_price_01', 'df_adj_price_02', 'df_adj_price_03', 'df_adj_price_04', 'df_adj_price_05'])
+
+  df_full_adj_prices.to_csv(full_adj_prices_dataset.path)
 
 # @component(
 #    base_image="gcr.io/dots-stock/python-img-v5.2"
@@ -1000,6 +1038,13 @@ def create_awesome_pipeline():
     market_info_dataset = op_get_market_info.outputs['market_info_dataset']
   )
 
+  op_get_full_adj_prices = get_full_adj_prices(
+    adj_price_dataset01= op_get_adj_prices_01.outputs['adj_price_dataset'],
+    adj_price_dataset02= op_get_adj_prices_02.outputs['adj_price_dataset'],
+    adj_price_dataset03= op_get_adj_prices_03.outputs['adj_price_dataset'],
+    adj_price_dataset04= op_get_adj_prices_04.outputs['adj_price_dataset'],
+    adj_price_dataset05= op_get_adj_prices_05.outputs['adj_price_dataset']
+  )
   
   
 # 
