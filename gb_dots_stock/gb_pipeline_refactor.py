@@ -91,14 +91,10 @@ def get_market_info(
       return [date.strftime('%Y%m%d')
               for date in pd.bdate_range(
           end=date_ref, freq='C', periods=n_days,
-          holidays=cal_KRX.precomputed_holidays)
-      ]
+          holidays=cal_KRX.precomputed_holidays) ]
   # 1. Market data
   #------------------------------------------------------------------------------
   def get_markets_aws(date_ref, n_days):
-      '''
-      장중일때는 해당날짜만 cache 안함
-      '''
       dates_n_days_ago = get_krx_on_dates_n_days_ago(date_ref, n_days)
       df_market = pd.DataFrame()
       for date in dates_n_days_ago:
@@ -106,20 +102,10 @@ def get_market_info(
           # logger.debug(f'date : {date} and df_.shape {df_.shape}' )
           df_market  = df_market.append(df_)
       return df_market
-
-  # def get_top30_list(df_market):
-  #     cols_out = ['날짜','종목코드','종목명']
-  #     return (df_market
-  #             .sort_values(['날짜','등락률'], ascending=False)
-  #             .groupby('날짜')
-  #             .head(30)[cols_out]
-  #     )
   
   df_market = get_markets_aws(date_ref=today, n_days=n_days)
-  # df_top30s = get_top30_list(df_market)
 
   df_market.to_csv(market_info_dataset.path)
-  # df_top30s.to_csv(top30_univ_dataset.path)
 
   return today
 
@@ -166,11 +152,6 @@ def get_bros(
 
   # helper functions
   #-----------------------------------------------------------------------------
-  def get_krx_on_dates_start_end(start, end):
-    return [date.strftime('%Y%m%d')
-            for date in pd.bdate_range(start=start, end=end, freq='C', 
-        holidays=cal_KRX.precomputed_holidays) ]
-
   def get_krx_on_dates_n_days_ago(date_ref, n_days=20):
     return [date.strftime('%Y%m%d')
             for date in pd.bdate_range(
@@ -217,25 +198,6 @@ def get_bros(
       df_ = find_bros(date, period=period)
       df_gang = df_gang.append(df_)
     return df_gang
-
-  def get_bros_univ(date_ref):
-
-    bros_120 = find_bros(date_ref, 120)
-    bros_90 = find_bros(date_ref, 90)
-    bros_60 = find_bros(date_ref, 60)
-    bros_40 = find_bros(date_ref, 40)
-    bros_20 = find_bros(date_ref, 20)
-
-    set_bros_120 =  set([i for l_i in bros_120 for i in l_i ])
-    set_bros_90 =  set([i for l_i in bros_90 for i in l_i ])
-    set_bros_60 =  set([i for l_i in bros_60 for i in l_i ])
-    set_bros_40 =  set([i for l_i in bros_40 for i in l_i ])
-    set_bros_20 =  set([i for l_i in bros_20 for i in l_i ])
-
-    s_univ = (
-             set_bros_40 | set_bros_20 | set_bros_120 | set_bros_60 | set_bros_90)
-
-    return list(s_univ)
   
   # jobs
   dates = get_krx_on_dates_n_days_ago(date_ref=today, n_days=n_days)
@@ -248,16 +210,9 @@ def get_bros(
 
   return 'OK'
 
-# @component()
-# def get_features():
-#   pass
-
-# @component()
-# def get_target():
-#   pass
 
 @component(
-    base_image="gcr.io/dots-stock/python-img-v5.2",
+    base_image="amancevice/pandas:1.3.2-slim"
 )
 def get_univ_for_price(
   # date_ref: str,
@@ -266,40 +221,31 @@ def get_univ_for_price(
   univ_dataset: Output[Dataset],
 ):
   import pandas as pd
-  import pickle
   import logging
   import json
   logger = logging.getLogger(__name__)
+  FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+  logging.basicConfig(format=FORMAT)
   logger.setLevel(logging.DEBUG)
-  # console handler
-  ch = logging.StreamHandler()
-  ch.setLevel(logging.DEBUG)
-  # create formatter
-  formatter = logging.Formatter(
-      '%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-  ch.setFormatter(formatter)
-  # add ch to logger
-  logger.addHandler(ch)
 
-  df_top30s = pd.read_csv(base_item_dataset.path,
-                          index_col=0,
-                          dtype={'날짜':str}).reset_index(drop=True)
+  # base item
+  df_top30s = pd.read_csv(base_item_dataset.path, 
+                       index_col=0, 
+                       dtype={'날짜': str}).reset_index(drop=True)
+
+  # load edge_list to make bros
   df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
-
   df_ed_r = df_ed.copy() 
-  print(f'test : {df_ed_r.columns}')
-  df_ed_r.columns = ['target', 'source', 'period', 'date', 'corr_value']
-  df_ed2 = df_ed.append(df_ed_r)
+  df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
+  df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
   dic_univ = {}
   for date, df in df_top30s.groupby('날짜'):
     logger.debug(f'date: {date}')
     l_top30 = df.종목코드.to_list()
-
     l_bro = df_ed2[(df_ed2.date == date) & 
                   (df_ed2.source.isin(l_top30))].target.unique().tolist()
-    print('size', l_top30.__len__(), l_bro.__len__())
 
     dic_univ[date] = list(set(l_top30 + l_bro ))
 
@@ -328,6 +274,9 @@ def get_adj_prices(
   for v in dic_univ.values():
     codes_stock.extend(v)
 
+  # drop duplicates
+  codes_stock = list(set(codes_stock))
+
   def get_price_adj(code, start, end):
     return fdr.DataReader(code, start=start, end=end)
 
@@ -343,7 +292,7 @@ def get_adj_prices(
   ae_log.debug(f'codes_stock {codes_stock.__len__()}')
   date_start = '20210101'
   date_end = today
-  df_adj_price = get_price(codes_stock, date_start=date_start, date_end=today)
+  df_adj_price = get_price(codes_stock, date_start=date_start, date_end=date_end)
 
   df_adj_price.to_csv(adj_price_dataset.path)
 
@@ -359,7 +308,6 @@ def get_target(
   df_price_dataset: Input[Dataset],
   df_target_dataset: Output[Dataset]
 ):
-  pass
   import pandas as pd
   import numpy as np
 
@@ -432,36 +380,20 @@ def get_target(
         np.where(df_['change_p3'] > 0.1, 
                 1,  np.where(df_['change_p3'] > -0.05, 0, -1))                               
     df_.dropna(subset=['high_p3'], inplace=True)                               
-    
     return df_
 
   def get_target_df(df_price):
-
     df_price.reset_index(inplace=True)
     df_price.columns = df_price.columns.str.lower()
-
     df_target = df_price.groupby('code').apply(lambda df: make_target(df))
     df_target = df_target.reset_index(drop=True)
     # df_target['date'] = df_target.date.str.replace('-', '')
-
     return df_target
 
   df_price = pd.read_csv(df_price_dataset.path)
   df_target = get_target_df(df_price=df_price)
 
   df_target.to_csv(df_target_dataset.path)
-
-  #   return today
-
-  # else :
-  # TECHNICAL_INDICATORS_LIST = ['macd',
-  #   'boll_ub',
-  #   'boll_lb',
-  #   'rsi_30',
-  #   'dx_30',
-  #   'close_30_sma',
-  #   'close_60_sma']
-    
 
 @component(
     base_image="gcr.io/deeplearning-platform-release/sklearn-cpu",
@@ -660,8 +592,8 @@ def get_features(
   #df_ed 가져오기
   df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
   df_ed_r = df_ed.copy() 
-  df_ed_r.columns = ['target', 'source', 'period', 'date', 'corr_value']
-  df_ed2 = df_ed.append(df_ed_r)
+  df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
+  df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
   #functions
@@ -821,6 +753,8 @@ def get_features(
 
   df_feat_s.fillna(0, inplace=True)
   df_feat_s.to_csv(features_dataset.path)
+
+# @component()
 
 job_file_name='market-data-ksh.json'
 @dsl.pipeline(
