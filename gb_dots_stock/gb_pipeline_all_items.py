@@ -132,7 +132,6 @@ def get_market_info(
 
   df_market.to_csv(market_info_dataset.path)
 
-
 # @component(
 #    base_image="gcr.io/dots-stock/python-img-v5.2"
 # )
@@ -786,11 +785,7 @@ job_file_name='ml-with-all-items.json'
   pipeline_root=PIPELINE_ROOT
 )    
 def create_awesome_pipeline():
-  op_set_defaults = set_defaults()
-  op_get_market_info = get_market_info(
-    date_ref = op_set_defaults.outputs['date_ref'],
-    n_days = op_set_defaults.outputs['n_days']
-  )
+  set_defaults()
 
   
   
