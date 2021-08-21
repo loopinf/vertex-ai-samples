@@ -57,10 +57,11 @@ def set_defaults()-> NamedTuple(
   else :
     date_ref = dates_krx_on[-1]
 
-  # date_ref = 'a'
-  # n_days = 'b'
   return (date_ref, n_days)
-  
+
+##############################
+# get market info ############
+##############################
 
 @component(
     base_image="gcr.io/dots-stock/python-img-v5.2",
@@ -132,6 +133,82 @@ def get_market_info(
 
   df_market.to_csv(market_info_dataset.path)
 
+#######################
+# get bros ############
+#######################
+@component(
+   base_image="gcr.io/dots-stock/python-img-v5.2"
+)
+def get_bros(
+    date_ref: str,
+    n_days: int, 
+    bros_univ_dataset: Output[Dataset]
+) -> str :
+  
+  import pandas as pd
+  import pandas_gbq
+  import networkx as nx
+  from trading_calendars import get_calendar
+  cal_KRX = get_calendar('XKRX') 
+
+  def get_krx_on_dates_n_days_ago(date_ref, n_days=20):
+    return [date.strftime('%Y%m%d')
+            for date in pd.bdate_range(
+        end=date_ref, freq='C', periods=n_days,
+        holidays=cal_KRX.precomputed_holidays) ]
+
+  def get_corr_pairs_gbq(date_ref, period):
+    date_ref_ = pd.Timestamp(date_ref).strftime('%Y-%m-%d')
+    sql = f'''
+    SELECT
+      DISTINCT source,
+      target,
+      corr_value,
+      period,
+      date
+    FROM
+      `dots-stock.krx_dataset.corr_ohlc_part1`
+    WHERE
+      date = "{date_ref_}"
+      AND period = {period}
+    ORDER BY
+      corr_value DESC
+    LIMIT
+      1000'''
+
+    PROJECT_ID = 'dots-stock'
+    df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID)
+    return df
+
+  def find_bros(date_ref, period):
+    '''clique over 3 nodes '''
+    df_edgelist = get_corr_pairs_gbq(date_ref, period)
+    g = nx.from_pandas_edgelist(df_edgelist, edge_attr=True)
+    bros_ = nx.find_cliques(g)
+    bros_3 = [bros for bros in bros_ if len(bros) >=3]
+    set_bros =  set([i for l_i in bros_3 for i in l_i])
+    g_gang = g.subgraph(set_bros)
+
+    df_gangs_edgelist = nx.to_pandas_edgelist(g_gang)
+    return df_gangs_edgelist
+
+  def find_gang(date_ref):
+    df_gang = pd.DataFrame()
+    for period in [20, 40, 60, 90, 120]:
+      df_ = find_bros(date, period=period)
+      df_gang = df_gang.append(df_)
+    return df_gang
+  
+  # jobs
+  dates = get_krx_on_dates_n_days_ago(date_ref=date_ref, n_days=n_days)
+  df_bros = pd.DataFrame()
+  for date in dates:
+    df = find_gang(date_ref=date)  
+    df_bros = df_bros.append(df)
+
+  df_bros.to_csv(bros_univ_dataset.path)
+
+  return 'OK'
 # @component(
 #    base_image="gcr.io/dots-stock/python-img-v5.2"
 # )
@@ -153,85 +230,7 @@ def get_market_info(
 #   df_base_item = get_top30_list(df_market)
 #   df_base_item.to_csv(base_item_dataset.path)
 
-# @component(
-#    base_image="gcr.io/dots-stock/python-img-v5.2"
-# )
-# def get_bros(
-#     today: str,
-#     n_days: int, 
-#     bros_univ_dataset: Output[Dataset]
-# ) -> str :
-#   '''
-  
-#   Returns:
-#     list
-#   '''
-#   import pandas as pd
-#   import pandas_gbq
-#   import networkx as nx
-#   from trading_calendars import get_calendar 
-#   PROJECT_ID = 'dots-stock'
-#   cal_KRX = get_calendar('XKRX')
 
-#   # helper functions
-#   #-----------------------------------------------------------------------------
-#   def get_krx_on_dates_n_days_ago(date_ref, n_days=20):
-#     return [date.strftime('%Y%m%d')
-#             for date in pd.bdate_range(
-#         end=date_ref, freq='C', periods=n_days,
-#         holidays=cal_KRX.precomputed_holidays) ]
-
-#   def get_corr_pairs_gbq(date_ref, period):
-#     date_ref_ = pd.Timestamp(date_ref).strftime('%Y-%m-%d')
-#     sql = f'''
-#     SELECT
-#       DISTINCT source,
-#       target,
-#       corr_value,
-#       period,
-#       date
-#     FROM
-#       `dots-stock.krx_dataset.corr_ohlc_part1`
-#     WHERE
-#       date = "{date_ref_}"
-#       AND period = {period}
-#     ORDER BY
-#       corr_value DESC
-#     LIMIT
-#       1000'''
-    
-#     df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID)
-#     return df
-
-#   def find_bros(date_ref, period):
-#     '''clique over 3 nodes '''
-#     df_edgelist = get_corr_pairs_gbq(date_ref, period)
-#     g = nx.from_pandas_edgelist(df_edgelist, edge_attr=True)
-#     bros_ = nx.find_cliques(g)
-#     bros_3 = [bros for bros in bros_ if len(bros) >=3]
-#     set_bros =  set([i for l_i in bros_3 for i in l_i])
-#     g_gang = g.subgraph(set_bros)
-
-#     df_gangs_edgelist = nx.to_pandas_edgelist(g_gang)
-#     return df_gangs_edgelist
-
-#   def find_gang(date_ref):
-#     df_gang = pd.DataFrame()
-#     for period in [20, 40, 60, 90, 120]:
-#       df_ = find_bros(date, period=period)
-#       df_gang = df_gang.append(df_)
-#     return df_gang
-  
-#   # jobs
-#   dates = get_krx_on_dates_n_days_ago(date_ref=today, n_days=n_days)
-#   df_bros = pd.DataFrame()
-#   for date in dates:
-#     df = find_gang(date_ref=date)  
-#     df_bros = df_bros.append(df)
-
-#   df_bros.to_csv(bros_univ_dataset.path)
-
-#   return 'OK'
 
 
 # @component(
@@ -785,7 +784,17 @@ job_file_name='ml-with-all-items.json'
   pipeline_root=PIPELINE_ROOT
 )    
 def create_awesome_pipeline():
-  set_defaults()
+  op_set_defaults = set_defaults()
+
+  op_get_bros = get_bros(
+    date_ref=op_set_defaults.outputs['date_ref'],
+    n_days=op_set_defaults.outputs['n_days']
+  )
+
+  op_get_market_info = get_market_info(
+    date_ref=op_set_defaults.outputs['date_ref'],
+    n_days=op_set_defaults.outputs['n_days']
+  )
 
   
   
