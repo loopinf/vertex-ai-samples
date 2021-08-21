@@ -56,9 +56,7 @@ def set_defaults()-> NamedTuple(
     date_ref = today
   else :
     date_ref = dates_krx_on[-1]
-
-  # date_ref = 'a'
-  # n_days = 'b'
+  
   return (date_ref, n_days)
   
 
@@ -785,7 +783,11 @@ job_file_name='ml-with-all-items.json'
   pipeline_root=PIPELINE_ROOT
 )    
 def create_awesome_pipeline():
-  set_defaults()
+  op_set_defaults = set_defaults()
+  op_get_market_info = get_market_info(
+    date_ref=op_set_defaults.outputs['date_ref'],
+    n_days=op_set_defaults.outputs['n_days']
+  )
 
   
   
