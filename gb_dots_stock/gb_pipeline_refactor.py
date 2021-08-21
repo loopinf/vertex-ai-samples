@@ -274,6 +274,9 @@ def get_adj_prices(
   for v in dic_univ.values():
     codes_stock.extend(v)
 
+  # drop duplicates
+  codes_stock = list(set(codes_stock))
+
   def get_price_adj(code, start, end):
     return fdr.DataReader(code, start=start, end=end)
 
@@ -589,8 +592,8 @@ def get_features(
   #df_ed 가져오기
   df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
   df_ed_r = df_ed.copy() 
-  df_ed_r.columns = ['target', 'source', 'period', 'date', 'corr_value']
-  df_ed2 = df_ed.append(df_ed_r)
+  df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
+  df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
   #functions
@@ -750,6 +753,8 @@ def get_features(
 
   df_feat_s.fillna(0, inplace=True)
   df_feat_s.to_csv(features_dataset.path)
+
+# @component()
 
 job_file_name='market-data-ksh.json'
 @dsl.pipeline(
