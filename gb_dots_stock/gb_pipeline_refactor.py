@@ -91,14 +91,10 @@ def get_market_info(
       return [date.strftime('%Y%m%d')
               for date in pd.bdate_range(
           end=date_ref, freq='C', periods=n_days,
-          holidays=cal_KRX.precomputed_holidays)
-      ]
+          holidays=cal_KRX.precomputed_holidays) ]
   # 1. Market data
   #------------------------------------------------------------------------------
   def get_markets_aws(date_ref, n_days):
-      '''
-      장중일때는 해당날짜만 cache 안함
-      '''
       dates_n_days_ago = get_krx_on_dates_n_days_ago(date_ref, n_days)
       df_market = pd.DataFrame()
       for date in dates_n_days_ago:
@@ -106,20 +102,10 @@ def get_market_info(
           # logger.debug(f'date : {date} and df_.shape {df_.shape}' )
           df_market  = df_market.append(df_)
       return df_market
-
-  # def get_top30_list(df_market):
-  #     cols_out = ['날짜','종목코드','종목명']
-  #     return (df_market
-  #             .sort_values(['날짜','등락률'], ascending=False)
-  #             .groupby('날짜')
-  #             .head(30)[cols_out]
-  #     )
   
   df_market = get_markets_aws(date_ref=today, n_days=n_days)
-  # df_top30s = get_top30_list(df_market)
 
   df_market.to_csv(market_info_dataset.path)
-  # df_top30s.to_csv(top30_univ_dataset.path)
 
   return today
 
@@ -166,11 +152,6 @@ def get_bros(
 
   # helper functions
   #-----------------------------------------------------------------------------
-  def get_krx_on_dates_start_end(start, end):
-    return [date.strftime('%Y%m%d')
-            for date in pd.bdate_range(start=start, end=end, freq='C', 
-        holidays=cal_KRX.precomputed_holidays) ]
-
   def get_krx_on_dates_n_days_ago(date_ref, n_days=20):
     return [date.strftime('%Y%m%d')
             for date in pd.bdate_range(
@@ -217,25 +198,6 @@ def get_bros(
       df_ = find_bros(date, period=period)
       df_gang = df_gang.append(df_)
     return df_gang
-
-  def get_bros_univ(date_ref):
-
-    bros_120 = find_bros(date_ref, 120)
-    bros_90 = find_bros(date_ref, 90)
-    bros_60 = find_bros(date_ref, 60)
-    bros_40 = find_bros(date_ref, 40)
-    bros_20 = find_bros(date_ref, 20)
-
-    set_bros_120 =  set([i for l_i in bros_120 for i in l_i ])
-    set_bros_90 =  set([i for l_i in bros_90 for i in l_i ])
-    set_bros_60 =  set([i for l_i in bros_60 for i in l_i ])
-    set_bros_40 =  set([i for l_i in bros_40 for i in l_i ])
-    set_bros_20 =  set([i for l_i in bros_20 for i in l_i ])
-
-    s_univ = (
-             set_bros_40 | set_bros_20 | set_bros_120 | set_bros_60 | set_bros_90)
-
-    return list(s_univ)
   
   # jobs
   dates = get_krx_on_dates_n_days_ago(date_ref=today, n_days=n_days)
@@ -259,7 +221,6 @@ def get_univ_for_price(
   univ_dataset: Output[Dataset],
 ):
   import pandas as pd
-  import pickle
   import logging
   import json
   logger = logging.getLogger(__name__)
@@ -328,7 +289,7 @@ def get_adj_prices(
   ae_log.debug(f'codes_stock {codes_stock.__len__()}')
   date_start = '20210101'
   date_end = today
-  df_adj_price = get_price(codes_stock, date_start=date_start, date_end=today)
+  df_adj_price = get_price(codes_stock, date_start=date_start, date_end=date_end)
 
   df_adj_price.to_csv(adj_price_dataset.path)
 
