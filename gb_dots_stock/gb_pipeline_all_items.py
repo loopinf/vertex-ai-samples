@@ -24,7 +24,7 @@ from kfp.v2.dsl import (Artifact,
 from kfp.v2.google.client import AIPlatformClient
 
 @component(
-  base_image="gcr.io/dots-stock/python-img-v5.2",
+  base_image='gcr.io/dots-stock/py38-pandas-cal'
 )
 def set_defaults()-> NamedTuple(
   'Outputs',
@@ -448,6 +448,9 @@ def get_adj_prices_05(
 
   ae_log.debug(df_adj_price.shape)
   
+###############################
+# get full adj     ############
+###############################
 @component(
   #  base_image="gcr.io/dots-stock/python-img-v5.2"
   packages_to_install=['pandas']
@@ -478,310 +481,281 @@ def get_full_adj_prices(
 
   df_full_adj_prices.to_csv(full_adj_prices_dataset.path)
 
-# @component(
-#    base_image="gcr.io/dots-stock/python-img-v5.2"
-# )
-# def get_base_item(
-#   market_info_dataset: Input[Dataset],
-#   base_item_dataset: Output[Dataset]
-# ):
-#   import pandas as pd
+###############################
+# get target       ############
+###############################
+@component(
+    # base_image="gcr.io/deeplearning-platform-release/sklearn-cpu"
+    base_image="amancevice/pandas:1.3.2-slim"
+)
+def get_target(
+  df_price_dataset: Input[Dataset],
+  df_target_dataset: Output[Dataset]
+):
+  import pandas as pd
+  import numpy as np
 
-#   # helper function
-#   def get_top30_list(df_market):
-#       cols_out = ['날짜','종목코드','종목명']
-#       return (df_market
-#               .sort_values(['날짜','등락률'], ascending=False)
-#               .groupby('날짜')
-#               .head(30)[cols_out])
-  
-#   df_market = pd.read_csv(market_info_dataset.path)
-#   df_base_item = get_top30_list(df_market)
-#   df_base_item.to_csv(base_item_dataset.path)
+  def make_target(df):
 
+    df_ = df.copy()
 
+    df_.sort_values(by='date', inplace=True)
+    df_['high_p1'] = df_.high.shift(-1)
+    df_['high_p2'] = df_.high.shift(-2)
+    df_['high_p3'] = df_.high.shift(-3)
 
+    df_['close_p1'] = df_.close.shift(-1)
+    df_['close_p2'] = df_.close.shift(-2)
+    df_['close_p3'] = df_.close.shift(-3)
 
-# @component(
-#     base_image="amancevice/pandas:1.3.2-slim"
-# )
-# def get_univ_for_price(
-#   # date_ref: str,
-#   base_item_dataset: Input[Dataset],
-#   bros_dataset: Input[Dataset],
-#   univ_dataset: Output[Dataset],
-# ):
-#   import pandas as pd
-#   import logging
-#   import json
-#   logger = logging.getLogger(__name__)
-#   FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
-#   logging.basicConfig(format=FORMAT)
-#   logger.setLevel(logging.DEBUG)
+    df_['change_p1'] = (df_.close_p1 - df_.close) / df_.close
+    df_['change_p2'] = (df_.close_p2 - df_.close) / df_.close
+    df_['change_p3'] = (df_.close_p3 - df_.close) / df_.close
 
-#   # base item
-#   df_top30s = pd.read_csv(base_item_dataset.path, 
-#                        index_col=0, 
-#                        dtype={'날짜': str}).reset_index(drop=True)
+    df_['change_p1_over5'] = df_['change_p1'] > 0.05
+    df_['change_p2_over5'] = df_['change_p2'] > 0.05
+    df_['change_p3_over5'] = df_['change_p3'] > 0.05
 
-#   # load edge_list to make bros
-#   df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
-#   df_ed_r = df_ed.copy() 
-#   df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
-#   df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
-#   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
+    df_['change_p1_over10'] = df_['change_p1'] > 0.1
+    df_['change_p2_over10'] = df_['change_p2'] > 0.1
+    df_['change_p3_over10'] = df_['change_p3'] > 0.1
 
-#   dic_univ = {}
-#   for date, df in df_top30s.groupby('날짜'):
-#     logger.debug(f'date: {date}')
-#     l_top30 = df.종목코드.to_list()
-#     l_bro = df_ed2[(df_ed2.date == date) & 
-#                   (df_ed2.source.isin(l_top30))].target.unique().tolist()
+    df_['close_high_1'] = (df_.high_p1 - df_.close) / df_.close
+    df_['close_high_2'] = (df_.high_p2 - df_.close) / df_.close
+    df_['close_high_3'] = (df_.high_p3 - df_.close) / df_.close
 
-#     dic_univ[date] = list(set(l_top30 + l_bro ))
+    df_['close_high_1_over10'] = df_['close_high_1'] > 0.1
+    df_['close_high_2_over10'] = df_['close_high_2'] > 0.1
+    df_['close_high_3_over10'] = df_['close_high_3'] > 0.1
 
-#   with open(univ_dataset.path, 'w', encoding='utf8') as f:
-#     json.dump(dic_univ, f)
-
-
-
-# @component(
-#     # base_image="gcr.io/deeplearning-platform-release/sklearn-cpu"
-#     base_image="amancevice/pandas:1.3.2-slim"
-# )
-# def get_target(
-#   df_price_dataset: Input[Dataset],
-#   df_target_dataset: Output[Dataset]
-# ):
-#   import pandas as pd
-#   import numpy as np
-
-#   def make_target(df):
-
-#     df_ = df.copy()
-
-#     df_.sort_values(by='date', inplace=True)
-#     df_['high_p1'] = df_.high.shift(-1)
-#     df_['high_p2'] = df_.high.shift(-2)
-#     df_['high_p3'] = df_.high.shift(-3)
-
-#     df_['close_p1'] = df_.close.shift(-1)
-#     df_['close_p2'] = df_.close.shift(-2)
-#     df_['close_p3'] = df_.close.shift(-3)
-
-#     df_['change_p1'] = (df_.close_p1 - df_.close) / df_.close
-#     df_['change_p2'] = (df_.close_p2 - df_.close) / df_.close
-#     df_['change_p3'] = (df_.close_p3 - df_.close) / df_.close
-
-#     df_['change_p1_over5'] = df_['change_p1'] > 0.05
-#     df_['change_p2_over5'] = df_['change_p2'] > 0.05
-#     df_['change_p3_over5'] = df_['change_p3'] > 0.05
-
-#     df_['change_p1_over10'] = df_['change_p1'] > 0.1
-#     df_['change_p2_over10'] = df_['change_p2'] > 0.1
-#     df_['change_p3_over10'] = df_['change_p3'] > 0.1
-
-#     df_['close_high_1'] = (df_.high_p1 - df_.close) / df_.close
-#     df_['close_high_2'] = (df_.high_p2 - df_.close) / df_.close
-#     df_['close_high_3'] = (df_.high_p3 - df_.close) / df_.close
-
-#     df_['close_high_1_over10'] = df_['close_high_1'] > 0.1
-#     df_['close_high_2_over10'] = df_['close_high_2'] > 0.1
-#     df_['close_high_3_over10'] = df_['close_high_3'] > 0.1
-
-#     df_['close_high_1_over5'] = df_['close_high_1'] > 0.05
-#     df_['close_high_2_over5'] = df_['close_high_2'] > 0.05
-#     df_['close_high_3_over5'] = df_['close_high_3'] > 0.05
+    df_['close_high_1_over5'] = df_['close_high_1'] > 0.05
+    df_['close_high_2_over5'] = df_['close_high_2'] > 0.05
+    df_['close_high_3_over5'] = df_['close_high_3'] > 0.05
     
-#     df_['target_over10'] = np.logical_or.reduce([
-#                                   df_.close_high_1_over10,
-#                                   df_.close_high_2_over10,
-#                                   df_.close_high_3_over10])
+    df_['target_over10'] = np.logical_or.reduce([
+                                  df_.close_high_1_over10,
+                                  df_.close_high_2_over10,
+                                  df_.close_high_3_over10])
     
-#     df_['target_over5'] = np.logical_or.reduce([
-#                                   df_.close_high_1_over5,
-#                                   df_.close_high_2_over5,
-#                                   df_.close_high_3_over5])
+    df_['target_over5'] = np.logical_or.reduce([
+                                  df_.close_high_1_over5,
+                                  df_.close_high_2_over5,
+                                  df_.close_high_3_over5])
     
-#     df_['target_close_over_10'] = np.logical_or.reduce([
-#                                   df_.change_p1_over10,
-#                                   df_.change_p2_over10,
-#                                   df_.change_p3_over10])  
+    df_['target_close_over_10'] = np.logical_or.reduce([
+                                  df_.change_p1_over10,
+                                  df_.change_p2_over10,
+                                  df_.change_p3_over10])  
     
-#     df_['target_close_over_5'] = np.logical_or.reduce([
-#                                   df_.change_p1_over5,
-#                                   df_.change_p2_over5,
-#                                   df_.change_p3_over5])  
+    df_['target_close_over_5'] = np.logical_or.reduce([
+                                  df_.change_p1_over5,
+                                  df_.change_p2_over5,
+                                  df_.change_p3_over5])  
                                   
-#     df_['target_mclass_close_over10_under5'] = \
-#         np.where(df_['change_p1'] > 0.1, 
-#                 1,  np.where(df_['change_p1'] > -0.05, 0, -1))                               
+    df_['target_mclass_close_over10_under5'] = \
+        np.where(df_['change_p1'] > 0.1, 
+                1,  np.where(df_['change_p1'] > -0.05, 0, -1))                               
 
-#     df_['target_mclass_close_p2_over10_under5'] = \
-#         np.where(df_['change_p2'] > 0.1, 
-#                 1,  np.where(df_['change_p2'] > -0.05, 0, -1))                               
+    df_['target_mclass_close_p2_over10_under5'] = \
+        np.where(df_['change_p2'] > 0.1, 
+                1,  np.where(df_['change_p2'] > -0.05, 0, -1))                               
                 
-#     df_['target_mclass_close_p3_over10_under5'] = \
-#         np.where(df_['change_p3'] > 0.1, 
-#                 1,  np.where(df_['change_p3'] > -0.05, 0, -1))                               
-#     df_.dropna(subset=['high_p3'], inplace=True)                               
-#     return df_
+    df_['target_mclass_close_p3_over10_under5'] = \
+        np.where(df_['change_p3'] > 0.1, 
+                1,  np.where(df_['change_p3'] > -0.05, 0, -1))                               
+    df_.dropna(subset=['high_p3'], inplace=True)                               
+    return df_
 
-#   def get_target_df(df_price):
-#     df_price.reset_index(inplace=True)
-#     df_price.columns = df_price.columns.str.lower()
-#     df_target = df_price.groupby('code').apply(lambda df: make_target(df))
-#     df_target = df_target.reset_index(drop=True)
-#     # df_target['date'] = df_target.date.str.replace('-', '')
-#     return df_target
+  def get_target_df(df_price):
+    df_price.reset_index(inplace=True)
+    df_price.columns = df_price.columns.str.lower()
+    df_target = df_price.groupby('code').apply(lambda df: make_target(df))
+    df_target = df_target.reset_index(drop=True)
+    # df_target['date'] = df_target.date.str.replace('-', '')
+    return df_target
 
-#   df_price = pd.read_csv(df_price_dataset.path)
-#   df_target = get_target_df(df_price=df_price)
+  df_price = pd.read_csv(df_price_dataset.path)
+  df_target = get_target_df(df_price=df_price)
 
-#   df_target.to_csv(df_target_dataset.path)
+  df_target.to_csv(df_target_dataset.path)
 
-# @component(
-#     base_image="gcr.io/deeplearning-platform-release/sklearn-cpu",
-#     packages_to_install=["stockstats"]
-# )
-# def get_techindi(
-#   df_price_dataset: Input[Dataset],
-#   df_techini_dataset: Output[Dataset]
-# ):
-#   TECHNICAL_INDICATORS_LIST = ['macd',
-#   'boll_ub',
-#   'boll_lb',
-#   'rsi_30',
-#   'dx_30',
-#   'close_30_sma',
-#   'close_60_sma']
-#   from stockstats import StockDataFrame as Sdf
-#   from sklearn.preprocessing import MaxAbsScaler
-#   import pandas as pd
-#   class FeatureEngineer:
-#     """Provides methods for preprocessing the stock price data
+###############################
+# get tech indicator ##########
+###############################
+@component(
+    base_image="gcr.io/deeplearning-platform-release/sklearn-cpu",
+    packages_to_install=["stockstats"]
+)
+def get_tech_indi(
+  df_price_dataset: Input[Dataset],
+  df_techini_dataset: Output[Dataset]
+):
+  TECHNICAL_INDICATORS_LIST = ['macd',
+  'boll_ub',
+  'boll_lb',
+  'rsi_30',
+  'dx_30',
+  'close_30_sma',
+  'close_60_sma']
+  from stockstats import StockDataFrame as Sdf
+  from sklearn.preprocessing import MaxAbsScaler
+  import pandas as pd
+  class FeatureEngineer:
+    """Provides methods for preprocessing the stock price data
 
-#     Attributes
-#     ----------
-#         use_technical_indicator : boolean
-#             we technical indicator or not
-#         tech_indicator_list : list
-#             a list of technical indicator names (modified from config.py)
-#         use_turbulence : boolean
-#             use turbulence index or not
-#         user_defined_feature:boolean
-#             user user defined features or not
+    Attributes
+    ----------
+        use_technical_indicator : boolean
+            we technical indicator or not
+        tech_indicator_list : list
+            a list of technical indicator names (modified from config.py)
+        use_turbulence : boolean
+            use turbulence index or not
+        user_defined_feature:boolean
+            user user defined features or not
 
-#     Methods
-#     -------
-#     preprocess_data()
-#         main method to do the feature engineering
+    Methods
+    -------
+    preprocess_data()
+        main method to do the feature engineering
 
-#     """
+    """
 
-#     def __init__(
-#       self,
-#       use_technical_indicator=True,
-#       tech_indicator_list=TECHNICAL_INDICATORS_LIST,
-#       user_defined_feature=False,
-#   ):
-#       self.use_technical_indicator = use_technical_indicator
-#       self.tech_indicator_list = tech_indicator_list
-#       self.user_defined_feature = user_defined_feature
+    def __init__(
+      self,
+      use_technical_indicator=True,
+      tech_indicator_list=TECHNICAL_INDICATORS_LIST,
+      user_defined_feature=False,
+  ):
+      self.use_technical_indicator = use_technical_indicator
+      self.tech_indicator_list = tech_indicator_list
+      self.user_defined_feature = user_defined_feature
 
-#     def preprocess_data(self, df):
-#       """main method to do the feature engineering
-#       @:param config: source dataframe
-#       @:return: a DataMatrices object
-#       """
-#       #clean data
-#       df = self.clean_data(df)
+    def preprocess_data(self, df):
+      """main method to do the feature engineering
+      @:param config: source dataframe
+      @:return: a DataMatrices object
+      """
+      #clean data
+      df = self.clean_data(df)
       
-#       # add technical indicators using stockstats
-#       if self.use_technical_indicator == True:
-#         df = self.add_technical_indicator(df)
-#         print("Successfully added technical indicators")
+      # add technical indicators using stockstats
+      if self.use_technical_indicator == True:
+        df = self.add_technical_indicator(df)
+        print("Successfully added technical indicators")
 
-#       # add user defined feature
-#       if self.user_defined_feature == True:
-#         df = self.add_user_defined_feature(df)
-#         print("Successfully added user defined features")
+      # add user defined feature
+      if self.user_defined_feature == True:
+        df = self.add_user_defined_feature(df)
+        print("Successfully added user defined features")
 
-#       # fill the missing values at the beginning and the end
-#       df = df.fillna(method="bfill").fillna(method="ffill")
-#       return df
+      # fill the missing values at the beginning and the end
+      df = df.fillna(method="bfill").fillna(method="ffill")
+      return df
     
-#     def clean_data(self, data):
-#       """
-#       clean the raw data
-#       deal with missing values
-#       reasons: stocks could be delisted, not incorporated at the time step 
-#       :param data: (df) pandas dataframe
-#       :return: (df) pandas dataframe
-#       """
-#       df = data.copy()
-#       df=df.sort_values(['date','tic'],ignore_index=True)
-#       df.index = df.date.factorize()[0]
-#       merged_closes = df.pivot_table(index = 'date',columns = 'tic', values = 'close')
-#       merged_closes = merged_closes.dropna(axis=1)
-#       tics = merged_closes.columns
-#       df = df[df.tic.isin(tics)]
-#       return df
+    def clean_data(self, data):
+      """
+      clean the raw data
+      deal with missing values
+      reasons: stocks could be delisted, not incorporated at the time step 
+      :param data: (df) pandas dataframe
+      :return: (df) pandas dataframe
+      """
+      df = data.copy()
+      df=df.sort_values(['date','tic'],ignore_index=True)
+      df.index = df.date.factorize()[0]
+      merged_closes = df.pivot_table(index = 'date',columns = 'tic', values = 'close')
+      merged_closes = merged_closes.dropna(axis=1)
+      tics = merged_closes.columns
+      df = df[df.tic.isin(tics)]
+      return df
 
-#     def add_technical_indicator(self, data):
-#       """
-#       calculate technical indicators
-#       use stockstats package to add technical inidactors
-#       :param data: (df) pandas dataframe
-#       :return: (df) pandas dataframe
-#       """
-#       df = data.copy()
-#       df = df.sort_values(by=['tic','date'])
-#       stock = Sdf.retype(df.copy())
-#       unique_ticker = stock.tic.unique()
+    def add_technical_indicator(self, data):
+      """
+      calculate technical indicators
+      use stockstats package to add technical inidactors
+      :param data: (df) pandas dataframe
+      :return: (df) pandas dataframe
+      """
+      df = data.copy()
+      df = df.sort_values(by=['tic','date'])
+      stock = Sdf.retype(df.copy())
+      unique_ticker = stock.tic.unique()
 
-#       for indicator in self.tech_indicator_list:
-#         indicator_df = pd.DataFrame()
-#         for i in range(len(unique_ticker)):
-#           try:
-#             temp_indicator = stock[stock.tic == unique_ticker[i]][indicator]
-#             temp_indicator = pd.DataFrame(temp_indicator)
-#             temp_indicator['tic'] = unique_ticker[i]
-#             temp_indicator['date'] = df[df.tic == unique_ticker[i]]['date'].to_list()
-#             indicator_df = indicator_df.append(
-#                 temp_indicator, ignore_index=True
-#             )
-#           except Exception as e:
-#             print(e)
-#         df = df.merge(indicator_df[['tic','date',indicator]],on=['tic','date'],how='left')
-#       df = df.sort_values(by=['date','tic'])
-#       return df
+      for indicator in self.tech_indicator_list:
+        indicator_df = pd.DataFrame()
+        for i in range(len(unique_ticker)):
+          try:
+            temp_indicator = stock[stock.tic == unique_ticker[i]][indicator]
+            temp_indicator = pd.DataFrame(temp_indicator)
+            temp_indicator['tic'] = unique_ticker[i]
+            temp_indicator['date'] = df[df.tic == unique_ticker[i]]['date'].to_list()
+            indicator_df = indicator_df.append(
+                temp_indicator, ignore_index=True
+            )
+          except Exception as e:
+            print(e)
+        df = df.merge(indicator_df[['tic','date',indicator]],on=['tic','date'],how='left')
+      df = df.sort_values(by=['date','tic'])
+      return df
 
-#     def add_user_defined_feature(self, data):
-#         """
-#         add user defined features
-#         :param data: (df) pandas dataframe
-#         :return: (df) pandas dataframe
-#         """
-#         df = data.copy()
-#         df["daily_return"] = df.close.pct_change(1)
-#         df['bb_u_ratio'] = df.boll_ub / df.close
-#         df['bb_l_ratio'] = df.boll_lb / df.close
-#         df['max_scale_MACD'] = MaxAbsScaler().fit_transform(df[['macd']])
-#         # df['return_lag_1']=df.close.pct_change(2)
-#         # df['return_lag_2']=df.close.pct_change(3)
-#         # df['return_lag_3']=df.close.pct_change(4)
-#         # df['return_lag_4']=df.close.pct_change(5)
-#         return df
+    def add_user_defined_feature(self, data):
+        """
+        add user defined features
+        :param data: (df) pandas dataframe
+        :return: (df) pandas dataframe
+        """
+        df = data.copy()
+        df["daily_return"] = df.close.pct_change(1)
+        df['bb_u_ratio'] = df.boll_ub / df.close
+        df['bb_l_ratio'] = df.boll_lb / df.close
+        df['max_scale_MACD'] = MaxAbsScaler().fit_transform(df[['macd']])
+        # df['return_lag_1']=df.close.pct_change(2)
+        # df['return_lag_2']=df.close.pct_change(3)
+        # df['return_lag_3']=df.close.pct_change(4)
+        # df['return_lag_4']=df.close.pct_change(5)
+        return df
   
-#   df_price = pd.read_csv(df_price_dataset.path)
-#   df_price.columns = df_price.columns.str.lower()
-#   df_price.rename(columns={'code':'tic'}, inplace=True)
-#   fe = FeatureEngineer(user_defined_feature=True)
-#   df_process = fe.preprocess_data(df_price)
-#   df_process.rename(columns={'tic':'code'}, inplace=True)
+  df_price = pd.read_csv(df_price_dataset.path)
+  df_price.columns = df_price.columns.str.lower()
+  df_price.rename(columns={'code':'tic'}, inplace=True)
+  fe = FeatureEngineer(user_defined_feature=True)
+  df_process = fe.preprocess_data(df_price)
+  df_process.rename(columns={'tic':'code'}, inplace=True)
 
-#   df_process.to_csv(df_techini_dataset.path)
+  df_process.to_csv(df_techini_dataset.path)
+
+###############################
+# get full tech indi ##########
+###############################
+@component(
+  #  base_image="gcr.io/dots-stock/python-img-v5.2"
+  packages_to_install=['pandas']
+)
+def get_full_tech_indi(
+  tech_indi_dataset01: Input[Dataset],
+  tech_indi_dataset02: Input[Dataset],
+  tech_indi_dataset03: Input[Dataset],
+  tech_indi_dataset04: Input[Dataset],
+  tech_indi_dataset05: Input[Dataset],
+  full_tech_indi_dataset: Output[Dataset]
+):
+
+  import pandas as pd
+
+  df_01 = pd.read_csv(tech_indi_dataset01.path,                          
+                          ).reset_index(drop=True)
+  df_02 = pd.read_csv(tech_indi_dataset02.path,                          
+                          ).reset_index(drop=True)
+  df_03 = pd.read_csv(tech_indi_dataset03.path,
+                          ).reset_index(drop=True)                      
+  df_04 = pd.read_csv(tech_indi_dataset04.path,
+                          ).reset_index(drop=True)
+  df_05 = pd.read_csv(tech_indi_dataset05.path,
+                          ).reset_index(drop=True)
+  
+  df_full = pd.concat([df_01, df_02, df_03,df_04, df_05])
+  df_full.to_csv(full_tech_indi_dataset.path)
 
 #########################################
 # get feature ###########################
@@ -965,8 +939,10 @@ def get_features(
   
   df_feats.to_csv(features_dataset.path)
 
-# # @component()
 
+#########################################
+# create pipeline #######################
+#########################################
 job_file_name='ml-with-all-items.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
@@ -1014,7 +990,28 @@ def create_awesome_pipeline():
     bros_dataset= op_get_bros.outputs['bros_univ_dataset']
   )
 
+  op_get_target = get_target(
+    op_get_full_adj_prices.outputs['full_adj_prices_dataset']
+  )
+  op_get_techindi_01 = get_tech_indi(
+    op_get_adj_prices_01.outputs['adj_price_dataset'])
+  op_get_techindi_02 = get_tech_indi(
+    op_get_adj_prices_02.outputs['adj_price_dataset'])
+  op_get_techindi_03 = get_tech_indi(
+    op_get_adj_prices_03.outputs['adj_price_dataset'])
+  op_get_techindi_04 = get_tech_indi(
+    op_get_adj_prices_04.outputs['adj_price_dataset'])
+  op_get_techindi_05 = get_tech_indi(
+    op_get_adj_prices_05.outputs['adj_price_dataset'])
   
+  op_get_full_tech_indi = get_full_tech_indi(
+    tech_indi_dataset01 = op_get_techindi_01.outputs['df_techini_dataset'],
+    tech_indi_dataset02 = op_get_techindi_02.outputs['df_techini_dataset'],
+    tech_indi_dataset03 = op_get_techindi_03.outputs['df_techini_dataset'],
+    tech_indi_dataset04 = op_get_techindi_04.outputs['df_techini_dataset'],
+    tech_indi_dataset05 = op_get_techindi_05.outputs['df_techini_dataset']
+
+  )
   
   
 # 
@@ -1033,3 +1030,52 @@ response = api_client.create_run_from_job_spec(
   enable_caching= True,
   pipeline_root=PIPELINE_ROOT
 )
+
+
+
+
+
+######################
+
+
+
+# @component(
+#     base_image="amancevice/pandas:1.3.2-slim"
+# )
+# def get_univ_for_price(
+#   # date_ref: str,
+#   base_item_dataset: Input[Dataset],
+#   bros_dataset: Input[Dataset],
+#   univ_dataset: Output[Dataset],
+# ):
+#   import pandas as pd
+#   import logging
+#   import json
+#   logger = logging.getLogger(__name__)
+#   FORMAT = "[%(filename)s:%(lineno)s - %(funcName)20s() ] %(message)s"
+#   logging.basicConfig(format=FORMAT)
+#   logger.setLevel(logging.DEBUG)
+
+#   # base item
+#   df_top30s = pd.read_csv(base_item_dataset.path, 
+#                        index_col=0, 
+#                        dtype={'날짜': str}).reset_index(drop=True)
+
+#   # load edge_list to make bros
+#   df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
+#   df_ed_r = df_ed.copy() 
+#   df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
+#   df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
+#   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
+
+#   dic_univ = {}
+#   for date, df in df_top30s.groupby('날짜'):
+#     logger.debug(f'date: {date}')
+#     l_top30 = df.종목코드.to_list()
+#     l_bro = df_ed2[(df_ed2.date == date) & 
+#                   (df_ed2.source.isin(l_top30))].target.unique().tolist()
+
+#     dic_univ[date] = list(set(l_top30 + l_bro ))
+
+#   with open(univ_dataset.path, 'w', encoding='utf8') as f:
+#     json.dump(dic_univ, f)
