@@ -844,7 +844,7 @@ def get_features(
 
   df_rank = df_mkt_.copy()
 
-  df_rank['in_top30'] = df_rank.순위_상승률 < 30
+  df_rank['in_top30'] = df_rank.순위_상승률 <= 30
   df_rank['rank_mean_10'] = df_rank.groupby('종목코드')['순위_상승률'].transform(
                               lambda x : x.rolling(10, min_periods=1).mean()
                           )
