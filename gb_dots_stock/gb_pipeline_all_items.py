@@ -799,14 +799,6 @@ def get_features(
   import pandas as pd
   import numpy as np
   from collections import Counter
-  from trading_calendars import get_calendar
-  cal_KRX = get_calendar('XKRX')  
-
-  def get_krx_on_dates_n_days_ago(date_ref, n_days=20):
-      return [date.strftime('%Y%m%d')
-              for date in pd.bdate_range(
-          end=date_ref, freq='C', periods=n_days,
-          holidays=cal_KRX.precomputed_holidays) ]
 
   #df_market_info 가져오기
   df_market = pd.read_csv(market_info_dataset.path,
@@ -814,140 +806,165 @@ def get_features(
                           dtype={'날짜':str}
                           ).reset_index(drop=True)
 
+  dates_in_set = df_market.날짜.unique().tolist()
   dates_on_train = df_market.날짜.unique().tolist()[-20:]
 
+  # 등락률 -1 
+  df_market = df_market.sort_values('날짜')
+  df_market['return_-1'] = df_market.groupby('종목코드').등락률.shift(1)
+
   #df_ed 가져오기
-  df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
+  df_ed = pd.read_csv(path2, index_col=0).reset_index(drop=True)
   df_ed_r = df_ed.copy() 
   df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
   df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
-  #functions
-  def get_n_bro_list(code, period, date_ref):
-    l_bros = df_ed2[(df_ed2.source == code) & (df_ed2.date == date_ref) & (df_ed2.period == period)].target.to_list()
-    print('l_bros', l_bros)
-    return l_bros
+  cols = ['종목코드', '날짜', '순위_상승률']
+  df_mkt_ = df_market[cols]
 
-  def get_up_bro_ratio(code, period, date_ref): # 친구들 중 오른 친구 비율 /  opts =  60일, 90일, 120일      
-    l_bros = get_n_bro_list(code, period, date_ref)
-    df__ = df_market[df_market.종목코드.isin(l_bros)].등락률 > 0
-    print('shape_of_friends', df__.shape[0])
-    ratio_up = df__.sum()  /df__.shape[0]
-    if np.isnan(ratio_up):
-        ratio_up = 0
-    print('ratio_up', ratio_up)
-    return ratio_up
+  cols_market = [ '종목코드','날짜','등락률','return_-1']
+  cols_bro = ['source','target','period','date']
 
-  def get_n_bro(code, period, date_ref): # 해당 코드의 친구 수 /  opts =  60일, 90일, 120일 
-    l_bros = get_n_bro_list(code, period, date_ref)        
-    return len(l_bros)
-
-  def get_bro_up_mean(code, period, df_, date_ref): # 오른 친구들만 골라서 평균 얼마나 올랐는지 /  opts =  60일, 90일, 120일
-    '''오른 종목의 상승률'''
-    l_bros = get_n_bro_list(code, period, date_ref)
-    df_bros= df_[df_.종목코드.isin(l_bros)]
-    up_mean = df_bros[df_bros.등락률 > 0].등락률.mean()
-    if np.isnan(up_mean):
-      return 0
-    return up_mean
-
-  def high_close_ratio(df) : # 당일 고가 / 종가의 비
-    try :
-      h_c_ratio = df.고가 / df.현재가
-    except Exception as e:
-      h_c_ratio = 0
-    return h_c_ratio
-
-  def low_close_ratio(df) :
-    try :
-      l_c_ratio = df.고가 / df.현재가
-    except Exception as e:
-      l_c_ratio = 0
-    return l_c_ratio
-
-  def bro_earn_avg(code, period, date_ref): # 모든 친구들의 상승률 평균
-    l_bros = get_n_bro_list(code, period, date_ref)
-    df_bros = df_market[df_market.종목코드.isin(l_bros)]
-    earn_avg = df_bros.등락률.mean()
-    if np.isnan(earn_avg):
-        return 0
-    return earn_avg
-
-  def get_volume_change_wrt_10_avg(code, vol, date_ref):
-    date_from = get_krx_on_dates_n_days_ago(date_ref, 10)
-    df_ = df_market[df_market.종목코드 == code]
-    df__ = df_[(df_.날짜 >= date_from) & (df_.날짜 < date_ref)]
-    try :
-      vol_avg = df__.거래량.mean()
-      vol_chg = (vol/vol_avg)
-    except :
-      vol_chg = 1
-    return vol_chg
+  # merge
+  df_ed2_1 = ( df_ed2[cols_bro]
+                  .merge(df_market[cols_market], 
+                      left_on=['target','date'],
+                      right_on=['종목코드','날짜'])
+                  .rename(columns={'등락률':'target_return',
+                  'return_-1':'target_return_-1'}))
+  df_ed2_1 = df_ed2_1[['source', 'target', 'period', 'date', 
+                      'target_return', 'target_return_-1']]
   
-  def get_volume_change_wrt_10_max(code, vol, date_ref):
-    date_from = get_krx_on_dates_n_days_ago(date_ref, 10)
-    df_ = df_market[df_market.종목코드 == code]
-    df__ = df_[(df_.날짜 >= date_from) & (df_.날짜 < date_ref)]
-    try :
-      vol_max = df__.거래량.max()
-      vol_chg = (vol/vol_max)
-    except :
-      vol_chg = 1
-    return vol_chg
+  df_tmp = df_mkt_.merge(df_ed2_1, 
+          left_on=['날짜','종목코드'], 
+          right_on=['date', 'source'], 
+          suffixes=('','_x'),
+          how='left')
+  df_tmp.drop(columns=['종목코드','날짜'], inplace=True)
+  df_tmp.dropna(subset=['target'], inplace=True)
 
-  def count_top30_n_days(code, date_ref, period):
-    date_from = get_krx_on_dates_n_days_ago(date_ref, period)    
-    df__ = df_market[(df_market.날짜 >= date_from) & (df_market.날짜 <= date_ref)]
-    l_top30 = []
-    for date, df in df__.groupby('날짜') :
-      df_temp = df.sort_values(by='등락률',  ascending=False)
-      l_top30.extend(df_temp.head(30).종목코드.to_list())
-    c_result = Counter(l_top30)
-    try:
-      c = c_result[code]
-    except :
-      c = 0
-    return c 
+  def get_upbro_ratio(df):
+      '''df : '''
+      return (
+              sum(df.target_return > 0) /
+              df.shape[0], # 그날 상승한 친구들의 비율
+              df.shape[0], # 그날 친구들 수
+              df.target_return.mean(), # 그날 모든 친구들 상승률의 평균
+              df[df.target_return > 0].target_return.mean(), # 그날 오른 친구들의 평균
+              df['target_return_-1'].mean(),# 전날 친구들 평균상승률
+              sum(df['target_return_-1'] > 0) / df.shape[0],# 전날 상승한 친구들 비율
+              df[df['target_return_-1'] > 0]['target_return_-1'].mean(),# 전날 상승한 친구들 평균
+              )
 
-  df_ = df_market[df_market.날짜.isin(dates_on_train)]
-  df_['up_bro_ratio_120'] = df_.apply(lambda row: get_up_bro_ratio(row.종목코드, 120, row.날짜), axis=1)
-  df_['n_bros_120'] = df_.apply(lambda row: get_n_bro(row.종목코드, 120, row.날짜), axis=1)
-  df_['up_bros_mean_120'] = df_.apply(lambda row: get_bro_up_mean(row.종목코드, 120, row.날짜), axis=1)
+  bro_up_ratio = (df_tmp.groupby(['date','source','period'])
+      .apply(lambda df: get_upbro_ratio(df))
+      .reset_index()
+      .rename(columns={0:'bro_up_ratio'})
+      )
+  
+  bro_up_ratio[['bro_up_ratio','n_bros', 'all_bro_rtrn_mean', 'up_bro_rtrn_mean',
+                  'all_bro_rtrn_mean_ystd', 'bro_up_ratio_ystd', 'up_bro_rtrn_mean_ystd']] = \
+      pd.DataFrame(bro_up_ratio.bro_up_ratio.tolist(), index=bro_up_ratio.index) 
+  
+  # Features related with Rank
 
-  df_['up_bro_ratio_90'] = df_.apply(lambda row: get_up_bro_ratio(row.종목코드, 90, row.날짜), axis=1)
-  df_['n_bros_90'] = df_.apply(lambda row: get_n_bro(row.종목코드, 90, row.날짜), axis=1)
-  df_['up_bros_mean_90'] = df_.apply(lambda row: get_bro_up_mean(row.종목코드, 90, row.날짜), axis=1)
+  df_rank = df_mkt_.copy()
 
-  df_['up_bro_ratio_60'] = df_.apply(lambda row: get_up_bro_ratio(row.종목코드, 60, row.날짜), axis=1)
-  df_['n_bros_60'] = df_.apply(lambda row: get_n_bro(row.종목코드, 60, row.날짜), axis=1)
-  df_['up_bros_mean_60'] = df_.apply(lambda row: get_bro_up_mean(row.종목코드, 60, row.날짜), axis=1)
+  df_rank['in_top30'] = df_rank.순위_상승률 < 30
+  df_rank['rank_mean_10'] = df_rank.groupby('종목코드')['순위_상승률'].transform(
+                              lambda x : x.rolling(10, min_periods=1).mean()
+                          )
 
-  df_['up_bro_ratio_40'] = df_.apply(lambda row: get_up_bro_ratio(row.종목코드, 40, row.날짜), axis=1)
-  df_['n_bros_40'] = df_.apply(lambda row: get_n_bro(row.종목코드, 40, row.날짜), axis=1)
-  df_['up_bros_mean_40'] = df_.apply(lambda row: get_bro_up_mean(row.종목코드, 40, row.날짜), axis=1)
+  df_rank['rank_mean_5'] = df_rank.groupby('종목코드')['순위_상승률'].transform(
+                              lambda x : x.rolling(5, min_periods=1).mean()
+                          )
 
-  df_['up_bro_ratio_20'] = df_.apply(lambda row: get_up_bro_ratio(row.종목코드, 20, row.날짜), axis=1)
-  df_['n_bros_20'] = df_.apply(lambda row: get_n_bro(row.종목코드, 20, row.날짜), axis=1)
-  df_['up_bros_mean_20'] = df_.apply(lambda row: get_bro_up_mean(row.종목코드, 20, row.날짜), axis=1)
+  df_rank['in_top_30_5'] = df_rank.groupby('종목코드')['in_top30'].transform(
+                              lambda x : x.rolling(5, min_periods=1).sum()
+                          )
 
-  df_['h_c_ratio'] = df_.apply(lambda row: high_close_ratio(row), axis=1)
-  df_['l_c_ratio'] = df_.apply(lambda row: low_close_ratio(row), axis=1)
+  df_rank['in_top_30_10'] = df_rank.groupby('종목코드')['in_top30'].transform(
+                              lambda x : x.rolling(10, min_periods=1).sum()
+                          )
 
-  df_['bro_earn_avg_120'] = df_.apply(lambda row : bro_earn_avg(row.종목코드, 120, row.날짜), axis=1)
-  df_['bro_earn_avg_90'] = df_.apply(lambda row : bro_earn_avg(row.종목코드, 90, row.날짜), axis=1)
-  df_['bro_earn_avg_60'] = df_.apply(lambda row : bro_earn_avg(row.종목코드, 60, row.날짜), axis=1)
-  df_['bro_earn_avg_40'] = df_.apply(lambda row : bro_earn_avg(row.종목코드, 40, row.날짜), axis=1)
-  df_['bro_earn_avg_20'] = df_.apply(lambda row : bro_earn_avg(row.종목코드, 20, row.날짜), axis=1)
+  df_tmp = df_tmp.merge(bro_up_ratio, on=['date','source','period'], how='left')
+  df_tmp['up_bro_ratio_20'] = df_tmp[df_tmp.period == 20].bro_up_ratio
+  df_tmp['up_bro_ratio_40'] = df_tmp[df_tmp.period == 40].bro_up_ratio
+  df_tmp['up_bro_ratio_60'] = df_tmp[df_tmp.period == 60].bro_up_ratio
+  df_tmp['up_bro_ratio_90'] = df_tmp[df_tmp.period == 90].bro_up_ratio
+  df_tmp['up_bro_ratio_120'] = df_tmp[df_tmp.period == 120].bro_up_ratio
 
-  df_['top30_count_10days'] = df_.apply(lambda row : count_top30_n_days(row.종목코드, row.날짜, 10), axis=1)
-  df_['top30_count_5days'] = df_.apply(lambda row : count_top30_n_days(row.종목코드, row.날짜, 5), axis=1)
+  df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 bro_up_ratio를 0으로 만들기
+  df_tmp.drop(columns=['bro_up_ratio'], inplace=True)
 
-  df_['volume_change_wrt_10_avg'] = df_.apply(lambda row:get_volume_change_wrt_10_avg(row.종목코드, row.거래량, row.날짜), axis=1)
-  df_['volume_change_wrt_10_max'] = df_.apply(lambda row:get_volume_change_wrt_10_max(row.종목코드, row.거래량, row.날짜), axis=1)
+  df_tmp['n_bro_20'] = df_tmp[df_tmp.period == 20].n_bros
+  df_tmp['n_bro_40'] = df_tmp[df_tmp.period == 40].n_bros
+  df_tmp['n_bro_60'] = df_tmp[df_tmp.period == 60].n_bros
+  df_tmp['n_bro_90'] = df_tmp[df_tmp.period == 90].n_bros
+  df_tmp['n_bro_120'] = df_tmp[df_tmp.period == 120].n_bros
 
-  df_.fillna(0, inplace=True)
-  df_.to_csv(features_dataset.path)
+  df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
+  df_tmp.drop(columns=['n_bros'], inplace=True)
+
+  df_tmp['all_bro_rtrn_mean_20'] = df_tmp[df_tmp.period == 20].all_bro_rtrn_mean
+  df_tmp['all_bro_rtrn_mean_40'] = df_tmp[df_tmp.period == 40].all_bro_rtrn_mean
+  df_tmp['all_bro_rtrn_mean_60'] = df_tmp[df_tmp.period == 60].all_bro_rtrn_mean
+  df_tmp['all_bro_rtrn_mean_90'] = df_tmp[df_tmp.period == 90].all_bro_rtrn_mean
+  df_tmp['all_bro_rtrn_mean_120'] = df_tmp[df_tmp.period == 120].all_bro_rtrn_mean
+
+  df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
+  df_tmp.drop(columns=['all_bro_rtrn_mean'], inplace=True)
+
+  df_tmp['up_bro_rtrn_mean_20'] = df_tmp[df_tmp.period == 20].up_bro_rtrn_mean
+  df_tmp['up_bro_rtrn_mean_40'] = df_tmp[df_tmp.period == 40].up_bro_rtrn_mean
+  df_tmp['up_bro_rtrn_mean_60'] = df_tmp[df_tmp.period == 60].up_bro_rtrn_mean
+  df_tmp['up_bro_rtrn_mean_90'] = df_tmp[df_tmp.period == 90].up_bro_rtrn_mean
+  df_tmp['up_bro_rtrn_mean_120'] = df_tmp[df_tmp.period == 120].up_bro_rtrn_mean
+
+  df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
+  df_tmp.drop(columns=['up_bro_rtrn_mean'], inplace=True)
+
+  df_tmp['all_bro_rtrn_mean_ystd_20'] = df_tmp[df_tmp.period == 20].all_bro_rtrn_mean_ystd
+  df_tmp['all_bro_rtrn_mean_ystd_40'] = df_tmp[df_tmp.period == 40].all_bro_rtrn_mean_ystd
+  df_tmp['all_bro_rtrn_mean_ystd_60'] = df_tmp[df_tmp.period == 60].all_bro_rtrn_mean_ystd
+  df_tmp['all_bro_rtrn_mean_ystd_90'] = df_tmp[df_tmp.period == 90].all_bro_rtrn_mean_ystd
+  df_tmp['all_bro_rtrn_mean_ystd_120'] = df_tmp[df_tmp.period == 120].all_bro_rtrn_mean_ystd
+
+  df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
+  df_tmp.drop(columns=['all_bro_rtrn_mean_ystd'], inplace=True)
+
+  df_tmp['bro_up_ratio_ystd_20'] = df_tmp[df_tmp.period == 20].bro_up_ratio_ystd
+  df_tmp['bro_up_ratio_ystd_40'] = df_tmp[df_tmp.period == 40].bro_up_ratio_ystd
+  df_tmp['bro_up_ratio_ystd_60'] = df_tmp[df_tmp.period == 60].bro_up_ratio_ystd
+  df_tmp['bro_up_ratio_ystd_90'] = df_tmp[df_tmp.period == 90].bro_up_ratio_ystd
+  df_tmp['bro_up_ratio_ystd_120'] = df_tmp[df_tmp.period == 120].bro_up_ratio_ystd
+
+  df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
+  df_tmp.drop(columns=['bro_up_ratio_ystd'], inplace=True)
+
+  df_tmp['up_bro_rtrn_mean_ystd_20'] = df_tmp[df_tmp.period == 20].up_bro_rtrn_mean_ystd
+  df_tmp['up_bro_rtrn_mean_ystd_40'] = df_tmp[df_tmp.period == 40].up_bro_rtrn_mean_ystd
+  df_tmp['up_bro_rtrn_mean_ystd_60'] = df_tmp[df_tmp.period == 60].up_bro_rtrn_mean_ystd
+  df_tmp['up_bro_rtrn_mean_ystd_90'] = df_tmp[df_tmp.period == 90].up_bro_rtrn_mean_ystd
+  df_tmp['up_bro_rtrn_mean_ystd_120'] = df_tmp[df_tmp.period == 120].up_bro_rtrn_mean_ystd
+
+  df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
+  df_tmp.drop(columns=['up_bro_rtrn_mean_ystd'], inplace=True)
+
+  # Merge DataFrames
+  cols_rank = ['종목코드', '날짜', 'in_top30', 'rank_mean_10', 'rank_mean_5', 'in_top_30_5', 'in_top_30_10']
+  df_merged = df_tmp.merge(df_rank[cols_rank],
+                      left_on=['source', 'date'],
+                      right_on=['종목코드', '날짜'])
+
+  df_merged.fillna(0, inplace=True)
+  df_merged.drop(columns=['종목코드', '날짜'], inplace=True)
+
+  df_merged = df_merged.drop_duplicates(subset=['source', 'date'])
+  df_feats = df_merged[df_merged.date.isin(dates_on_train)]
+  
+  df_feats.to_csv(features_dataset.path)
 
 # # @component()
 
