@@ -155,3 +155,4 @@ temp/
 
 # pipeline-job
 *.json
+test.py
