@@ -814,7 +814,7 @@ def get_features(
   df_market['return_-1'] = df_market.groupby('종목코드').등락률.shift(1)
 
   #df_ed 가져오기
-  df_ed = pd.read_csv(path2, index_col=0).reset_index(drop=True)
+  df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
   df_ed_r = df_ed.copy() 
   df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
   df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
