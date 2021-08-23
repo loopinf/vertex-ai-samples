@@ -939,6 +939,43 @@ def get_features(
   
   df_feats.to_csv(features_dataset.path)
 
+@component(
+  packages_to_install=['pandas']
+)
+def get_ml_dataset(
+  features_dataset : Input[Dataset],
+  target_dataset : Input[Dataset],
+  tech_indi_dataset : Input[Dataset],
+  ml_dataset : Output[Dataset]
+):
+
+  import pandas as pd
+
+  df_feats = pd.read_csv(features_dataset.path,
+                        index_col=0,
+                        dtype={'date':str},
+                              ).reset_index(drop=True)
+
+  df_target = pd.read_csv(target_dataset.path,
+                          index_col=0,
+                          dtype={'code':str},
+                              ).reset_index(drop=True)
+  df_target['date'] = pd.to_datetime(df_target.date).dt.strftime('%Y%m%d')
+
+  df_tech = pd.read_csv(tech_indi_dataset.path,
+                          index_col=0,
+                              ).reset_index(drop=True)
+  df_tech['date'] = pd.to_datetime(df_tech.date).dt.strftime('%Y%m%d')
+
+  df_ml_dataset = (df_feats.merge(df_target,
+                              left_on=['source', 'date'],
+                              right_on=['code', 'date']))
+
+  df_ml_dataset = (df_ml_dataset.merge(df_tech,
+                              left_on=['source', 'date'],
+                              right_on=['code', 'date']))
+
+  df_ml_dataset.to_csv(ml_dataset.path)
 
 #########################################
 # create pipeline #######################
@@ -1012,6 +1049,13 @@ def create_awesome_pipeline():
     tech_indi_dataset05 = op_get_techindi_05.outputs['df_techini_dataset']
 
   )
+
+  get_ml_dataset(
+    features_dataset= op_get_features.outputs['features_dataset'],
+    target_dataset= op_get_target.outputs['df_target_dataset'],
+    tech_indi_dataset= op_get_full_tech_indi.outputs['full_tech_indi_dataset']
+  )
+
   
   
 # 
