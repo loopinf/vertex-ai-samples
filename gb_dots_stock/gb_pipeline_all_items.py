@@ -934,8 +934,8 @@ def get_features(
   df_merged.fillna(0, inplace=True)
   df_merged.drop(columns=['종목코드', '날짜'], inplace=True)
 
-  df_merged = df_merged.drop_duplicates(subset=['source', 'date'])
-  df_feats = df_merged[df_merged.date.isin(dates_on_train)]
+  df_feats = df_merged.drop_duplicates(subset=['source', 'date'])
+  # df_feats = df_merged[df_merged.date.isin(dates_on_train)]
   
   df_feats.to_csv(features_dataset.path)
 
