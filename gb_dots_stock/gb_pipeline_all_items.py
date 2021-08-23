@@ -967,12 +967,12 @@ def get_ml_dataset(
   df_tech['date'] = pd.to_datetime(df_tech.date).dt.strftime('%Y%m%d')
 
   df_ml_dataset = (df_feats.merge(df_target,
-                            left_on=['source', 'date'],
+                            left_on=['code', 'date'],
                             right_on=['code', 'date'],
                             how='left'))
 
   df_ml_dataset = (df_ml_dataset.merge(df_tech,
-                              left_on=['source', 'date'],
+                              left_on=['code', 'date'],
                               right_on=['code', 'date'],
                               how='left'))
 
