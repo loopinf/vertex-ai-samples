@@ -574,7 +574,7 @@ def get_target(
     # df_target['date'] = df_target.date.str.replace('-', '')
     return df_target
 
-  df_price = pd.read_csv(df_price_dataset.path)
+  df_price = pd.read_csv(df_price_dataset.path, index_col=0)
   df_target = get_target_df(df_price=df_price)
 
   df_target.to_csv(df_target_dataset.path)
@@ -743,15 +743,15 @@ def get_full_tech_indi(
 
   import pandas as pd
 
-  df_01 = pd.read_csv(tech_indi_dataset01.path,                          
+  df_01 = pd.read_csv(tech_indi_dataset01.path, index_col=0                          
                           ).reset_index(drop=True)
-  df_02 = pd.read_csv(tech_indi_dataset02.path,                          
+  df_02 = pd.read_csv(tech_indi_dataset02.path, index_col=0               
                           ).reset_index(drop=True)
-  df_03 = pd.read_csv(tech_indi_dataset03.path,
+  df_03 = pd.read_csv(tech_indi_dataset03.path, index_col=0
                           ).reset_index(drop=True)                      
-  df_04 = pd.read_csv(tech_indi_dataset04.path,
+  df_04 = pd.read_csv(tech_indi_dataset04.path, index_col=0
                           ).reset_index(drop=True)
-  df_05 = pd.read_csv(tech_indi_dataset05.path,
+  df_05 = pd.read_csv(tech_indi_dataset05.path, index_col=0
                           ).reset_index(drop=True)
   
   df_full = pd.concat([df_01, df_02, df_03,df_04, df_05])
