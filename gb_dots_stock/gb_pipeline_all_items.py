@@ -927,15 +927,14 @@ def get_features(
 
   # Merge DataFrames
   cols_rank = ['종목코드', '날짜', 'in_top30', 'rank_mean_10', 'rank_mean_5', 'in_top_30_5', 'in_top_30_10']
-  df_merged = df_tmp.merge(df_rank[cols_rank],
-                      left_on=['source', 'date'],
-                      right_on=['종목코드', '날짜'])
+  df_feats =df_rank[cols_rank].merge(df_tmp,
+                      left_on=['종목코드', '날짜'],
+                      right_on=['source', 'date'],
+                      how='outer')
 
-  df_merged.fillna(0, inplace=True)
-  df_merged.drop(columns=['종목코드', '날짜'], inplace=True)
-
-  df_feats = df_merged.drop_duplicates(subset=['source', 'date'])
-  # df_feats = df_merged[df_merged.date.isin(dates_on_train)]
+  df_feats.fillna(0, inplace=True)
+  df_feats.drop(columns=['종목코드', '날짜'], inplace=True)
+  df_feats.rename(columns={'source':'code', '종목명':'name', '순위_상승률':'rank'}, inplace=True)
   
   df_feats.to_csv(features_dataset.path)
 
@@ -968,12 +967,16 @@ def get_ml_dataset(
   df_tech['date'] = pd.to_datetime(df_tech.date).dt.strftime('%Y%m%d')
 
   df_ml_dataset = (df_feats.merge(df_target,
-                              left_on=['source', 'date'],
-                              right_on=['code', 'date']))
+                            left_on=['source', 'date'],
+                            right_on=['code', 'date'],
+                            how='left'))
 
   df_ml_dataset = (df_ml_dataset.merge(df_tech,
                               left_on=['source', 'date'],
-                              right_on=['code', 'date']))
+                              right_on=['code', 'date'],
+                              how='left'))
+
+  df_ml_dataset.dropna(inplace=True)
 
   df_ml_dataset.to_csv(ml_dataset.path)
 
