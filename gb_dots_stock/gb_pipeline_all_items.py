@@ -800,7 +800,7 @@ def get_features(
   cols_bro = ['source','target','period','date']
 
   # merge
-  df_ed2_1 = ( df_ed2[cols_bro]
+  df_ed2_1 = (df_ed2[cols_bro]
                   .merge(df_market[cols_market], 
                       left_on=['target','date'],
                       right_on=['종목코드','날짜'])
@@ -840,26 +840,6 @@ def get_features(
                   'all_bro_rtrn_mean_ystd', 'bro_up_ratio_ystd', 'up_bro_rtrn_mean_ystd']] = \
       pd.DataFrame(bro_up_ratio.bro_up_ratio.tolist(), index=bro_up_ratio.index) 
   
-  # Features related with Rank
-
-  df_rank = df_mkt_.copy()
-
-  df_rank['in_top30'] = df_rank.순위_상승률 <= 30
-  df_rank['rank_mean_10'] = df_rank.groupby('종목코드')['순위_상승률'].transform(
-                              lambda x : x.rolling(10, min_periods=1).mean()
-                          )
-
-  df_rank['rank_mean_5'] = df_rank.groupby('종목코드')['순위_상승률'].transform(
-                              lambda x : x.rolling(5, min_periods=1).mean()
-                          )
-
-  df_rank['in_top_30_5'] = df_rank.groupby('종목코드')['in_top30'].transform(
-                              lambda x : x.rolling(5, min_periods=1).sum()
-                          )
-
-  df_rank['in_top_30_10'] = df_rank.groupby('종목코드')['in_top30'].transform(
-                              lambda x : x.rolling(10, min_periods=1).sum()
-                          )
 
   df_tmp = df_tmp.merge(bro_up_ratio, on=['date','source','period'], how='left')
   df_tmp['up_bro_ratio_20'] = df_tmp[df_tmp.period == 20].bro_up_ratio
@@ -924,6 +904,27 @@ def get_features(
 
   df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
   df_tmp.drop(columns=['up_bro_rtrn_mean_ystd'], inplace=True)
+
+  # Features related with Rank
+
+  df_rank = df_mkt_.copy()
+
+  df_rank['in_top30'] = df_rank.순위_상승률 <= 30
+  df_rank['rank_mean_10'] = df_rank.groupby('종목코드')['순위_상승률'].transform(
+                              lambda x : x.rolling(10, min_periods=1).mean()
+                          )
+
+  df_rank['rank_mean_5'] = df_rank.groupby('종목코드')['순위_상승률'].transform(
+                              lambda x : x.rolling(5, min_periods=1).mean()
+                          )
+
+  df_rank['in_top_30_5'] = df_rank.groupby('종목코드')['in_top30'].transform(
+                              lambda x : x.rolling(5, min_periods=1).sum()
+                          )
+
+  df_rank['in_top_30_10'] = df_rank.groupby('종목코드')['in_top30'].transform(
+                              lambda x : x.rolling(10, min_periods=1).sum()
+                          )
 
   # Merge DataFrames
   cols_rank = ['종목코드', '날짜', 'in_top30', 'rank_mean_10', 'rank_mean_5', 'in_top_30_5', 'in_top_30_10']
