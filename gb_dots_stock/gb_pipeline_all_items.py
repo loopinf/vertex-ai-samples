@@ -131,9 +131,10 @@ def get_market_info(
   
   df_market = get_markets_aws(date_ref=date_ref, n_days=n_days)
 
-  with open(market_info_dataset.path, 'wb') as f:
-    pickle.dump(df_market, f)
+  # with open(market_info_dataset.path, 'wb') as f:
+  #   pickle.dump(df_market, f)
   # df_market.to_csv(market_info_dataset.path)
+  df_market.to_pickle(market_info_dataset.path)
 
 #######################
 # get bros ############
@@ -210,8 +211,9 @@ def get_bros(
     df_bros = df_bros.append(df)
 
   # df_bros.to_csv(bros_univ_dataset.path)
-  with open(bros_univ_dataset.path, 'wb') as f:
-    pickle.dump(df_bros, f)
+  df_bros.to_pickle(bros_univ_dataset.path)
+  # with open(bros_univ_dataset.path, 'wb') as f:
+  #   pickle.dump(df_bros, f)
 
 
 ###############################
@@ -235,8 +237,9 @@ def get_adj_prices_01(
   #                         index_col=0,
   #                         dtype={'날짜':str, '종목코드':str}
   #                         ).reset_index(drop=True)
-  with open(market_info_dataset.path, 'rb') as f:
-    df_market = pickle.load(f)
+  df_market = pd.read_pickle(market_info_dataset.path)
+  # with open(market_info_dataset.path, 'rb') as f:
+  #   df_market = pickle.load(f)
 
   date_ref = df_market.날짜.max()
   date_start = '20210101'
@@ -260,12 +263,14 @@ def get_adj_prices_01(
   ae_log.debug(f'codes_stock {codes.__len__()}')
 
   df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
-  print('df_adj_cols =>', df_adj_price.columns)
-
+  
   # df_adj_price.to_csv(adj_price_dataset.path)
   df_adj_price = df_adj_price.reset_index()
-  with open(adj_price_dataset.path, 'wb') as f:
-    pickle.dump(df_adj_price, f)
+  print('df_adj_cols =>', df_adj_price.columns)
+
+  df_adj_price.to_pickle(adj_price_dataset.path)
+  # with open(adj_price_dataset.path, 'wb') as f:
+  #   pickle.dump(df_adj_price, f)
 
   ae_log.debug(df_adj_price.shape)
 
@@ -319,8 +324,10 @@ def get_adj_prices_02(
 
   # df_adj_price.to_csv(adj_price_dataset.path)
   df_adj_price = df_adj_price.reset_index()
-  with open(adj_price_dataset.path, 'wb') as f:
-    pickle.dump(df_adj_price, f)
+
+  df_adj_price.to_pickle(adj_price_dataset.path)
+  # with open(adj_price_dataset.path, 'wb') as f:
+  #   pickle.dump(df_adj_price, f)
 
   ae_log.debug(df_adj_price.shape)
 
@@ -374,8 +381,10 @@ def get_adj_prices_03(
 
   # df_adj_price.to_csv(adj_price_dataset.path)
   df_adj_price = df_adj_price.reset_index()
-  with open(adj_price_dataset.path, 'wb') as f:
-    pickle.dump(df_adj_price, f)
+
+  df_adj_price.to_pickle(adj_price_dataset.path)
+  # with open(adj_price_dataset.path, 'wb') as f:
+  #   pickle.dump(df_adj_price, f)
 
   ae_log.debug(df_adj_price.shape)
 
@@ -429,8 +438,10 @@ def get_adj_prices_04(
 
   # df_adj_price.to_csv(adj_price_dataset.path)
   df_adj_price = df_adj_price.reset_index()
-  with open(adj_price_dataset.path, 'wb') as f:
-    pickle.dump(df_adj_price, f)
+
+  df_adj_price.to_pickle(adj_price_dataset.path)
+  # with open(adj_price_dataset.path, 'wb') as f:
+  #   pickle.dump(df_adj_price, f)
 
   ae_log.debug(df_adj_price.shape)
 
@@ -484,17 +495,19 @@ def get_adj_prices_05(
 
   # df_adj_price.to_csv(adj_price_dataset.path)
   df_adj_price = df_adj_price.reset_index()
-  with open(adj_price_dataset.path, 'wb') as f:
-    pickle.dump(df_adj_price, f)
-  df_adj_price.to_pickle(a)
+
+  df_adj_price.to_pickle(adj_price_dataset.path)
+  # with open(adj_price_dataset.path, 'wb') as f:
+  #   pickle.dump(df_adj_price, f)
+  # df_adj_price.to_pickle(a)
   ae_log.debug(df_adj_price.shape)
   
 ###############################
 # get full adj     ############
 ###############################
 @component(
-  #  base_image="gcr.io/dots-stock/python-img-v5.2"
-  packages_to_install=['pandas']
+   base_image="gcr.io/dots-stock/python-img-v5.2"
+  # packages_to_install=['pandas']
 )
 def get_full_adj_prices(
   adj_price_dataset01: Input[Dataset],
@@ -508,31 +521,37 @@ def get_full_adj_prices(
   import pandas as pd
   import pickle
 
-  df_adj_price_01 = pd.read_csv(adj_price_dataset01.path,                          
-                          ).reset_index(drop=True)
-  df_adj_price_02 = pd.read_csv(adj_price_dataset02.path,                          
-                          ).reset_index(drop=True)
-  df_adj_price_03 = pd.read_csv(adj_price_dataset03.path,
-                          ).reset_index(drop=True)                      
-  df_adj_price_04 = pd.read_csv(adj_price_dataset04.path,
-                          ).reset_index(drop=True)
-  df_adj_price_05 = pd.read_csv(adj_price_dataset05.path,
-                          ).reset_index(drop=True)
+  # df_adj_price_01 = pd.read_csv(adj_price_dataset01.path,                          
+  #                         ).reset_index(drop=True)
+  # df_adj_price_02 = pd.read_csv(adj_price_dataset02.path,                          
+  #                         ).reset_index(drop=True)
+  # df_adj_price_03 = pd.read_csv(adj_price_dataset03.path,
+  #                         ).reset_index(drop=True)                      
+  # df_adj_price_04 = pd.read_csv(adj_price_dataset04.path,
+  #                         ).reset_index(drop=True)
+  # df_adj_price_05 = pd.read_csv(adj_price_dataset05.path,
+  #                         ).reset_index(drop=True)
   
-  with open(adj_price_dataset01.path, 'rb') as f:
-    df_adj_price_01 = pickle.load(f)
+  # with open(adj_price_dataset01.path, 'rb') as f:
+  #   df_adj_price_01 = pickle.load(f)
 
-  with open(adj_price_dataset02.path, 'rb') as f:
-    df_adj_price_02 = pickle.load(f)
+  # with open(adj_price_dataset02.path, 'rb') as f:
+  #   df_adj_price_02 = pickle.load(f)
 
-  with open(adj_price_dataset03.path, 'rb') as f:
-    df_adj_price_03 = pickle.load(f)
+  # with open(adj_price_dataset03.path, 'rb') as f:
+  #   df_adj_price_03 = pickle.load(f)
 
-  with open(adj_price_dataset04.path, 'rb') as f:
-    df_adj_price_04 = pickle.load(f)
+  # with open(adj_price_dataset04.path, 'rb') as f:
+  #   df_adj_price_04 = pickle.load(f)
 
-  with open(adj_price_dataset05.path, 'rb') as f:
-    df_adj_price_05 = pickle.load(f)
+  # with open(adj_price_dataset05.path, 'rb') as f:
+  #   df_adj_price_05 = pickle.load(f)
+
+  df_adj_price_01 = pd.read_pickle(adj_price_dataset01.path)
+  df_adj_price_02 = pd.read_pickle(adj_price_dataset02.path)
+  df_adj_price_03 = pd.read_pickle(adj_price_dataset03.path)
+  df_adj_price_04 = pd.read_pickle(adj_price_dataset04.path)
+  df_adj_price_05 = pd.read_pickle(adj_price_dataset05.path)
 
   
   df_full_adj_prices = pd.concat([df_adj_price_01, 
@@ -542,8 +561,9 @@ def get_full_adj_prices(
                                 df_adj_price_05])
 
   # df_full_adj_prices.to_csv(full_adj_prices_dataset.path)
-  with open(full_adj_prices_dataset.path, 'wb') as f:
-    pickle.dump(df_full_adj_prices, f)
+  df_full_adj_prices.to_pickle(full_adj_prices_dataset.path)
+  # with open(full_adj_prices_dataset.path, 'wb') as f:
+  #   pickle.dump(df_full_adj_prices, f)
 
 ###############################
 # get target       ############
@@ -640,21 +660,23 @@ def get_target(
     return df_target
 
   # df_price = pd.read_csv(df_price_dataset.path, index_col=0)
-  with open(df_price_dataset.path, 'rb') as f:
-    df_price = pickle.load(f)
+  df_price = pd.read_pickle(df_price_dataset.path)
+  # with open(df_price_dataset.path, 'rb') as f:
+  #   df_price = pickle.load(f)
   print('df cols =>', df_price.columns)
 
   df_target = get_target_df(df_price=df_price)
   # df_target.to_csv(df_target_dataset.path)
-  with open(df_target_dataset.path, 'wb') as f:
-    pickle.dump(df_target, f)
+  df_target.to_pickle(df_target_dataset.path)
+  # with open(df_target_dataset.path, 'wb') as f:
+  #   pickle.dump(df_target, f)
 
 ###############################
 # get tech indicator ##########
 ###############################
 @component(
-    base_image="gcr.io/deeplearning-platform-release/sklearn-cpu",
-    packages_to_install=["stockstats"]
+    base_image="gcr.io/dots-stock/py38-pandas-cal",
+    packages_to_install=["stockstats", "scikit-learn"]
 )
 def get_tech_indi(
   df_price_dataset: Input[Dataset],
@@ -811,8 +833,9 @@ def get_tech_indi(
         return df
   
   # df_price = pd.read_csv(df_price_dataset.path)
-  with open(df_price_dataset.path, 'rb') as f:
-    df_price = pickle.load(f)
+  df_price = pd.read_pickle(df_price_dataset.path)
+  # with open(df_price_dataset.path, 'rb') as f:
+  #   df_price = pickle.load(f)
 
   print('size =>', df_price.shape)
   print('cols =>', df_price.columns)
@@ -824,16 +847,17 @@ def get_tech_indi(
   df_process.rename(columns={'tic':'code'}, inplace=True)
 
   # df_process.to_csv(df_techini_dataset.path)
-  with open(df_techini_dataset.path, 'wb') as f:
-    pickle.dump(df_process, f)
+  df_process.to_pickle(df_techini_dataset.path)
+  # with open(df_techini_dataset.path, 'wb') as f:
+  #   pickle.dump(df_process, f)
 
 
 ###############################
 # get full tech indi ##########
 ###############################
 @component(
-  #  base_image="gcr.io/dots-stock/python-img-v5.2"
-  packages_to_install=['pandas']
+   base_image="gcr.io/dots-stock/python-img-v5.2"
+  # packages_to_install=['pandas']
 )
 def get_full_tech_indi(
   tech_indi_dataset01: Input[Dataset],
@@ -845,39 +869,46 @@ def get_full_tech_indi(
 ):
 
   import pandas as pd
-  import pickle
+  # import pickle
 
-  df_01 = pd.read_csv(tech_indi_dataset01.path, index_col=0                          
-                          ).reset_index(drop=True)
-  df_02 = pd.read_csv(tech_indi_dataset02.path, index_col=0               
-                          ).reset_index(drop=True)
-  df_03 = pd.read_csv(tech_indi_dataset03.path, index_col=0
-                          ).reset_index(drop=True)                      
-  df_04 = pd.read_csv(tech_indi_dataset04.path, index_col=0
-                          ).reset_index(drop=True)
-  df_05 = pd.read_csv(tech_indi_dataset05.path, index_col=0
-                          ).reset_index(drop=True)
+  # df_01 = pd.read_csv(tech_indi_dataset01.path, index_col=0                          
+  #                         ).reset_index(drop=True)
+  # df_02 = pd.read_csv(tech_indi_dataset02.path, index_col=0               
+  #                         ).reset_index(drop=True)
+  # df_03 = pd.read_csv(tech_indi_dataset03.path, index_col=0
+  #                         ).reset_index(drop=True)                      
+  # df_04 = pd.read_csv(tech_indi_dataset04.path, index_col=0
+  #                         ).reset_index(drop=True)
+  # df_05 = pd.read_csv(tech_indi_dataset05.path, index_col=0
+  #                         ).reset_index(drop=True)
 
-  with open(tech_indi_dataset01.path, 'rb') as f:
-    df_01 = pickle.load(f)
+  # with open(tech_indi_dataset01.path, 'rb') as f:
+  #   df_01 = pickle.load(f)
 
-  with open(tech_indi_dataset02.path, 'rb') as f:
-    df_02 = pickle.load(f)
+  # with open(tech_indi_dataset02.path, 'rb') as f:
+  #   df_02 = pickle.load(f)
 
-  with open(tech_indi_dataset03.path, 'rb') as f:
-    df_03 = pickle.load(f)
+  # with open(tech_indi_dataset03.path, 'rb') as f:
+  #   df_03 = pickle.load(f)
 
-  with open(tech_indi_dataset04.path, 'rb') as f:
-    df_04 = pickle.load(f)
+  # with open(tech_indi_dataset04.path, 'rb') as f:
+  #   df_04 = pickle.load(f)
 
-  with open(tech_indi_dataset05.path, 'rb') as f:
-    df_05 = pickle.load(f)
+  # with open(tech_indi_dataset05.path, 'rb') as f:
+  #   df_05 = pickle.load(f)
+
+  df_01 = pd.read_pickle(tech_indi_dataset01.path)
+  df_02 = pd.read_pickle(tech_indi_dataset02.path)
+  df_03 = pd.read_pickle(tech_indi_dataset03.path)
+  df_04 = pd.read_pickle(tech_indi_dataset04.path)
+  df_05 = pd.read_pickle(tech_indi_dataset05.path)
   
   df_full = pd.concat([df_01, df_02, df_03,df_04, df_05])
 
   # df_full.to_csv(full_tech_indi_dataset.path)
-  with open(full_tech_indi_dataset.path, 'wb') as f:
-    pickle.dump(df_full, f)
+  df_full.to_pickle(full_tech_indi_dataset.path)
+  # with open(full_tech_indi_dataset.path, 'wb') as f:
+  #   pickle.dump(df_full, f)
 
 #########################################
 # get feature ###########################
@@ -892,7 +923,7 @@ def get_features(
   ):
   
   import pandas as pd
-  import pickle
+  # import pickle
   import numpy as np
   from collections import Counter
 
@@ -902,8 +933,9 @@ def get_features(
   #                         dtype={'날짜':str}
   #                         ).reset_index(drop=True)
 
-  with open(market_info_dataset.path, 'rb') as f:
-    df_market = pickle.load(f)
+  df_market = pd.read_pickle(market_info_dataset.path)
+  # with open(market_info_dataset.path, 'rb') as f:
+  #   df_market = pickle.load(f)
 
   # 등락률 -1 
   df_market = df_market.sort_values('날짜')
@@ -911,8 +943,9 @@ def get_features(
 
   #df_ed 가져오기
   # df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
-  with open(bros_dataset.path, 'rb') as f:
-    df_ed = pickle.load(f)
+  df_ed = pd.read_pickle(bros_dataset.path)
+  # with open(bros_dataset.path, 'rb') as f:
+  #   df_ed = pickle.load(f)
 
   df_ed_r = df_ed.copy() 
   df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
@@ -1054,24 +1087,43 @@ def get_features(
   df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
   df_tmp.drop(columns=['up_bro_rtrn_mean_ystd'], inplace=True)
 
-
   # Merge DataFrames
   cols_rank = ['종목코드', '날짜', 'in_top30', 'rank_mean_10', 'rank_mean_5', 'in_top_30_5', 'in_top_30_10']
-  df_feats =df_rank[cols_rank].merge(df_tmp,
+  cols_tmp = ['source', 'target', 'period', 'date', 'target_return',
+        'target_return_-1', 'up_bro_ratio_20', 'up_bro_ratio_40',
+        'up_bro_ratio_60', 'up_bro_ratio_90', 'up_bro_ratio_120', 'n_bro_20',
+        'n_bro_40', 'n_bro_60', 'n_bro_90', 'n_bro_120', 'all_bro_rtrn_mean_20',
+        'all_bro_rtrn_mean_40', 'all_bro_rtrn_mean_60', 'all_bro_rtrn_mean_90',
+        'all_bro_rtrn_mean_120', 'up_bro_rtrn_mean_20', 'up_bro_rtrn_mean_40',
+        'up_bro_rtrn_mean_60', 'up_bro_rtrn_mean_90', 'up_bro_rtrn_mean_120',
+        'all_bro_rtrn_mean_ystd_20', 'all_bro_rtrn_mean_ystd_40',
+        'all_bro_rtrn_mean_ystd_60', 'all_bro_rtrn_mean_ystd_90',
+        'all_bro_rtrn_mean_ystd_120', 'bro_up_ratio_ystd_20',
+        'bro_up_ratio_ystd_40', 'bro_up_ratio_ystd_60', 'bro_up_ratio_ystd_90',
+        'bro_up_ratio_ystd_120', 'up_bro_rtrn_mean_ystd_20',
+        'up_bro_rtrn_mean_ystd_40', 'up_bro_rtrn_mean_ystd_60',
+        'up_bro_rtrn_mean_ystd_90', 'up_bro_rtrn_mean_ystd_120']
+
+  df_feat_bro = df_tmp.drop_duplicates(subset=['source', 'date'])
+
+  #%%
+  df_feats =df_rank[cols_rank].merge(df_feat_bro[cols_tmp],
                       left_on=['종목코드', '날짜'],
                       right_on=['source', 'date'],
-                      how='outer')
+                      how='left')
 
-  df_feats.fillna(0, inplace=True)
+  # df_feats.fillna(0, inplace=True)
   df_feats.drop(columns=['종목코드', '날짜'], inplace=True)
   df_feats.rename(columns={'source':'code', '종목명':'name', '순위_상승률':'rank'}, inplace=True)
-
+  
   # df_feats.to_csv(features_dataset.path)
-  with open(features_dataset.path, 'wb') as f:
-    pickle.dump(df_feats, f)
+  df_feats.to_pickle(features_dataset.path)
+  # with open(features_dataset.path, 'wb') as f:
+  #   pickle.dump(df_feats, f)
 
 @component(
-  packages_to_install=['pandas']
+  base_image="gcr.io/dots-stock/python-img-v5.2",
+  # packages_to_install=['pandas']
 )
 def get_ml_dataset(
   features_dataset : Input[Dataset],
@@ -1081,22 +1133,24 @@ def get_ml_dataset(
 ):
 
   import pandas as pd
-  import pickle
+  # import pickle
 
   # df_feats = pd.read_csv(features_dataset.path,
   #                       index_col=0,
   #                       dtype={'date':str},
   #                             ).reset_index(drop=True)
-  with open(features_dataset.path, 'rb') as f:
-    df_feats = pickle.load(f)
+  df_feats = pd.read_pickle(features_dataset.path)
+  # with open(features_dataset.path, 'rb') as f:
+  #   df_feats = pickle.load(f)
   
 
   # df_target = pd.read_csv(target_dataset.path,
   #                         index_col=0,
   #                         dtype={'code':str},
   #                             ).reset_index(drop=True)
-  with open(target_dataset.path, 'rb') as f:
-    df_target = pickle.load(f)
+  df_target = pd.read_pickle(target_dataset.path)
+  # with open(target_dataset.path, 'rb') as f:
+  #   df_target = pickle.load(f)
 
   df_target['date'] = pd.to_datetime(df_target.date).dt.strftime('%Y%m%d')
 
@@ -1104,8 +1158,9 @@ def get_ml_dataset(
   #                         index_col=0,
   #                             ).reset_index(drop=True)
 
-  with open(tech_indi_dataset.path, 'rb') as f:
-    df_tech = pickle.load(f)
+  df_tech = pd.read_pickle(tech_indi_dataset.path)
+  # with open(tech_indi_dataset.path, 'rb') as f:
+  #   df_tech = pickle.load(f)
 
   df_tech['date'] = pd.to_datetime(df_tech.date).dt.strftime('%Y%m%d')
 
@@ -1122,8 +1177,9 @@ def get_ml_dataset(
   # df_ml_dataset.dropna(inplace=True)
 
   # df_ml_dataset.to_csv(ml_dataset.path)
-  with open(ml_dataset.path, 'wb') as f:
-    pickle.dump(df_ml_dataset, f)
+  df_ml_dataset.to_pickle(ml_dataset.path)
+  # with open(ml_dataset.path, 'wb') as f:
+  #   pickle.dump(df_ml_dataset, f)
 
 
 #########################################
