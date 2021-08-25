@@ -954,11 +954,11 @@ def get_features(
   df_feats =df_rank[cols_rank].merge(df_tmp,
                       left_on=['종목코드', '날짜'],
                       right_on=['source', 'date'],
-                      how='outer')
+                      how='left')
 
   df_feats.fillna(0, inplace=True)
-  df_feats.drop(columns=['종목코드', '날짜'], inplace=True)
-  df_feats.rename(columns={'source':'code', '종목명':'name', '순위_상승률':'rank'}, inplace=True)
+  df_feats.drop(columns=['source', 'date'], inplace=True)
+  df_feats.rename(columns={'종목코드':'code', '날짜':'date','종목명':'name', '순위_상승률':'rank'}, inplace=True)
   
   df_feats.to_csv(features_dataset.path)
 
