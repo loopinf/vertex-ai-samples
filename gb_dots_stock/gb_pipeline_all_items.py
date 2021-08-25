@@ -598,7 +598,8 @@ def get_tech_indi(
   'close_30_sma',
   'close_60_sma']
   from stockstats import StockDataFrame as Sdf
-  from sklearn.preprocessing import MaxAbsScaler
+  # from sklearn.preprocessing import MaxAbsScaler
+  from sklearn.preprocessing import maxabs_scale
   import pandas as pd
   class FeatureEngineer:
     """Provides methods for preprocessing the stock price data
@@ -706,14 +707,36 @@ def get_tech_indi(
         :return: (df) pandas dataframe
         """
         df = data.copy()
-        df["daily_return"] = df.close.pct_change(1)
-        df['bb_u_ratio'] = df.boll_ub / df.close
-        df['bb_l_ratio'] = df.boll_lb / df.close
-        df['max_scale_MACD'] = MaxAbsScaler().fit_transform(df[['macd']])
-        # df['return_lag_1']=df.close.pct_change(2)
-        # df['return_lag_2']=df.close.pct_change(3)
-        # df['return_lag_3']=df.close.pct_change(4)
-        # df['return_lag_4']=df.close.pct_change(5)
+        df = df.sort_values(by=['tic','date'])
+        df["daily_return"] = df.groupby('tic').close.pct_change(1)
+        df['return_lag_1']=df.groupby('tic').close.pct_change(2)
+        df['return_lag_2']=df.groupby('tic').close.pct_change(3)
+        df['return_lag_3']=df.groupby('tic').close.pct_change(4)
+        
+        # bollinger band - relative
+        df['bb_u_ratio'] = df.boll_ub / df.close # without groupby
+        df['bb_l_ratio'] = df.boll_lb / df.close # don't need groupby
+
+        # macd - relative
+        df['max_scale_MACD'] = df.groupby('tic').macd.transform(
+            lambda x: maxabs_scale(x))
+
+        # custom volume indicator
+        def volume_change_wrt_10_max(df):
+          return df.volume / df.volume.rolling(10).max()
+        def volume_change_wrt_10_mean(df):
+          return df.volume / df.volume.rolling(10).mean()
+
+        df['volume_change_wrt_10max'] = (
+            df.groupby('tic')
+            .apply(lambda df: volume_change_wrt_10_max(df))
+            .reset_index(drop=True)
+            )
+        df['volume_change_wrt_10mean'] = (
+            df.groupby('tic')
+            .apply(lambda df: volume_change_wrt_10_mean(df))
+            .reset_index(drop=True)
+            )
         return df
   
   df_price = pd.read_csv(df_price_dataset.path)
