@@ -37,7 +37,7 @@ def set_defaults()-> NamedTuple(
   from trading_calendars import get_calendar
 
   today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')
-  # today = '20210809'
+  today = '20210824'
   period_to_train = 20
   n_days = period_to_train + 20
 
@@ -574,7 +574,7 @@ def get_target(
     # df_target['date'] = df_target.date.str.replace('-', '')
     return df_target
 
-  df_price = pd.read_csv(df_price_dataset.path)
+  df_price = pd.read_csv(df_price_dataset.path, index_col=0)
   df_target = get_target_df(df_price=df_price)
 
   df_target.to_csv(df_target_dataset.path)
@@ -598,7 +598,8 @@ def get_tech_indi(
   'close_30_sma',
   'close_60_sma']
   from stockstats import StockDataFrame as Sdf
-  from sklearn.preprocessing import MaxAbsScaler
+  # from sklearn.preprocessing import MaxAbsScaler
+  from sklearn.preprocessing import maxabs_scale
   import pandas as pd
   class FeatureEngineer:
     """Provides methods for preprocessing the stock price data
@@ -706,14 +707,36 @@ def get_tech_indi(
         :return: (df) pandas dataframe
         """
         df = data.copy()
-        df["daily_return"] = df.close.pct_change(1)
-        df['bb_u_ratio'] = df.boll_ub / df.close
-        df['bb_l_ratio'] = df.boll_lb / df.close
-        df['max_scale_MACD'] = MaxAbsScaler().fit_transform(df[['macd']])
-        # df['return_lag_1']=df.close.pct_change(2)
-        # df['return_lag_2']=df.close.pct_change(3)
-        # df['return_lag_3']=df.close.pct_change(4)
-        # df['return_lag_4']=df.close.pct_change(5)
+        df = df.sort_values(by=['tic','date'])
+        df["daily_return"] = df.groupby('tic').close.pct_change(1)
+        df['return_lag_1']=df.groupby('tic').close.pct_change(2)
+        df['return_lag_2']=df.groupby('tic').close.pct_change(3)
+        df['return_lag_3']=df.groupby('tic').close.pct_change(4)
+        
+        # bollinger band - relative
+        df['bb_u_ratio'] = df.boll_ub / df.close # without groupby
+        df['bb_l_ratio'] = df.boll_lb / df.close # don't need groupby
+
+        # macd - relative
+        df['max_scale_MACD'] = df.groupby('tic').macd.transform(
+            lambda x: maxabs_scale(x))
+
+        # custom volume indicator
+        def volume_change_wrt_10_max(df):
+          return df.volume / df.volume.rolling(10).max()
+        def volume_change_wrt_10_mean(df):
+          return df.volume / df.volume.rolling(10).mean()
+
+        df['volume_change_wrt_10max'] = (
+            df.groupby('tic')
+            .apply(lambda df: volume_change_wrt_10_max(df))
+            .reset_index(drop=True)
+            )
+        df['volume_change_wrt_10mean'] = (
+            df.groupby('tic')
+            .apply(lambda df: volume_change_wrt_10_mean(df))
+            .reset_index(drop=True)
+            )
         return df
   
   df_price = pd.read_csv(df_price_dataset.path)
@@ -743,15 +766,15 @@ def get_full_tech_indi(
 
   import pandas as pd
 
-  df_01 = pd.read_csv(tech_indi_dataset01.path,                          
+  df_01 = pd.read_csv(tech_indi_dataset01.path, index_col=0                          
                           ).reset_index(drop=True)
-  df_02 = pd.read_csv(tech_indi_dataset02.path,                          
+  df_02 = pd.read_csv(tech_indi_dataset02.path, index_col=0               
                           ).reset_index(drop=True)
-  df_03 = pd.read_csv(tech_indi_dataset03.path,
+  df_03 = pd.read_csv(tech_indi_dataset03.path, index_col=0
                           ).reset_index(drop=True)                      
-  df_04 = pd.read_csv(tech_indi_dataset04.path,
+  df_04 = pd.read_csv(tech_indi_dataset04.path, index_col=0
                           ).reset_index(drop=True)
-  df_05 = pd.read_csv(tech_indi_dataset05.path,
+  df_05 = pd.read_csv(tech_indi_dataset05.path, index_col=0
                           ).reset_index(drop=True)
   
   df_full = pd.concat([df_01, df_02, df_03,df_04, df_05])
@@ -793,14 +816,14 @@ def get_features(
   df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
-  cols = ['종목코드', '날짜', '순위_상승률']
+  cols = ['종목코드', '종목명', '날짜', '순위_상승률']
   df_mkt_ = df_market[cols]
 
   cols_market = [ '종목코드','날짜','등락률','return_-1']
   cols_bro = ['source','target','period','date']
 
   # merge
-  df_ed2_1 = ( df_ed2[cols_bro]
+  df_ed2_1 = (df_ed2[cols_bro]
                   .merge(df_market[cols_market], 
                       left_on=['target','date'],
                       right_on=['종목코드','날짜'])
@@ -818,29 +841,31 @@ def get_features(
   df_tmp.dropna(subset=['target'], inplace=True)
 
   def get_upbro_ratio(df):
-      '''df : '''
-      return (
-              sum(df.target_return > 0) /
-              df.shape[0], # 그날 상승한 친구들의 비율
-              df.shape[0], # 그날 친구들 수
-              df.target_return.mean(), # 그날 모든 친구들 상승률의 평균
-              df[df.target_return > 0].target_return.mean(), # 그날 오른 친구들의 평균
-              df['target_return_-1'].mean(),# 전날 친구들 평균상승률
-              sum(df['target_return_-1'] > 0) / df.shape[0],# 전날 상승한 친구들 비율
-              df[df['target_return_-1'] > 0]['target_return_-1'].mean(),# 전날 상승한 친구들 평균
-              )
+    '''df : '''
+    return (
+            sum(df.target_return > 0) /
+            df.shape[0], # 그날 상승한 친구들의 비율
+            df.shape[0], # 그날 친구들 수
+            df.target_return.mean(), # 그날 모든 친구들 상승률의 평균
+            df[df.target_return > 0].target_return.mean(), # 그날 오른 친구들의 평균
+            df['target_return_-1'].mean(),# 전날 친구들 평균상승률
+            sum(df['target_return_-1'] > 0) / df.shape[0],# 전날 상승한 친구들 비율
+            df[df['target_return_-1'] > 0]['target_return_-1'].mean(),# 전날 상승한 친구들 평균
+
+            )
 
   bro_up_ratio = (df_tmp.groupby(['date','source','period'])
       .apply(lambda df: get_upbro_ratio(df))
       .reset_index()
       .rename(columns={0:'bro_up_ratio'})
       )
-  
+  #%%
+  #5
   bro_up_ratio[['bro_up_ratio','n_bros', 'all_bro_rtrn_mean', 'up_bro_rtrn_mean',
                   'all_bro_rtrn_mean_ystd', 'bro_up_ratio_ystd', 'up_bro_rtrn_mean_ystd']] = \
       pd.DataFrame(bro_up_ratio.bro_up_ratio.tolist(), index=bro_up_ratio.index) 
-  
-  # Features related with Rank
+
+
 
   df_rank = df_mkt_.copy()
 
@@ -860,6 +885,7 @@ def get_features(
   df_rank['in_top_30_10'] = df_rank.groupby('종목코드')['in_top30'].transform(
                               lambda x : x.rolling(10, min_periods=1).sum()
                           )
+
 
   df_tmp = df_tmp.merge(bro_up_ratio, on=['date','source','period'], how='left')
   df_tmp['up_bro_ratio_20'] = df_tmp[df_tmp.period == 20].bro_up_ratio
@@ -925,20 +951,61 @@ def get_features(
   df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
   df_tmp.drop(columns=['up_bro_rtrn_mean_ystd'], inplace=True)
 
+
   # Merge DataFrames
   cols_rank = ['종목코드', '날짜', 'in_top30', 'rank_mean_10', 'rank_mean_5', 'in_top_30_5', 'in_top_30_10']
-  df_merged = df_tmp.merge(df_rank[cols_rank],
-                      left_on=['source', 'date'],
-                      right_on=['종목코드', '날짜'])
+  df_feats =df_rank[cols_rank].merge(df_tmp,
+                      left_on=['종목코드', '날짜'],
+                      right_on=['source', 'date'],
+                      how='outer')
 
-  df_merged.fillna(0, inplace=True)
-  df_merged.drop(columns=['종목코드', '날짜'], inplace=True)
+  df_feats.fillna(0, inplace=True)
+  df_feats.drop(columns=['종목코드', '날짜'], inplace=True)
+  df_feats.rename(columns={'source':'code', '종목명':'name', '순위_상승률':'rank'}, inplace=True)
 
-  df_merged = df_merged.drop_duplicates(subset=['source', 'date'])
-  df_feats = df_merged[df_merged.date.isin(dates_on_train)]
-  
   df_feats.to_csv(features_dataset.path)
 
+@component(
+  packages_to_install=['pandas']
+)
+def get_ml_dataset(
+  features_dataset : Input[Dataset],
+  target_dataset : Input[Dataset],
+  tech_indi_dataset : Input[Dataset],
+  ml_dataset : Output[Dataset]
+):
+
+  import pandas as pd
+
+  df_feats = pd.read_csv(features_dataset.path,
+                        index_col=0,
+                        dtype={'date':str},
+                              ).reset_index(drop=True)
+
+  df_target = pd.read_csv(target_dataset.path,
+                          index_col=0,
+                          dtype={'code':str},
+                              ).reset_index(drop=True)
+  df_target['date'] = pd.to_datetime(df_target.date).dt.strftime('%Y%m%d')
+
+  df_tech = pd.read_csv(tech_indi_dataset.path,
+                          index_col=0,
+                              ).reset_index(drop=True)
+  df_tech['date'] = pd.to_datetime(df_tech.date).dt.strftime('%Y%m%d')
+
+  df_ml_dataset = (df_feats.merge(df_target,
+                            left_on=['code', 'date'],
+                            right_on=['code', 'date'],
+                            how='left'))
+
+  df_ml_dataset = (df_ml_dataset.merge(df_tech,
+                              left_on=['code', 'date'],
+                              right_on=['code', 'date'],
+                              how='left'))
+
+  # df_ml_dataset.dropna(inplace=True)
+
+  df_ml_dataset.to_csv(ml_dataset.path)
 
 #########################################
 # create pipeline #######################
@@ -1012,6 +1079,13 @@ def create_awesome_pipeline():
     tech_indi_dataset05 = op_get_techindi_05.outputs['df_techini_dataset']
 
   )
+
+  get_ml_dataset(
+    features_dataset= op_get_features.outputs['features_dataset'],
+    target_dataset= op_get_target.outputs['df_target_dataset'],
+    tech_indi_dataset= op_get_full_tech_indi.outputs['full_tech_indi_dataset']
+  )
+
   
   
 # 
