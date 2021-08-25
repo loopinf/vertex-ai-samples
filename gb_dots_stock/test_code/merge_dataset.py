@@ -194,3 +194,7 @@ df_feats.fillna(0, inplace=True)
 # %%
 
 # %%
+path = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210825225701/get-features_7116259157291827200/features_dataset'
+
+df_ = pd.read_pickle(path)
+# %%
