@@ -816,7 +816,7 @@ def get_features(
   df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
-  cols = ['종목코드', '날짜', '순위_상승률']
+  cols = ['종목코드', '종목명', '날짜', '순위_상승률']
   df_mkt_ = df_market[cols]
 
   cols_market = [ '종목코드','날짜','등락률','return_-1']
