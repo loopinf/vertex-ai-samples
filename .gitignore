@@ -155,4 +155,5 @@ temp/
 
 # pipeline-job
 *.json
-.gb_dots_stock/test_code/*.py
+gb_dots_stock/test_code/
+

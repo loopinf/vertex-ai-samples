@@ -130,9 +130,6 @@ def get_market_info(
   
   df_market = get_markets_aws(date_ref=date_ref, n_days=n_days)
 
-  # with open(market_info_dataset.path, 'wb') as f:
-  #   pickle.dump(df_market, f)
-  # df_market.to_csv(market_info_dataset.path)
   df_market.to_pickle(market_info_dataset.path)
 
 #######################
@@ -209,19 +206,18 @@ def get_bros(
     df = find_gang(date_ref=date)  
     df_bros = df_bros.append(df)
 
-  # df_bros.to_csv(bros_univ_dataset.path)
   df_bros.to_pickle(bros_univ_dataset.path)
-  # with open(bros_univ_dataset.path, 'wb') as f:
-  #   pickle.dump(df_bros, f)
 
 
 ###############################
-# get adj price 01 ############
+# get adj price############
 ###############################
 @component(
     base_image="gcr.io/dots-stock/python-img-v5.2",
 )
-def get_adj_prices_01(
+def get_adj_prices(
+  start_index :int,
+  end_index : int,
   market_info_dataset: Input[Dataset],
   adj_price_dataset: Output[Dataset]
   ):
@@ -230,15 +226,8 @@ def get_adj_prices_01(
   import FinanceDataReader as fdr
   from ae_module.ae_logger import ae_log
   import pandas as pd
-  import pickle
 
-  # df_market = pd.read_csv(market_info_dataset.path,
-  #                         index_col=0,
-  #                         dtype={'날짜':str, '종목코드':str}
-  #                         ).reset_index(drop=True)
   df_market = pd.read_pickle(market_info_dataset.path)
-  # with open(market_info_dataset.path, 'rb') as f:
-  #   df_market = pickle.load(f)
 
   date_ref = df_market.날짜.max()
   date_start = '20210101'
@@ -254,252 +243,21 @@ def get_adj_prices_01(
       df_ = get_price_adj(code, date_start, date_end)
       print('size', df_.shape)
       df_['code'] = str(code)
-      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
       df_price = df_price.append(df_)
     return df_price
 
-  codes = codes_stock[0:600]
+  codes = codes_stock[ start_index : end_index ]
   ae_log.debug(f'codes_stock {codes.__len__()}')
 
   df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
   
-  # df_adj_price.to_csv(adj_price_dataset.path)
   df_adj_price = df_adj_price.reset_index()
   print('df_adj_cols =>', df_adj_price.columns)
 
   df_adj_price.to_pickle(adj_price_dataset.path)
-  # with open(adj_price_dataset.path, 'wb') as f:
-  #   pickle.dump(df_adj_price, f)
 
   ae_log.debug(df_adj_price.shape)
 
-###############################
-# get adj price 02 ############
-###############################
-@component(
-    base_image="gcr.io/dots-stock/python-img-v5.2",
-)
-def get_adj_prices_02(
-  market_info_dataset: Input[Dataset],
-  adj_price_dataset: Output[Dataset]
-  ):
-
-  # import json
-  import FinanceDataReader as fdr
-  from ae_module.ae_logger import ae_log
-  import pandas as pd
-  import pickle
-
-  # df_market = pd.read_csv(market_info_dataset.path,
-  #                         index_col=0,
-  #                         dtype={'날짜':str, '종목코드':str}
-  #                         ).reset_index(drop=True)
-
-  with open(market_info_dataset.path, 'rb') as f:
-    df_market = pickle.load(f)
-
-  date_ref = df_market.날짜.max()
-  date_start = '20210101'
-
-  codes_stock = df_market[df_market.날짜 == date_ref].종목코드.to_list()
-
-  def get_price_adj(code, start, end):
-    return fdr.DataReader(code, start=start, end=end)
-
-  def get_price(l_univ, date_start, date_end):
-    df_price = pd.DataFrame()
-    for code in l_univ :
-      df_ = get_price_adj(code, date_start, date_end)
-      print('size', df_.shape)
-      df_['code'] = code
-      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
-      df_price = df_price.append(df_)
-    return df_price
-
-  codes = codes_stock[600:1200]
-  ae_log.debug(f'codes_stock {codes.__len__()}')
-
-  df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
-
-  # df_adj_price.to_csv(adj_price_dataset.path)
-  df_adj_price = df_adj_price.reset_index()
-
-  df_adj_price.to_pickle(adj_price_dataset.path)
-  # with open(adj_price_dataset.path, 'wb') as f:
-  #   pickle.dump(df_adj_price, f)
-
-  ae_log.debug(df_adj_price.shape)
-
-###############################
-# get adj price 03 ############
-###############################
-@component(
-    base_image="gcr.io/dots-stock/python-img-v5.2",
-)
-def get_adj_prices_03(
-  market_info_dataset: Input[Dataset],
-  adj_price_dataset: Output[Dataset]
-  ):
-
-  # import json
-  import FinanceDataReader as fdr
-  from ae_module.ae_logger import ae_log
-  import pandas as pd
-  import pickle
-
-  # df_market = pd.read_csv(market_info_dataset.path,
-  #                         index_col=0,
-  #                         dtype={'날짜':str, '종목코드':str}
-  #                         ).reset_index(drop=True)
-
-  with open(market_info_dataset.path, 'rb') as f:
-    df_market = pickle.load(f)
-
-  date_ref = df_market.날짜.max()
-  date_start = '20210101'
-
-  codes_stock = df_market[df_market.날짜 == date_ref].종목코드.to_list()
-
-  def get_price_adj(code, start, end):
-    return fdr.DataReader(code, start=start, end=end)
-
-  def get_price(l_univ, date_start, date_end):
-    df_price = pd.DataFrame()
-    for code in l_univ :
-      df_ = get_price_adj(code, date_start, date_end)
-      print('size', df_.shape)
-      df_['code'] = code
-      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
-      df_price = df_price.append(df_)
-    return df_price
-
-  codes = codes_stock[1200:1800]
-  ae_log.debug(f'codes_stock {codes.__len__()}')
-
-  df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
-
-  # df_adj_price.to_csv(adj_price_dataset.path)
-  df_adj_price = df_adj_price.reset_index()
-
-  df_adj_price.to_pickle(adj_price_dataset.path)
-  # with open(adj_price_dataset.path, 'wb') as f:
-  #   pickle.dump(df_adj_price, f)
-
-  ae_log.debug(df_adj_price.shape)
-
-###############################
-# get adj price 04 ############
-###############################
-@component(
-    base_image="gcr.io/dots-stock/python-img-v5.2",
-)
-def get_adj_prices_04(
-  market_info_dataset: Input[Dataset],
-  adj_price_dataset: Output[Dataset]
-  ):
-
-  # import json
-  import FinanceDataReader as fdr
-  from ae_module.ae_logger import ae_log
-  import pandas as pd
-  import pickle
-
-  # df_market = pd.read_csv(market_info_dataset.path,
-  #                         index_col=0,
-  #                         dtype={'날짜':str, '종목코드':str}
-  #                         ).reset_index(drop=True)
-
-  with open(market_info_dataset.path, 'rb') as f:
-    df_market = pickle.load(f)
-
-  date_ref = df_market.날짜.max()
-  date_start = '20210101'
-
-  codes_stock = df_market[df_market.날짜 == date_ref].종목코드.to_list()
-
-  def get_price_adj(code, start, end):
-    return fdr.DataReader(code, start=start, end=end)
-
-  def get_price(l_univ, date_start, date_end):
-    df_price = pd.DataFrame()
-    for code in l_univ :
-      df_ = get_price_adj(code, date_start, date_end)
-      print('size', df_.shape)
-      df_['code'] = code
-      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
-      df_price = df_price.append(df_)
-    return df_price
-
-  codes = codes_stock[1800:2400]
-  ae_log.debug(f'codes_stock {codes.__len__()}')
-
-  df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
-
-  # df_adj_price.to_csv(adj_price_dataset.path)
-  df_adj_price = df_adj_price.reset_index()
-
-  df_adj_price.to_pickle(adj_price_dataset.path)
-  # with open(adj_price_dataset.path, 'wb') as f:
-  #   pickle.dump(df_adj_price, f)
-
-  ae_log.debug(df_adj_price.shape)
-
-###############################
-# get adj price 05 ############
-###############################
-@component(
-    base_image="gcr.io/dots-stock/python-img-v5.2",
-)
-def get_adj_prices_05(
-  market_info_dataset: Input[Dataset],
-  adj_price_dataset: Output[Dataset]
-  ):
-
-  # import json
-  import FinanceDataReader as fdr
-  from ae_module.ae_logger import ae_log
-  import pandas as pd
-  import pickle
-
-  # df_market = pd.read_csv(market_info_dataset.path,
-  #                         index_col=0,
-  #                         dtype={'날짜':str, '종목코드':str}
-  #                         ).reset_index(drop=True)
-
-  with open(market_info_dataset.path, 'rb') as f:
-    df_market = pickle.load(f)
-
-  date_ref = df_market.날짜.max()
-  date_start = '20210101'
-
-  codes_stock = df_market[df_market.날짜 == date_ref].종목코드.to_list()
-
-  def get_price_adj(code, start, end):
-    return fdr.DataReader(code, start=start, end=end)
-
-  def get_price(l_univ, date_start, date_end):
-    df_price = pd.DataFrame()
-    for code in l_univ :
-      df_ = get_price_adj(code, date_start, date_end)
-      print('size', df_.shape)
-      df_['code'] = code
-      # df_['price'] = df_['Close'] / df_.Close.iloc[0]
-      df_price = df_price.append(df_)
-    return df_price
-
-  codes = codes_stock[2400:]
-  ae_log.debug(f'codes_stock {codes.__len__()}')
-
-  df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
-
-  # df_adj_price.to_csv(adj_price_dataset.path)
-  df_adj_price = df_adj_price.reset_index()
-
-  df_adj_price.to_pickle(adj_price_dataset.path)
-  # with open(adj_price_dataset.path, 'wb') as f:
-  #   pickle.dump(df_adj_price, f)
-  # df_adj_price.to_pickle(a)
-  ae_log.debug(df_adj_price.shape)
   
 ###############################
 # get full adj     ############
@@ -568,15 +326,14 @@ def get_full_adj_prices(
 # get target       ############
 ###############################
 @component(
-    # base_image="gcr.io/deeplearning-platform-release/sklearn-cpu"
-    base_image="amancevice/pandas:1.3.2-slim"
+    base_image="gcr.io/dots-stock/python-img-v5.2",
+    # base_image="amancevice/pandas:1.3.2-slim"
 )
 def get_target(
   df_price_dataset: Input[Dataset],
   df_target_dataset: Output[Dataset]
 ):
   import pandas as pd
-  import pickle
   import numpy as np
 
   def make_target(df):
@@ -674,7 +431,8 @@ def get_target(
 # get tech indicator ##########
 ###############################
 @component(
-    base_image="gcr.io/dots-stock/py38-pandas-cal",
+    # base_image="gcr.io/dots-stock/py38-pandas-cal",
+    base_image="gcr.io/dots-stock/python-img-v5.2",
     packages_to_install=["stockstats", "scikit-learn"]
 )
 def get_tech_indi(
@@ -867,34 +625,7 @@ def get_full_tech_indi(
   full_tech_indi_dataset: Output[Dataset]
 ):
 
-  import pandas as pd
-  # import pickle
-
-  # df_01 = pd.read_csv(tech_indi_dataset01.path, index_col=0                          
-  #                         ).reset_index(drop=True)
-  # df_02 = pd.read_csv(tech_indi_dataset02.path, index_col=0               
-  #                         ).reset_index(drop=True)
-  # df_03 = pd.read_csv(tech_indi_dataset03.path, index_col=0
-  #                         ).reset_index(drop=True)                      
-  # df_04 = pd.read_csv(tech_indi_dataset04.path, index_col=0
-  #                         ).reset_index(drop=True)
-  # df_05 = pd.read_csv(tech_indi_dataset05.path, index_col=0
-  #                         ).reset_index(drop=True)
-
-  # with open(tech_indi_dataset01.path, 'rb') as f:
-  #   df_01 = pickle.load(f)
-
-  # with open(tech_indi_dataset02.path, 'rb') as f:
-  #   df_02 = pickle.load(f)
-
-  # with open(tech_indi_dataset03.path, 'rb') as f:
-  #   df_03 = pickle.load(f)
-
-  # with open(tech_indi_dataset04.path, 'rb') as f:
-  #   df_04 = pickle.load(f)
-
-  # with open(tech_indi_dataset05.path, 'rb') as f:
-  #   df_05 = pickle.load(f)
+  import pandas as pd  
 
   df_01 = pd.read_pickle(tech_indi_dataset01.path)
   df_02 = pd.read_pickle(tech_indi_dataset02.path)
@@ -904,10 +635,7 @@ def get_full_tech_indi(
   
   df_full = pd.concat([df_01, df_02, df_03,df_04, df_05])
 
-  # df_full.to_csv(full_tech_indi_dataset.path)
   df_full.to_pickle(full_tech_indi_dataset.path)
-  # with open(full_tech_indi_dataset.path, 'wb') as f:
-  #   pickle.dump(df_full, f)
 
 #########################################
 # get feature ###########################
@@ -922,29 +650,17 @@ def get_features(
   ):
   
   import pandas as pd
-  # import pickle
   import numpy as np
   from collections import Counter
 
-  #df_market_info 가져오기
-  # df_market = pd.read_csv(market_info_dataset.path,
-  #                         index_col=0,
-  #                         dtype={'날짜':str}
-  #                         ).reset_index(drop=True)
-
   df_market = pd.read_pickle(market_info_dataset.path)
-  # with open(market_info_dataset.path, 'rb') as f:
-  #   df_market = pickle.load(f)
 
   # 등락률 -1 
   df_market = df_market.sort_values('날짜')
   df_market['return_-1'] = df_market.groupby('종목코드').등락률.shift(1)
 
   #df_ed 가져오기
-  # df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
   df_ed = pd.read_pickle(bros_dataset.path)
-  # with open(bros_dataset.path, 'rb') as f:
-  #   df_ed = pickle.load(f)
 
   df_ed_r = df_ed.copy() 
   df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
@@ -1101,11 +817,8 @@ def get_features(
         'up_bro_rtrn_mean_ystd_40', 'up_bro_rtrn_mean_ystd_60',
         'up_bro_rtrn_mean_ystd_90', 'up_bro_rtrn_mean_ystd_120']
 
-  #%%
-
   df_feat_bro = df_tmp.drop_duplicates(subset=['source', 'date'])
 
-  #%%
   df_feats =df_rank.merge(df_feat_bro[cols_tmp],
                       left_on=['종목코드', '날짜'],
                       right_on=['source', 'date'],
@@ -1130,35 +843,13 @@ def get_ml_dataset(
 ):
 
   import pandas as pd
-  # import pickle
 
-  # df_feats = pd.read_csv(features_dataset.path,
-  #                       index_col=0,
-  #                       dtype={'date':str},
-  #                             ).reset_index(drop=True)
-  df_feats = pd.read_pickle(features_dataset.path)
-  # with open(features_dataset.path, 'rb') as f:
-  #   df_feats = pickle.load(f)
-  
+  df_feats = pd.read_pickle(features_dataset.path)  
 
-  # df_target = pd.read_csv(target_dataset.path,
-  #                         index_col=0,
-  #                         dtype={'code':str},
-  #                             ).reset_index(drop=True)
   df_target = pd.read_pickle(target_dataset.path)
-  # with open(target_dataset.path, 'rb') as f:
-  #   df_target = pickle.load(f)
-
   df_target['date'] = pd.to_datetime(df_target.date).dt.strftime('%Y%m%d')
 
-  # df_tech = pd.read_csv(tech_indi_dataset.path,
-  #                         index_col=0,
-  #                             ).reset_index(drop=True)
-
   df_tech = pd.read_pickle(tech_indi_dataset.path)
-  # with open(tech_indi_dataset.path, 'rb') as f:
-  #   df_tech = pickle.load(f)
-
   df_tech['date'] = pd.to_datetime(df_tech.date).dt.strftime('%Y%m%d')
 
   df_ml_dataset = (df_feats.merge(df_target,
@@ -1173,11 +864,7 @@ def get_ml_dataset(
 
   df_ml_dataset.dropna(inplace=True)
 
-  # df_ml_dataset.to_csv(ml_dataset.path)
   df_ml_dataset.to_pickle(ml_dataset.path)
-  # with open(ml_dataset.path, 'wb') as f:
-  #   pickle.dump(df_ml_dataset, f)
-
 
 #########################################
 # create pipeline #######################
@@ -1192,46 +879,47 @@ def create_awesome_pipeline():
 
   op_get_bros = get_bros(
     date_ref=op_set_defaults.outputs['date_ref'],
-    n_days=op_set_defaults.outputs['n_days']
-  )
+    n_days=op_set_defaults.outputs['n_days'])
 
   op_get_market_info = get_market_info(
     date_ref=op_set_defaults.outputs['date_ref'],
-    n_days=op_set_defaults.outputs['n_days']
-  )
+    n_days=op_set_defaults.outputs['n_days'])
 
-  op_get_adj_prices_01 = get_adj_prices_01(
-    market_info_dataset = op_get_market_info.outputs['market_info_dataset']
-  )
-  op_get_adj_prices_02 = get_adj_prices_02(
-    market_info_dataset = op_get_market_info.outputs['market_info_dataset']
-  )
-  op_get_adj_prices_03 = get_adj_prices_03(
-    market_info_dataset = op_get_market_info.outputs['market_info_dataset']
-  )
-  op_get_adj_prices_04 = get_adj_prices_04(
-    market_info_dataset = op_get_market_info.outputs['market_info_dataset']
-  )
-  op_get_adj_prices_05 = get_adj_prices_05(
-    market_info_dataset = op_get_market_info.outputs['market_info_dataset']
-  )
+  op_get_adj_prices_01 = get_adj_prices(
+    start_index=0,
+    end_index=600,
+    market_info_dataset = op_get_market_info.outputs['market_info_dataset'])
+  op_get_adj_prices_02 = get_adj_prices(
+    start_index=600,
+    end_index=1200,
+    market_info_dataset = op_get_market_info.outputs['market_info_dataset'])
+  op_get_adj_prices_03 = get_adj_prices(
+    start_index=1200,
+    end_index=1800,
+    market_info_dataset = op_get_market_info.outputs['market_info_dataset'])
+  op_get_adj_prices_04 = get_adj_prices(
+    start_index=1800,
+    end_index=2400,
+    market_info_dataset = op_get_market_info.outputs['market_info_dataset'])
+  op_get_adj_prices_05 = get_adj_prices(
+    start_index=2400,
+    end_index=4000,
+    market_info_dataset = op_get_market_info.outputs['market_info_dataset'])
 
   op_get_full_adj_prices = get_full_adj_prices(
       adj_price_dataset01= op_get_adj_prices_01.outputs['adj_price_dataset'],
       adj_price_dataset02= op_get_adj_prices_02.outputs['adj_price_dataset'],
       adj_price_dataset03= op_get_adj_prices_03.outputs['adj_price_dataset'],
       adj_price_dataset04= op_get_adj_prices_04.outputs['adj_price_dataset'],
-      adj_price_dataset05= op_get_adj_prices_05.outputs['adj_price_dataset']
-    )
+      adj_price_dataset05= op_get_adj_prices_05.outputs['adj_price_dataset'])
 
   op_get_features = get_features(
     market_info_dataset= op_get_market_info.outputs['market_info_dataset'], 
-    bros_dataset= op_get_bros.outputs['bros_univ_dataset']
-  )
+    bros_dataset= op_get_bros.outputs['bros_univ_dataset'])
 
   op_get_target = get_target(
-    op_get_full_adj_prices.outputs['full_adj_prices_dataset']
-  )
+    op_get_full_adj_prices.outputs['full_adj_prices_dataset'])
+
   op_get_techindi_01 = get_tech_indi(
     op_get_adj_prices_01.outputs['adj_price_dataset'])
   op_get_techindi_02 = get_tech_indi(
@@ -1248,19 +936,14 @@ def create_awesome_pipeline():
     tech_indi_dataset02 = op_get_techindi_02.outputs['df_techini_dataset'],
     tech_indi_dataset03 = op_get_techindi_03.outputs['df_techini_dataset'],
     tech_indi_dataset04 = op_get_techindi_04.outputs['df_techini_dataset'],
-    tech_indi_dataset05 = op_get_techindi_05.outputs['df_techini_dataset']
-
-  )
+    tech_indi_dataset05 = op_get_techindi_05.outputs['df_techini_dataset'])
 
   get_ml_dataset(
     features_dataset= op_get_features.outputs['features_dataset'],
     target_dataset= op_get_target.outputs['df_target_dataset'],
-    tech_indi_dataset= op_get_full_tech_indi.outputs['full_tech_indi_dataset']
-  )
+    tech_indi_dataset= op_get_full_tech_indi.outputs['full_tech_indi_dataset'])
 
   
-  
-# 
 compiler.Compiler().compile(
   pipeline_func=create_awesome_pipeline,
   package_path=job_file_name
