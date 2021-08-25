@@ -242,7 +242,7 @@ def get_adj_prices_01(
     for code in l_univ :
       df_ = get_price_adj(code, date_start, date_end)
       print('size', df_.shape)
-      df_['code'] = code
+      df_['code'] = str(code)
       # df_['price'] = df_['Close'] / df_.Close.iloc[0]
       df_price = df_price.append(df_)
     return df_price
@@ -739,7 +739,7 @@ def get_tech_indi(
             )
         return df
   
-  df_price = pd.read_csv(df_price_dataset.path)
+  df_price = pd.read_csv(df_price_dataset.path, dtype={'code': str})
   df_price.columns = df_price.columns.str.lower()
   df_price.rename(columns={'code':'tic'}, inplace=True)
   fe = FeatureEngineer(user_defined_feature=True)
@@ -766,18 +766,18 @@ def get_full_tech_indi(
 
   import pandas as pd
 
-  df_01 = pd.read_csv(tech_indi_dataset01.path, index_col=0                          
+  df_01 = pd.read_csv(tech_indi_dataset01.path, index_col=0, dtype={'code': str}                          
                           ).reset_index(drop=True)
-  df_02 = pd.read_csv(tech_indi_dataset02.path, index_col=0               
+  df_02 = pd.read_csv(tech_indi_dataset02.path, index_col=0, dtype={'code': str}              
                           ).reset_index(drop=True)
-  df_03 = pd.read_csv(tech_indi_dataset03.path, index_col=0
+  df_03 = pd.read_csv(tech_indi_dataset03.path, index_col=0, dtype={'code': str}
                           ).reset_index(drop=True)                      
-  df_04 = pd.read_csv(tech_indi_dataset04.path, index_col=0
+  df_04 = pd.read_csv(tech_indi_dataset04.path, index_col=0, dtype={'code': str}
                           ).reset_index(drop=True)
-  df_05 = pd.read_csv(tech_indi_dataset05.path, index_col=0
+  df_05 = pd.read_csv(tech_indi_dataset05.path, index_col=0, dtype={'code': str}
                           ).reset_index(drop=True)
   
-  df_full = pd.concat([df_01, df_02, df_03,df_04, df_05])
+  df_full = pd.concat([df_01, df_02, df_03, df_04, df_05])
   df_full.to_csv(full_tech_indi_dataset.path)
 
 #########################################
