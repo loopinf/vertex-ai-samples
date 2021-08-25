@@ -160,8 +160,8 @@ df_tmp.drop(columns=['up_bro_rtrn_mean_ystd'], inplace=True)
 
 # Merge DataFrames
 cols_rank = ['종목코드', '날짜', 'in_top30', 'rank_mean_10', 'rank_mean_5', 'in_top_30_5', 'in_top_30_10']
-cols_tmp = ['source', 'target', 'period', 'date', 'target_return',
-       'target_return_-1', 'up_bro_ratio_20', 'up_bro_ratio_40',
+cols_tmp = ['source', 'date',
+        'up_bro_ratio_20', 'up_bro_ratio_40',
        'up_bro_ratio_60', 'up_bro_ratio_90', 'up_bro_ratio_120', 'n_bro_20',
        'n_bro_40', 'n_bro_60', 'n_bro_90', 'n_bro_120', 'all_bro_rtrn_mean_20',
        'all_bro_rtrn_mean_40', 'all_bro_rtrn_mean_60', 'all_bro_rtrn_mean_90',
@@ -180,15 +180,17 @@ cols_tmp = ['source', 'target', 'period', 'date', 'target_return',
 df_feat_bro = df_tmp.drop_duplicates(subset=['source', 'date'])
 
 #%%
-df_feats =df_rank[cols_rank].merge(df_feat_bro[cols_tmp],
+df_feats =df_rank.merge(df_feat_bro[cols_tmp],
                     left_on=['종목코드', '날짜'],
                     right_on=['source', 'date'],
                     how='left')
 
 # df_feats.fillna(0, inplace=True)
-df_feats.drop(columns=['종목코드', '날짜'], inplace=True)
-df_feats.rename(columns={'source':'code', '종목명':'name', '순위_상승률':'rank'}, inplace=True)
-
+df_feats.drop(columns=['source', 'date'], inplace=True)
+df_feats.rename(columns={'종목코드':'code', '종목명':'name', '순위_상승률':'rank', '날짜':'date'}, inplace=True)
+df_feats.fillna(0, inplace=True)
 
 # df_feats.to_pickle(features_dataset.path)
+# %%
+
 # %%
