@@ -5,9 +5,11 @@ import pandas as pd
 import numpy as np
 from collections import Counter
 
-#%%
-path = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210825204845/get-market-info_6880383126808297472/market_info_dataset'
-df_market = pd.read_pickle(path)
+# %%
+folder = '/Users/seunghankim/Downloads/'
+feat = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823113318_get-features_-363683262096211968_features_dataset'
+target = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823002313_get-target_-1738969998304477184_df_target_dataset'
+tech = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823003125_get-full-tech-indi_217281089834582016_full_tech_indi_dataset'
 
 # 등락률 -1 
 df_market = df_market.sort_values('날짜')
@@ -88,102 +90,18 @@ df_rank['in_top_30_5'] = df_rank.groupby('종목코드')['in_top30'].transform(
                             lambda x : x.rolling(5, min_periods=1).sum()
                         )
 
-df_rank['in_top_30_10'] = df_rank.groupby('종목코드')['in_top30'].transform(
-                            lambda x : x.rolling(10, min_periods=1).sum()
-                        )
+df_ml_dataset = (df_feats.merge(df_target,
+                            left_on=['source', 'date'],
+                            right_on=['code', 'date'],
+                            how='left'))
+
+df_ml_dataset = (df_ml_dataset.merge(df_tech,
+                            left_on=['source', 'date'],
+                            right_on=['code', 'date'],
+                            how='left'))
 
 
-df_tmp = df_tmp.merge(bro_up_ratio, on=['date','source','period'], how='left')
-df_tmp['up_bro_ratio_20'] = df_tmp[df_tmp.period == 20].bro_up_ratio
-df_tmp['up_bro_ratio_40'] = df_tmp[df_tmp.period == 40].bro_up_ratio
-df_tmp['up_bro_ratio_60'] = df_tmp[df_tmp.period == 60].bro_up_ratio
-df_tmp['up_bro_ratio_90'] = df_tmp[df_tmp.period == 90].bro_up_ratio
-df_tmp['up_bro_ratio_120'] = df_tmp[df_tmp.period == 120].bro_up_ratio
-
-df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 bro_up_ratio를 0으로 만들기
-df_tmp.drop(columns=['bro_up_ratio'], inplace=True)
-
-df_tmp['n_bro_20'] = df_tmp[df_tmp.period == 20].n_bros
-df_tmp['n_bro_40'] = df_tmp[df_tmp.period == 40].n_bros
-df_tmp['n_bro_60'] = df_tmp[df_tmp.period == 60].n_bros
-df_tmp['n_bro_90'] = df_tmp[df_tmp.period == 90].n_bros
-df_tmp['n_bro_120'] = df_tmp[df_tmp.period == 120].n_bros
-
-df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
-df_tmp.drop(columns=['n_bros'], inplace=True)
-
-df_tmp['all_bro_rtrn_mean_20'] = df_tmp[df_tmp.period == 20].all_bro_rtrn_mean
-df_tmp['all_bro_rtrn_mean_40'] = df_tmp[df_tmp.period == 40].all_bro_rtrn_mean
-df_tmp['all_bro_rtrn_mean_60'] = df_tmp[df_tmp.period == 60].all_bro_rtrn_mean
-df_tmp['all_bro_rtrn_mean_90'] = df_tmp[df_tmp.period == 90].all_bro_rtrn_mean
-df_tmp['all_bro_rtrn_mean_120'] = df_tmp[df_tmp.period == 120].all_bro_rtrn_mean
-
-df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
-df_tmp.drop(columns=['all_bro_rtrn_mean'], inplace=True)
-
-df_tmp['up_bro_rtrn_mean_20'] = df_tmp[df_tmp.period == 20].up_bro_rtrn_mean
-df_tmp['up_bro_rtrn_mean_40'] = df_tmp[df_tmp.period == 40].up_bro_rtrn_mean
-df_tmp['up_bro_rtrn_mean_60'] = df_tmp[df_tmp.period == 60].up_bro_rtrn_mean
-df_tmp['up_bro_rtrn_mean_90'] = df_tmp[df_tmp.period == 90].up_bro_rtrn_mean
-df_tmp['up_bro_rtrn_mean_120'] = df_tmp[df_tmp.period == 120].up_bro_rtrn_mean
-
-df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
-df_tmp.drop(columns=['up_bro_rtrn_mean'], inplace=True)
-
-df_tmp['all_bro_rtrn_mean_ystd_20'] = df_tmp[df_tmp.period == 20].all_bro_rtrn_mean_ystd
-df_tmp['all_bro_rtrn_mean_ystd_40'] = df_tmp[df_tmp.period == 40].all_bro_rtrn_mean_ystd
-df_tmp['all_bro_rtrn_mean_ystd_60'] = df_tmp[df_tmp.period == 60].all_bro_rtrn_mean_ystd
-df_tmp['all_bro_rtrn_mean_ystd_90'] = df_tmp[df_tmp.period == 90].all_bro_rtrn_mean_ystd
-df_tmp['all_bro_rtrn_mean_ystd_120'] = df_tmp[df_tmp.period == 120].all_bro_rtrn_mean_ystd
-
-df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
-df_tmp.drop(columns=['all_bro_rtrn_mean_ystd'], inplace=True)
-
-df_tmp['bro_up_ratio_ystd_20'] = df_tmp[df_tmp.period == 20].bro_up_ratio_ystd
-df_tmp['bro_up_ratio_ystd_40'] = df_tmp[df_tmp.period == 40].bro_up_ratio_ystd
-df_tmp['bro_up_ratio_ystd_60'] = df_tmp[df_tmp.period == 60].bro_up_ratio_ystd
-df_tmp['bro_up_ratio_ystd_90'] = df_tmp[df_tmp.period == 90].bro_up_ratio_ystd
-df_tmp['bro_up_ratio_ystd_120'] = df_tmp[df_tmp.period == 120].bro_up_ratio_ystd
-
-df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
-df_tmp.drop(columns=['bro_up_ratio_ystd'], inplace=True)
-
-df_tmp['up_bro_rtrn_mean_ystd_20'] = df_tmp[df_tmp.period == 20].up_bro_rtrn_mean_ystd
-df_tmp['up_bro_rtrn_mean_ystd_40'] = df_tmp[df_tmp.period == 40].up_bro_rtrn_mean_ystd
-df_tmp['up_bro_rtrn_mean_ystd_60'] = df_tmp[df_tmp.period == 60].up_bro_rtrn_mean_ystd
-df_tmp['up_bro_rtrn_mean_ystd_90'] = df_tmp[df_tmp.period == 90].up_bro_rtrn_mean_ystd
-df_tmp['up_bro_rtrn_mean_ystd_120'] = df_tmp[df_tmp.period == 120].up_bro_rtrn_mean_ystd
-
-df_tmp.fillna(0, inplace=True) #친구가 없는 종목의 n_bros를 0으로 만들기
-df_tmp.drop(columns=['up_bro_rtrn_mean_ystd'], inplace=True)
-
-
-# Merge DataFrames
-cols_rank = ['종목코드', '날짜', 'in_top30', 'rank_mean_10', 'rank_mean_5', 'in_top_30_5', 'in_top_30_10']
-cols_tmp = ['source', 'date',
-        'up_bro_ratio_20', 'up_bro_ratio_40',
-       'up_bro_ratio_60', 'up_bro_ratio_90', 'up_bro_ratio_120', 'n_bro_20',
-       'n_bro_40', 'n_bro_60', 'n_bro_90', 'n_bro_120', 'all_bro_rtrn_mean_20',
-       'all_bro_rtrn_mean_40', 'all_bro_rtrn_mean_60', 'all_bro_rtrn_mean_90',
-       'all_bro_rtrn_mean_120', 'up_bro_rtrn_mean_20', 'up_bro_rtrn_mean_40',
-       'up_bro_rtrn_mean_60', 'up_bro_rtrn_mean_90', 'up_bro_rtrn_mean_120',
-       'all_bro_rtrn_mean_ystd_20', 'all_bro_rtrn_mean_ystd_40',
-       'all_bro_rtrn_mean_ystd_60', 'all_bro_rtrn_mean_ystd_90',
-       'all_bro_rtrn_mean_ystd_120', 'bro_up_ratio_ystd_20',
-       'bro_up_ratio_ystd_40', 'bro_up_ratio_ystd_60', 'bro_up_ratio_ystd_90',
-       'bro_up_ratio_ystd_120', 'up_bro_rtrn_mean_ystd_20',
-       'up_bro_rtrn_mean_ystd_40', 'up_bro_rtrn_mean_ystd_60',
-       'up_bro_rtrn_mean_ystd_90', 'up_bro_rtrn_mean_ystd_120']
-
-#%%
-
-df_feat_bro = df_tmp.drop_duplicates(subset=['source', 'date'])
-
-#%%
-df_feats =df_rank.merge(df_feat_bro[cols_tmp],
-                    left_on=['종목코드', '날짜'],
-                    right_on=['source', 'date'],
-                    how='left')
+df_ml_dataset.dropna(inplace=True)
 
 # df_feats.fillna(0, inplace=True)
 df_feats.drop(columns=['source', 'date'], inplace=True)
