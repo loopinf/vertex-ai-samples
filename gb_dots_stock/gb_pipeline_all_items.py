@@ -38,6 +38,7 @@ def set_defaults()-> NamedTuple(
 
   today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')
   today = '20210824'
+
   period_to_train = 20
   n_days = period_to_train + 20
 
@@ -72,6 +73,7 @@ def get_market_info(
     n_days: int
 ):
   import pandas as pd
+  import pickle
   from trading_calendars import get_calendar
   cal_KRX = get_calendar('XKRX')
 
@@ -129,7 +131,9 @@ def get_market_info(
   
   df_market = get_markets_aws(date_ref=date_ref, n_days=n_days)
 
-  df_market.to_csv(market_info_dataset.path)
+  with open(market_info_dataset.path, 'wb') as f:
+    pickle.dump(df_market, f)
+  # df_market.to_csv(market_info_dataset.path)
 
 #######################
 # get bros ############
@@ -141,9 +145,10 @@ def get_bros(
     date_ref: str,
     n_days: int, 
     bros_univ_dataset: Output[Dataset]
-) -> str :
+):
   
   import pandas as pd
+  import pickle
   import pandas_gbq
   import networkx as nx
   from trading_calendars import get_calendar
@@ -204,9 +209,10 @@ def get_bros(
     df = find_gang(date_ref=date)  
     df_bros = df_bros.append(df)
 
-  df_bros.to_csv(bros_univ_dataset.path)
+  # df_bros.to_csv(bros_univ_dataset.path)
+  with open(bros_univ_dataset.path, 'wb') as f:
+    pickle.dump(df_bros, f)
 
-  return 'OK'
 
 ###############################
 # get adj price 01 ############
@@ -219,15 +225,18 @@ def get_adj_prices_01(
   adj_price_dataset: Output[Dataset]
   ):
 
-  import json
+  # import json
   import FinanceDataReader as fdr
   from ae_module.ae_logger import ae_log
   import pandas as pd
+  import pickle
 
-  df_market = pd.read_csv(market_info_dataset.path,
-                          index_col=0,
-                          dtype={'날짜':str}
-                          ).reset_index(drop=True)
+  # df_market = pd.read_csv(market_info_dataset.path,
+  #                         index_col=0,
+  #                         dtype={'날짜':str, '종목코드':str}
+  #                         ).reset_index(drop=True)
+  with open(market_info_dataset.path, 'rb') as f:
+    df_market = pickle.load(f)
 
   date_ref = df_market.날짜.max()
   date_start = '20210101'
@@ -251,8 +260,12 @@ def get_adj_prices_01(
   ae_log.debug(f'codes_stock {codes.__len__()}')
 
   df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
+  print('df_adj_cols =>', df_adj_price.columns)
 
-  df_adj_price.to_csv(adj_price_dataset.path)
+  # df_adj_price.to_csv(adj_price_dataset.path)
+  df_adj_price = df_adj_price.reset_index()
+  with open(adj_price_dataset.path, 'wb') as f:
+    pickle.dump(df_adj_price, f)
 
   ae_log.debug(df_adj_price.shape)
 
@@ -267,15 +280,19 @@ def get_adj_prices_02(
   adj_price_dataset: Output[Dataset]
   ):
 
-  import json
+  # import json
   import FinanceDataReader as fdr
   from ae_module.ae_logger import ae_log
   import pandas as pd
+  import pickle
 
-  df_market = pd.read_csv(market_info_dataset.path,
-                          index_col=0,
-                          dtype={'날짜':str}
-                          ).reset_index(drop=True)
+  # df_market = pd.read_csv(market_info_dataset.path,
+  #                         index_col=0,
+  #                         dtype={'날짜':str, '종목코드':str}
+  #                         ).reset_index(drop=True)
+
+  with open(market_info_dataset.path, 'rb') as f:
+    df_market = pickle.load(f)
 
   date_ref = df_market.날짜.max()
   date_start = '20210101'
@@ -300,7 +317,10 @@ def get_adj_prices_02(
 
   df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
 
-  df_adj_price.to_csv(adj_price_dataset.path)
+  # df_adj_price.to_csv(adj_price_dataset.path)
+  df_adj_price = df_adj_price.reset_index()
+  with open(adj_price_dataset.path, 'wb') as f:
+    pickle.dump(df_adj_price, f)
 
   ae_log.debug(df_adj_price.shape)
 
@@ -315,15 +335,19 @@ def get_adj_prices_03(
   adj_price_dataset: Output[Dataset]
   ):
 
-  import json
+  # import json
   import FinanceDataReader as fdr
   from ae_module.ae_logger import ae_log
   import pandas as pd
+  import pickle
 
-  df_market = pd.read_csv(market_info_dataset.path,
-                          index_col=0,
-                          dtype={'날짜':str}
-                          ).reset_index(drop=True)
+  # df_market = pd.read_csv(market_info_dataset.path,
+  #                         index_col=0,
+  #                         dtype={'날짜':str, '종목코드':str}
+  #                         ).reset_index(drop=True)
+
+  with open(market_info_dataset.path, 'rb') as f:
+    df_market = pickle.load(f)
 
   date_ref = df_market.날짜.max()
   date_start = '20210101'
@@ -348,7 +372,10 @@ def get_adj_prices_03(
 
   df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
 
-  df_adj_price.to_csv(adj_price_dataset.path)
+  # df_adj_price.to_csv(adj_price_dataset.path)
+  df_adj_price = df_adj_price.reset_index()
+  with open(adj_price_dataset.path, 'wb') as f:
+    pickle.dump(df_adj_price, f)
 
   ae_log.debug(df_adj_price.shape)
 
@@ -363,15 +390,19 @@ def get_adj_prices_04(
   adj_price_dataset: Output[Dataset]
   ):
 
-  import json
+  # import json
   import FinanceDataReader as fdr
   from ae_module.ae_logger import ae_log
   import pandas as pd
+  import pickle
 
-  df_market = pd.read_csv(market_info_dataset.path,
-                          index_col=0,
-                          dtype={'날짜':str}
-                          ).reset_index(drop=True)
+  # df_market = pd.read_csv(market_info_dataset.path,
+  #                         index_col=0,
+  #                         dtype={'날짜':str, '종목코드':str}
+  #                         ).reset_index(drop=True)
+
+  with open(market_info_dataset.path, 'rb') as f:
+    df_market = pickle.load(f)
 
   date_ref = df_market.날짜.max()
   date_start = '20210101'
@@ -396,7 +427,10 @@ def get_adj_prices_04(
 
   df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
 
-  df_adj_price.to_csv(adj_price_dataset.path)
+  # df_adj_price.to_csv(adj_price_dataset.path)
+  df_adj_price = df_adj_price.reset_index()
+  with open(adj_price_dataset.path, 'wb') as f:
+    pickle.dump(df_adj_price, f)
 
   ae_log.debug(df_adj_price.shape)
 
@@ -411,15 +445,19 @@ def get_adj_prices_05(
   adj_price_dataset: Output[Dataset]
   ):
 
-  import json
+  # import json
   import FinanceDataReader as fdr
   from ae_module.ae_logger import ae_log
   import pandas as pd
+  import pickle
 
-  df_market = pd.read_csv(market_info_dataset.path,
-                          index_col=0,
-                          dtype={'날짜':str}
-                          ).reset_index(drop=True)
+  # df_market = pd.read_csv(market_info_dataset.path,
+  #                         index_col=0,
+  #                         dtype={'날짜':str, '종목코드':str}
+  #                         ).reset_index(drop=True)
+
+  with open(market_info_dataset.path, 'rb') as f:
+    df_market = pickle.load(f)
 
   date_ref = df_market.날짜.max()
   date_start = '20210101'
@@ -444,8 +482,11 @@ def get_adj_prices_05(
 
   df_adj_price = get_price(codes, date_start=date_start, date_end=date_ref)
 
-  df_adj_price.to_csv(adj_price_dataset.path)
-
+  # df_adj_price.to_csv(adj_price_dataset.path)
+  df_adj_price = df_adj_price.reset_index()
+  with open(adj_price_dataset.path, 'wb') as f:
+    pickle.dump(df_adj_price, f)
+  df_adj_price.to_pickle(a)
   ae_log.debug(df_adj_price.shape)
   
 ###############################
@@ -465,6 +506,7 @@ def get_full_adj_prices(
 ):
 
   import pandas as pd
+  import pickle
 
   df_adj_price_01 = pd.read_csv(adj_price_dataset01.path,                          
                           ).reset_index(drop=True)
@@ -477,9 +519,31 @@ def get_full_adj_prices(
   df_adj_price_05 = pd.read_csv(adj_price_dataset05.path,
                           ).reset_index(drop=True)
   
-  df_full_adj_prices = pd.concat([df_adj_price_01, df_adj_price_02, df_adj_price_03,df_adj_price_04, df_adj_price_05])
+  with open(adj_price_dataset01.path, 'rb') as f:
+    df_adj_price_01 = pickle.load(f)
 
-  df_full_adj_prices.to_csv(full_adj_prices_dataset.path)
+  with open(adj_price_dataset02.path, 'rb') as f:
+    df_adj_price_02 = pickle.load(f)
+
+  with open(adj_price_dataset03.path, 'rb') as f:
+    df_adj_price_03 = pickle.load(f)
+
+  with open(adj_price_dataset04.path, 'rb') as f:
+    df_adj_price_04 = pickle.load(f)
+
+  with open(adj_price_dataset05.path, 'rb') as f:
+    df_adj_price_05 = pickle.load(f)
+
+  
+  df_full_adj_prices = pd.concat([df_adj_price_01, 
+                                df_adj_price_02,
+                                df_adj_price_03,
+                                df_adj_price_04,
+                                df_adj_price_05])
+
+  # df_full_adj_prices.to_csv(full_adj_prices_dataset.path)
+  with open(full_adj_prices_dataset.path, 'wb') as f:
+    pickle.dump(df_full_adj_prices, f)
 
 ###############################
 # get target       ############
@@ -493,6 +557,7 @@ def get_target(
   df_target_dataset: Output[Dataset]
 ):
   import pandas as pd
+  import pickle
   import numpy as np
 
   def make_target(df):
@@ -574,10 +639,15 @@ def get_target(
     # df_target['date'] = df_target.date.str.replace('-', '')
     return df_target
 
-  df_price = pd.read_csv(df_price_dataset.path, index_col=0)
-  df_target = get_target_df(df_price=df_price)
+  # df_price = pd.read_csv(df_price_dataset.path, index_col=0)
+  with open(df_price_dataset.path, 'rb') as f:
+    df_price = pickle.load(f)
+  print('df cols =>', df_price.columns)
 
-  df_target.to_csv(df_target_dataset.path)
+  df_target = get_target_df(df_price=df_price)
+  # df_target.to_csv(df_target_dataset.path)
+  with open(df_target_dataset.path, 'wb') as f:
+    pickle.dump(df_target, f)
 
 ###############################
 # get tech indicator ##########
@@ -601,6 +671,7 @@ def get_tech_indi(
   # from sklearn.preprocessing import MaxAbsScaler
   from sklearn.preprocessing import maxabs_scale
   import pandas as pd
+  import pickle
   class FeatureEngineer:
     """Provides methods for preprocessing the stock price data
 
@@ -663,7 +734,7 @@ def get_tech_indi(
       :return: (df) pandas dataframe
       """
       df = data.copy()
-      df=df.sort_values(['date','tic'],ignore_index=True)
+      df=df.sort_values(['date','tic'],ignore_index=True) ##
       df.index = df.date.factorize()[0]
       merged_closes = df.pivot_table(index = 'date',columns = 'tic', values = 'close')
       merged_closes = merged_closes.dropna(axis=1)
@@ -739,14 +810,23 @@ def get_tech_indi(
             )
         return df
   
-  df_price = pd.read_csv(df_price_dataset.path)
+  # df_price = pd.read_csv(df_price_dataset.path)
+  with open(df_price_dataset.path, 'rb') as f:
+    df_price = pickle.load(f)
+
+  print('size =>', df_price.shape)
+  print('cols =>', df_price.columns)
+
   df_price.columns = df_price.columns.str.lower()
   df_price.rename(columns={'code':'tic'}, inplace=True)
   fe = FeatureEngineer(user_defined_feature=True)
   df_process = fe.preprocess_data(df_price)
   df_process.rename(columns={'tic':'code'}, inplace=True)
 
-  df_process.to_csv(df_techini_dataset.path)
+  # df_process.to_csv(df_techini_dataset.path)
+  with open(df_techini_dataset.path, 'wb') as f:
+    pickle.dump(df_process, f)
+
 
 ###############################
 # get full tech indi ##########
@@ -765,6 +845,7 @@ def get_full_tech_indi(
 ):
 
   import pandas as pd
+  import pickle
 
   df_01 = pd.read_csv(tech_indi_dataset01.path, index_col=0                          
                           ).reset_index(drop=True)
@@ -776,9 +857,27 @@ def get_full_tech_indi(
                           ).reset_index(drop=True)
   df_05 = pd.read_csv(tech_indi_dataset05.path, index_col=0
                           ).reset_index(drop=True)
+
+  with open(tech_indi_dataset01.path, 'rb') as f:
+    df_01 = pickle.load(f)
+
+  with open(tech_indi_dataset02.path, 'rb') as f:
+    df_02 = pickle.load(f)
+
+  with open(tech_indi_dataset03.path, 'rb') as f:
+    df_03 = pickle.load(f)
+
+  with open(tech_indi_dataset04.path, 'rb') as f:
+    df_04 = pickle.load(f)
+
+  with open(tech_indi_dataset05.path, 'rb') as f:
+    df_05 = pickle.load(f)
   
   df_full = pd.concat([df_01, df_02, df_03,df_04, df_05])
-  df_full.to_csv(full_tech_indi_dataset.path)
+
+  # df_full.to_csv(full_tech_indi_dataset.path)
+  with open(full_tech_indi_dataset.path, 'wb') as f:
+    pickle.dump(df_full, f)
 
 #########################################
 # get feature ###########################
@@ -793,24 +892,28 @@ def get_features(
   ):
   
   import pandas as pd
+  import pickle
   import numpy as np
   from collections import Counter
 
   #df_market_info 가져오기
-  df_market = pd.read_csv(market_info_dataset.path,
-                          index_col=0,
-                          dtype={'날짜':str}
-                          ).reset_index(drop=True)
+  # df_market = pd.read_csv(market_info_dataset.path,
+  #                         index_col=0,
+  #                         dtype={'날짜':str}
+  #                         ).reset_index(drop=True)
 
-  dates_in_set = df_market.날짜.unique().tolist()
-  dates_on_train = df_market.날짜.unique().tolist()[-20:]
+  with open(market_info_dataset.path, 'rb') as f:
+    df_market = pickle.load(f)
 
   # 등락률 -1 
   df_market = df_market.sort_values('날짜')
   df_market['return_-1'] = df_market.groupby('종목코드').등락률.shift(1)
 
   #df_ed 가져오기
-  df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
+  # df_ed = pd.read_csv(bros_dataset.path, index_col=0).reset_index(drop=True)
+  with open(bros_dataset.path, 'rb') as f:
+    df_ed = pickle.load(f)
+
   df_ed_r = df_ed.copy() 
   df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
   df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
@@ -963,7 +1066,9 @@ def get_features(
   df_feats.drop(columns=['종목코드', '날짜'], inplace=True)
   df_feats.rename(columns={'source':'code', '종목명':'name', '순위_상승률':'rank'}, inplace=True)
 
-  df_feats.to_csv(features_dataset.path)
+  # df_feats.to_csv(features_dataset.path)
+  with open(features_dataset.path, 'wb') as f:
+    pickle.dump(df_feats, f)
 
 @component(
   packages_to_install=['pandas']
@@ -976,21 +1081,32 @@ def get_ml_dataset(
 ):
 
   import pandas as pd
+  import pickle
 
-  df_feats = pd.read_csv(features_dataset.path,
-                        index_col=0,
-                        dtype={'date':str},
-                              ).reset_index(drop=True)
+  # df_feats = pd.read_csv(features_dataset.path,
+  #                       index_col=0,
+  #                       dtype={'date':str},
+  #                             ).reset_index(drop=True)
+  with open(features_dataset.path, 'rb') as f:
+    df_feats = pickle.load(f)
+  
 
-  df_target = pd.read_csv(target_dataset.path,
-                          index_col=0,
-                          dtype={'code':str},
-                              ).reset_index(drop=True)
+  # df_target = pd.read_csv(target_dataset.path,
+  #                         index_col=0,
+  #                         dtype={'code':str},
+  #                             ).reset_index(drop=True)
+  with open(target_dataset.path, 'rb') as f:
+    df_target = pickle.load(f)
+
   df_target['date'] = pd.to_datetime(df_target.date).dt.strftime('%Y%m%d')
 
-  df_tech = pd.read_csv(tech_indi_dataset.path,
-                          index_col=0,
-                              ).reset_index(drop=True)
+  # df_tech = pd.read_csv(tech_indi_dataset.path,
+  #                         index_col=0,
+  #                             ).reset_index(drop=True)
+
+  with open(tech_indi_dataset.path, 'rb') as f:
+    df_tech = pickle.load(f)
+
   df_tech['date'] = pd.to_datetime(df_tech.date).dt.strftime('%Y%m%d')
 
   df_ml_dataset = (df_feats.merge(df_target,
@@ -1005,7 +1121,10 @@ def get_ml_dataset(
 
   # df_ml_dataset.dropna(inplace=True)
 
-  df_ml_dataset.to_csv(ml_dataset.path)
+  # df_ml_dataset.to_csv(ml_dataset.path)
+  with open(ml_dataset.path, 'wb') as f:
+    pickle.dump(df_ml_dataset, f)
+
 
 #########################################
 # create pipeline #######################

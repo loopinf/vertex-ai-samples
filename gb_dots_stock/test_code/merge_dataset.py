@@ -2,55 +2,43 @@
 from numpy import dtype
 import pandas as pd
 import os
-
-# %%
-folder = '/Users/seunghankim/Downloads/'
-feat = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210825083522_get-features_-8195416625814437888_features_dataset'
-target = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210825083522_get-target_7945484438681419776_df_target_dataset'
-tech = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210825090905_get-full-tech-indi_-854549233200529408_full_tech_indi_dataset'
-
-path_feat = os.path.join(folder, feat)
-path_target = os.path.join(folder, target)
-path_tech = os.path.join(folder, tech)
-
-#%%
-df_feats = pd.read_csv(path_feat,
-                        index_col=0,
-                        dtype={'date':str},
-                              ).reset_index(drop=True)
-df_target = pd.read_csv(path_target,
-                        index_col=0,
-                        dtype={'code':str},
-                            ).reset_index(drop=True)
-df_target['date'] = pd.to_datetime(df_target.date).dt.strftime('%Y%m%d')
-
-
-df_tech = pd.read_csv(path_tech,
-                        index_col=0,
-                            ).reset_index(drop=True)
-df_tech['date'] = pd.to_datetime(df_tech.date).dt.strftime('%Y%m%d')
+import holoviews as hv
+import hvplot
+import pickle
+import gcsfs
+import gzip
+fs = gcsfs.GCSFileSystem(project='dots-stock')
 
 #%%
 
-df_ml_dataset = (df_feats.merge(df_target,
-                            left_on=['code', 'date'],
-                            right_on=['code', 'date'],
-                            how='left'))
+full_tech_indi = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210825090905/get-full-tech-indi_-854549233200529408/full_tech_indi_dataset'
+df_ = pd.read_csv(full_tech_indi)
 
 #%%
-df_ml_dataset = (df_ml_dataset.merge(df_tech,
-                            left_on=['code', 'date'],
-                            right_on=['code', 'date'],
-                            how='left'))
+tech_indi_01 = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210825090905/get-tech-indi_-3736852994717646848/df_techini_dataset'
+df_tech_01 = pd.read_csv(tech_indi_01)
 
 #%%
-# df_ml_dataset.dropna(inplace=True)
+
+adj_price_each = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210825173450/get-adj-prices-01_-8666042786874654720/adj_price_dataset'
+# df_adj_price_each = pd.read_csv(adj_price_each)
+
+with open(adj_price_each, 'rb') as f:
+    df_adj_price_each = pickle.load(f)
+#%%
+market_info = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210825083522/get-market-info_3333798420254031872/market_info_dataset'
+# df_market_info = pd.read_csv(market_info,
+#                             index_col=0,
+#                             dtype={'날짜':str, '종목코드':str}
+#                             ).reset_index(drop=True)
+
+df_market = pd.read_pickle(market_info)
+
 
 
 # %%
-df1 = pd.DataFrame({'a': ['foo', 'bar'], 'b': [1, 2]})
-df2 = pd.DataFrame({'a': ['foo', 'baz'], 'c': [3, 4]})
-
-df1.merge(df2, how='left', on='a')
-
+feat_path = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210825173450/get-features_-1748513759233572864/features_dataset'
+df = pd.read_csv(feat_path)
+# with open(feat_path, 'rb') as f:
+#     df_feat = pickle.load(f)
 # %%
