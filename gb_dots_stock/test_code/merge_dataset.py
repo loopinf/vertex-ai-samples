@@ -1,35 +1,25 @@
 #%%
-
 import pandas as pd
-# import pickle
-import numpy as np
-from collections import Counter
-
-# %%
-folder = '/Users/seunghankim/Downloads/'
-feat = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823113318_get-features_-363683262096211968_features_dataset'
-target = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823002313_get-target_-1738969998304477184_df_target_dataset'
-tech = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823003125_get-full-tech-indi_217281089834582016_full_tech_indi_dataset'
 
 #%%
-df_feats = pd.read_pickle(features_dataset.path)  
+path_market = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210826072355/get-market-info_-5428517604748689408/market_info_dataset'
+path_ml_data = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210826072355/get-ml-dataset_8406540450533474304/ml_dataset'
+path_tech = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210826072355/get-full-tech-indi_3794854432106086400/full_tech_indi_dataset'
+path_target = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210826072355/get-target_-816831586321301504/df_target_dataset'
 
-  df_target = pd.read_pickle(target_dataset.path)
-  df_target['date'] = pd.to_datetime(df_target.date).dt.strftime('%Y%m%d')
 
-  df_tech = pd.read_pickle(tech_indi_dataset.path)
-  df_tech['date'] = pd.to_datetime(df_tech.date).dt.strftime('%Y%m%d')
+df_market = pd.read_pickle(path_market)
+df_ml = pd.read_pickle(path_ml_data)
+df_tech = pd.read_pickle(path_tech)
+df_target = pd.read_pickle(path_target)
 
-  df_ml_dataset = (df_feats.merge(df_target,
-                            left_on=['code', 'date'],
-                            right_on=['code', 'date'],
-                            how='left'))
+# %%
+date = '20210824'
+df_market_ = df_market[df_market.날짜 == date]
+df_ml_ = df_ml[df_ml.date == date]
+# %%
+l_codes_market = df_market_.종목코드.to_list()
+l_codes_ml_data = df_ml_.code.to_list()
 
-  df_ml_dataset = (df_ml_dataset.merge(df_tech,
-                              left_on=['code', 'date'],
-                              right_on=['code', 'date'],
-                              how='left'))
-
-  df_ml_dataset.dropna(inplace=True)
-
-  df_ml_dataset.to_pickle(ml_dataset.path)
+l_diff = set(l_codes_market) - set(l_codes_ml_data)
+# %%
