@@ -866,6 +866,218 @@ def get_ml_dataset(
 
   df_ml_dataset.to_pickle(ml_dataset.path)
 
+
+@component(
+  base_image="gcr.io/dots-stock/python-img-v5.2",
+  # packages_to_install=['pandas']
+)
+def create_model_and_prediction_01(
+  ml_dataset : Input[Dataset],
+  prediction_result_01 : Output[Dataset],
+  model_01_artifact: Output[Model]
+):
+
+  import pandas as pd
+  from pykrx import stock
+  import FinanceDataReader as fdr
+
+  df_dataset = pd.read_pickle(ml_dataset.path)
+
+  df_01 = df_dataset.copy()
+
+  # drop duplicated column
+  cols_ohlcv_x = ['open_x', 'high_x', 'low_x', 'close_x', 'volume_x', 'change_x']
+  cols_ohlcv_y = ['open_y', 'high_y', 'low_y', 'close_y', 'volume_y', 'change_y']
+  df_02 = df_01.drop(columns=cols_ohlcv_x+cols_ohlcv_y)
+
+  # drop SPACs
+  stock_names = pd.Series(df_.name.unique())
+  stock_names_SPAC = stock_names[ stock_names.str.contains('스팩')].tolist()
+
+  df_03 = df_02.where( 
+            lambda df : ~df_01.name.isin(stock_names_SPAC)
+            ).dropna(subset=['name'])
+
+  # Remove administrative items
+  krx_adm = fdr.StockListing('KRX-ADMINISTRATIVE') # 관리종목
+  df_04 = df_03.merge(krx_adm[['Symbol','DesignationDate']], 
+         left_on='code', right_on='Symbol', how='left')
+  
+  cols_date = ['date', 'DesignationDate']
+  cols_base = ['code','name']
+
+  df_04['date'] = pd.to_datetime(df_04.date)
+  df_04['admin_stock'] = df_04.DesignationDate <= df_04.date
+  df_05 = (
+        df_04.where(
+            lambda df: df.admin_stock == 0
+        ).dropna(subset=['admin_stock'])
+        ) 
+
+  # Add day of week
+  df_05['dayofweek'] = pd.to_datetime(df_05.date.astype('str')).dt.dayofweek.astype('category')
+
+  # Set Target & Features
+  target_col = ['target_close_over_10']
+  cols_indicator = [
+                    'code',
+                    'name',
+                    'date',
+                    ]
+  features = [
+                #  'code',
+                #  'name',
+                #  'date',
+                'rank',
+                'in_top30',
+                'rank_mean_10',
+                'rank_mean_5',
+                'in_top_30_5',
+                'in_top_30_10',
+                'up_bro_ratio_20',
+                'up_bro_ratio_40',
+                'up_bro_ratio_60',
+                'up_bro_ratio_90',
+                'up_bro_ratio_120',
+                'n_bro_20',
+                'n_bro_40',
+                'n_bro_60',
+                'n_bro_90',
+                'n_bro_120',
+                'all_bro_rtrn_mean_20',
+                'all_bro_rtrn_mean_40',
+                'all_bro_rtrn_mean_60',
+                'all_bro_rtrn_mean_90',
+                'all_bro_rtrn_mean_120',
+                'up_bro_rtrn_mean_20',
+                'up_bro_rtrn_mean_40',
+                'up_bro_rtrn_mean_60',
+                'up_bro_rtrn_mean_90',
+                'up_bro_rtrn_mean_120',
+                'all_bro_rtrn_mean_ystd_20',
+                'all_bro_rtrn_mean_ystd_40',
+                'all_bro_rtrn_mean_ystd_60',
+                'all_bro_rtrn_mean_ystd_90',
+                'all_bro_rtrn_mean_ystd_120',
+                'bro_up_ratio_ystd_20',
+                'bro_up_ratio_ystd_40',
+                'bro_up_ratio_ystd_60',
+                'bro_up_ratio_ystd_90',
+                'bro_up_ratio_ystd_120',
+                'up_bro_rtrn_mean_ystd_20',
+                'up_bro_rtrn_mean_ystd_40',
+                'up_bro_rtrn_mean_ystd_60',
+                'up_bro_rtrn_mean_ystd_90',
+                'up_bro_rtrn_mean_ystd_120',
+                #  'index',
+                #  'open_x',
+                #  'high_x',
+                #  'low_x',
+                #  'close_x',
+                #  'volume_x',
+                #  'change_x',
+                #  'high_p1',
+                #  'high_p2',
+                #  'high_p3',
+                #  'close_p1',
+                #  'close_p2',
+                #  'close_p3',
+                #  'change_p1',
+                #  'change_p2',
+                #  'change_p3',
+                #  'change_p1_over5',
+                #  'change_p2_over5',
+                #  'change_p3_over5',
+                #  'change_p1_over10',
+                #  'change_p2_over10',
+                #  'change_p3_over10',
+                #  'close_high_1',
+                #  'close_high_2',
+                #  'close_high_3',
+                #  'close_high_1_over10',
+                #  'close_high_2_over10',
+                #  'close_high_3_over10',
+                #  'close_high_1_over5',
+                #  'close_high_2_over5',
+                #  'close_high_3_over5',
+                #  'open_y',
+                #  'high_y',
+                #  'low_y',
+                #  'close_y',
+                #  'volume_y',
+                #  'change_y',
+                #  'macd',
+                #  'boll_ub',
+                #  'boll_lb',
+                'rsi_30',
+                'dx_30',
+                #  'close_30_sma',
+                #  'close_60_sma',
+                #  'daily_return',
+                'return_lag_1',
+                'return_lag_2',
+                'return_lag_3',
+                'bb_u_ratio',
+                'bb_l_ratio',
+                'max_scale_MACD',
+                'volume_change_wrt_10max',
+                'volume_change_wrt_10mean',
+                #  'Symbol',
+                #  'DesignationDate',
+                #  'admin_stock',
+                'dayofweek']        
+
+  # Drop rows than contains NaN in Target Col
+  df_06 = df_05.dropna(axis=0, subset=target_col)    
+
+  # ML Model
+  from catboost import CatBoostClassifier
+  from sklearn.model_selection import train_test_split
+  from catboost import Pool
+  from catboost.utils import get_roc_curve
+  import sklearn
+  from sklearn import metrics
+
+  # Set Model
+  model_01 = CatBoostClassifier(
+            # random_seed = 42,
+            # task_type = 'GPU',
+            # iterations=3000,
+            iterations=2000,
+            train_dir = '/tmp',
+            verbose=500
+        )
+
+  categorical_features_names = ['in_top30',
+                              'dayofweek']
+
+  X = df_06[features + cols_indicator]
+  y = df_06[target_col].astype('float')
+  X['in_top30'] = X.in_top30.astype('int')
+
+  X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+  X_train_indictor = X_train[cols_indicator]
+  X_test_indictor = X_test[cols_indicator]
+
+  X_train = X_train[features]
+  X_test = X_test[features]
+
+  print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
+  print('No. of true : ', y.sum() )
+
+  model_01.fit(X_train, y_train, verbose=200, plot=True, 
+            cat_features=['in_top30','dayofweek'])
+
+  score = model_01.score(X_test, y_test)
+  print(f'model score : {model_01.score(X_test, y_test)}')
+
+  model_01_artifact.metadata["train_score"] = float(score)
+  model_01_artifact.metadata["framework"] = "CatBoost"
+  
+  model_01.save_model(model_01_artifact.path)
+
+
 #########################################
 # create pipeline #######################
 #########################################
