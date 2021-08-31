@@ -972,10 +972,14 @@ def create_awesome_pipeline():
     tech_indi_dataset04 = op_get_techindi_04.outputs['df_techini_dataset'],
     tech_indi_dataset05 = op_get_techindi_05.outputs['df_techini_dataset'])
 
-  get_ml_dataset(
+  op_get_ml_dataset = get_ml_dataset(
     features_dataset= op_get_features.outputs['features_dataset'],
     target_dataset= op_get_target.outputs['df_target_dataset'],
     tech_indi_dataset= op_get_full_tech_indi.outputs['full_tech_indi_dataset'])
+
+  # op_create_model_and_prediction_01 = create_model_and_prediction_01(
+    # ml_dataset= op_get_ml_dataset.outputs['ml_dataset']
+  # )
 
   
 compiler.Compiler().compile(
