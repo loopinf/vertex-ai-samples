@@ -562,11 +562,8 @@ def get_tech_indi(
             )
         return df
   
-  # df_price = pd.read_csv(df_price_dataset.path)
   df_price = pd.read_pickle(df_price_dataset.path)
-  # with open(df_price_dataset.path, 'rb') as f:
-  #   df_price = pickle.load(f)
-
+  
   print('size =>', df_price.shape)
   print('cols =>', df_price.columns)
 
@@ -576,10 +573,7 @@ def get_tech_indi(
   df_process = fe.preprocess_data(df_price)
   df_process.rename(columns={'tic':'code'}, inplace=True)
 
-  # df_process.to_csv(df_techini_dataset.path)
   df_process.to_pickle(df_techini_dataset.path)
-  # with open(df_techini_dataset.path, 'wb') as f:
-  #   pickle.dump(df_process, f)
 
 
 ###############################
