@@ -854,6 +854,7 @@ def create_model_and_prediction_01(
 ):
 
   import pandas as pd
+  import numpy as np
   from pykrx import stock
   import FinanceDataReader as fdr
 
@@ -900,6 +901,13 @@ def create_model_and_prediction_01(
   # Add day of week
   df_preP['dayofweek'] = pd.to_datetime(df_preP.date.astype('str')).dt.dayofweek.astype('category')
 
+  # Add market_cap categotu
+  df_preP['mkt_cap_cat'] = pd.cut(
+                            df_preP['mkt_cap'],
+                            bins=[0, 1000, 5000, 10000, 50000, np.inf],
+                            include_lowest=True,
+                            labels=['A', 'B', 'C', 'D', 'E'])
+
   # Set Target & Features
   target_col = ['target_close_over_10']
   cols_indicator = [
@@ -912,6 +920,7 @@ def create_model_and_prediction_01(
                 #  'name',
                 #  'date',
                 'rank',
+                'mkt_cap',
                 'in_top30',
                 'rank_mean_10',
                 'rank_mean_5',
