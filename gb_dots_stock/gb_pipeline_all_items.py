@@ -921,6 +921,7 @@ def create_model_and_prediction_01(
                 #  'date',
                 'rank',
                 'mkt_cap',
+                'mkt_cap_cat',
                 'in_top30',
                 'rank_mean_10',
                 'rank_mean_5',
