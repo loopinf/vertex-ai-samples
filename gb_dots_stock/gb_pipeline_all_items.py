@@ -276,34 +276,7 @@ def get_full_adj_prices(
 ):
 
   import pandas as pd
-  import pickle
-
-  # df_adj_price_01 = pd.read_csv(adj_price_dataset01.path,                          
-  #                         ).reset_index(drop=True)
-  # df_adj_price_02 = pd.read_csv(adj_price_dataset02.path,                          
-  #                         ).reset_index(drop=True)
-  # df_adj_price_03 = pd.read_csv(adj_price_dataset03.path,
-  #                         ).reset_index(drop=True)                      
-  # df_adj_price_04 = pd.read_csv(adj_price_dataset04.path,
-  #                         ).reset_index(drop=True)
-  # df_adj_price_05 = pd.read_csv(adj_price_dataset05.path,
-  #                         ).reset_index(drop=True)
   
-  # with open(adj_price_dataset01.path, 'rb') as f:
-  #   df_adj_price_01 = pickle.load(f)
-
-  # with open(adj_price_dataset02.path, 'rb') as f:
-  #   df_adj_price_02 = pickle.load(f)
-
-  # with open(adj_price_dataset03.path, 'rb') as f:
-  #   df_adj_price_03 = pickle.load(f)
-
-  # with open(adj_price_dataset04.path, 'rb') as f:
-  #   df_adj_price_04 = pickle.load(f)
-
-  # with open(adj_price_dataset05.path, 'rb') as f:
-  #   df_adj_price_05 = pickle.load(f)
-
   df_adj_price_01 = pd.read_pickle(adj_price_dataset01.path)
   df_adj_price_02 = pd.read_pickle(adj_price_dataset02.path)
   df_adj_price_03 = pd.read_pickle(adj_price_dataset03.path)
