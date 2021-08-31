@@ -436,16 +436,11 @@ def get_target(
     packages_to_install=["stockstats", "scikit-learn"]
 )
 def get_tech_indi(
+  # date_ref: str,
   df_price_dataset: Input[Dataset],
-  df_techini_dataset: Output[Dataset]
+  df_techini_dataset: Output[Dataset],
+  
 ):
-  TECHNICAL_INDICATORS_LIST = ['macd',
-  'boll_ub',
-  'boll_lb',
-  'rsi_30',
-  'dx_30',
-  'close_30_sma',
-  'close_60_sma']
   from stockstats import StockDataFrame as Sdf
   # from sklearn.preprocessing import MaxAbsScaler
   from sklearn.preprocessing import maxabs_scale
