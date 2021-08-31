@@ -1,17 +1,24 @@
 #%%
+from re import A
+from typing import Awaitable, AwaitableGenerator
 import pandas as pd
 
 #%%
-path_market = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210826072355/get-market-info_-5428517604748689408/market_info_dataset'
-path_ml_data = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210826072355/get-ml-dataset_8406540450533474304/ml_dataset'
-path_tech = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210826072355/get-full-tech-indi_3794854432106086400/full_tech_indi_dataset'
-path_target = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210826072355/get-target_-816831586321301504/df_target_dataset'
+path_feat = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210826072355/get-features_6100697441319780352/features_dataset'
+path_ml_data = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210831074629/get-ml-dataset_891440047335669760/ml_dataset'
+# path_tech = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210826072355/get-full-tech-indi_3794854432106086400/full_tech_indi_dataset'
+# path_target = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210826072355/get-target_-816831586321301504/df_target_dataset'
 
+path_tmp = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210831114324/create-model-and-prediction-01_-6413398548259274752/prediction_result_01'
 
-df_market = pd.read_pickle(path_market)
+df_feat = pd.read_pickle(path_feat)
 df_ml = pd.read_pickle(path_ml_data)
-df_tech = pd.read_pickle(path_tech)
-df_target = pd.read_pickle(path_target)
+# df_tech = pd.read_pickle(path_tech)
+# df_target = pd.read_pickle(path_target)
+
+df = pd.read_pickle(path_tmp)
+
+# df = df[['종목명', '날짜', 'Proba02']]
 
 # %%
 date = '20210824'
