@@ -574,6 +574,11 @@ def get_tech_indi(
         df['bb_u_ratio'] = df.boll_ub / df.close # without groupby
         df['bb_l_ratio'] = df.boll_lb / df.close # don't need groupby
 
+        # oh oc ol ratio 
+        df['oh_ratio'] = (df.high - df.open) / df.open
+        df['oc_ratio'] = (df.close - df.open) / df.open
+        df['ol_ratio'] = (df.low - df.open) / df.open
+
         # macd - relative
         df['max_scale_MACD'] = df.groupby('tic').macd.transform(
             lambda x: maxabs_scale(x))
@@ -594,6 +599,24 @@ def get_tech_indi(
             .apply(lambda df: volume_change_wrt_10_mean(df))
             .reset_index(drop=True)
             )
+
+        # close ratio rolling min max
+        def close_ratio_wrt_10_max(df):
+          return df.close / df.close.rolling(10).max() 
+        def close_ratio_wrt_10_min(df):
+          return df.close / df.close.rolling(10).min() 
+
+        df['close_ratio_wrt_10max'] = (
+          df.groupby('tic')
+          .apply(lambda df: close_ratio_wrt_10_max(df))
+          .reset_index(drop=True)
+        )
+        df['close_ratio_wrt_10min'] = (
+          df.groupby('tic')
+          .apply(lambda df: close_ratio_wrt_10_min(df))
+          .reset_index(drop=True)
+        )
+        
         return df
   
   # df_price = pd.read_csv(df_price_dataset.path)
