@@ -634,7 +634,7 @@ def get_features(
   df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
-  cols = ['종목코드', '종목명', '날짜', '순위_상승률']
+  cols = ['종목코드', '종목명', '날짜', '순위_상승률', '시가총액']
   df_mkt_ = df_market[cols]
 
   cols_market = [ '종목코드','날짜','등락률','return_-1']
@@ -793,7 +793,15 @@ def get_features(
 
   # df_feats.fillna(0, inplace=True)
   df_feats.drop(columns=['source', 'date'], inplace=True)
-  df_feats.rename(columns={'종목코드':'code', '종목명':'name', '순위_상승률':'rank', '날짜':'date'}, inplace=True)
+  df_feats.rename(
+            columns={
+                '종목코드':'code',
+                '종목명':'name',
+                '순위_상승률':'rank',
+                '날짜':'date',
+                '시가총액':'mkt_cap',
+                }, inplace=True)
+                
   df_feats.fillna(0, inplace=True)
   
   df_feats.to_pickle(features_dataset.path)
