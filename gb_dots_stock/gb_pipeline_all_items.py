@@ -862,19 +862,20 @@ def get_ml_dataset(
                               right_on=['code', 'date'],
                               how='left'))
 
-  df_ml_dataset.dropna(inplace=True)
+  # df_ml_dataset.dropna(inplace=True)
 
   df_ml_dataset.to_pickle(ml_dataset.path)
 
 
 @component(
   base_image="gcr.io/dots-stock/python-img-v5.2",
-  # packages_to_install=['pandas']
+  packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
 )
 def create_model_and_prediction_01(
   ml_dataset : Input[Dataset],
   prediction_result_01 : Output[Dataset],
-  model_01_artifact: Output[Model]
+  model_01_artifact: Output[Model],
+  # metrics: Output[ClassificationMetrics],
 ):
 
   import pandas as pd
@@ -883,39 +884,46 @@ def create_model_and_prediction_01(
 
   df_dataset = pd.read_pickle(ml_dataset.path)
 
-  df_01 = df_dataset.copy()
+  df_preP = df_dataset.copy()
+
+  print(f'size01 {df_preP.shape}')
 
   # drop duplicated column
   cols_ohlcv_x = ['open_x', 'high_x', 'low_x', 'close_x', 'volume_x', 'change_x']
   cols_ohlcv_y = ['open_y', 'high_y', 'low_y', 'close_y', 'volume_y', 'change_y']
-  df_02 = df_01.drop(columns=cols_ohlcv_x+cols_ohlcv_y)
+  df_preP = df_preP.drop(columns=cols_ohlcv_x+cols_ohlcv_y)
+
+  print(f'size02 {df_preP.shape}')
 
   # drop SPACs
-  stock_names = pd.Series(df_.name.unique())
+  stock_names = pd.Series(df_preP.name.unique())
   stock_names_SPAC = stock_names[ stock_names.str.contains('스팩')].tolist()
 
-  df_03 = df_02.where( 
-            lambda df : ~df_01.name.isin(stock_names_SPAC)
+  df_preP = df_preP.where( 
+            lambda df : ~df.name.isin(stock_names_SPAC)
             ).dropna(subset=['name'])
+
+  print(f'size03 {df_preP.shape}')
 
   # Remove administrative items
   krx_adm = fdr.StockListing('KRX-ADMINISTRATIVE') # 관리종목
-  df_04 = df_03.merge(krx_adm[['Symbol','DesignationDate']], 
+  df_preP = df_preP.merge(krx_adm[['Symbol','DesignationDate']], 
          left_on='code', right_on='Symbol', how='left')
   
+  print(f'size04 {df_preP.shape}')
   cols_date = ['date', 'DesignationDate']
   cols_base = ['code','name']
 
-  df_04['date'] = pd.to_datetime(df_04.date)
-  df_04['admin_stock'] = df_04.DesignationDate <= df_04.date
-  df_05 = (
-        df_04.where(
+  df_preP['date'] = pd.to_datetime(df_preP.date)
+  df_preP['admin_stock'] = df_preP.DesignationDate <= df_preP.date
+  df_preP = (
+        df_preP.where(
             lambda df: df.admin_stock == 0
         ).dropna(subset=['admin_stock'])
         ) 
-
+  print(f'size05 {df_preP.shape}')
   # Add day of week
-  df_05['dayofweek'] = pd.to_datetime(df_05.date.astype('str')).dt.dayofweek.astype('category')
+  df_preP['dayofweek'] = pd.to_datetime(df_preP.date.astype('str')).dt.dayofweek.astype('category')
 
   # Set Target & Features
   target_col = ['target_close_over_10']
@@ -1027,19 +1035,45 @@ def create_model_and_prediction_01(
                 #  'admin_stock',
                 'dayofweek']        
 
-  # Drop rows than contains NaN in Target Col
-  df_06 = df_05.dropna(axis=0, subset=target_col)    
+  # Change datetime format to str
+  df_preP['date'] = df_preP.date.dt.strftime('%Y%m%d')
+
+  # Split Dataset into For Training & For Prediction
+  l_dates = df_preP.date.unique().tolist()
+  print(f'size06 {l_dates.__len__()}')
+  dates_for_train = l_dates[-23:-3] # 며칠전까지 볼것인가!! 20일만! 일단은
+  print(f'size07 {dates_for_train.__len__()}')
+  date_for_pred = l_dates[-1]
+  print(f'size08 {date_for_pred}')
+
+  df_train = df_preP[df_preP.date.isin(dates_for_train)]
+  df_train = df_train.dropna(axis=0, subset=target_col)
+
+  df_pred = df_preP[df_preP.date == date_for_pred] 
+
+  print(f'size of train {df_train.shape} size of pred {df_pred.shape}')
 
   # ML Model
   from catboost import CatBoostClassifier
   from sklearn.model_selection import train_test_split
   from catboost import Pool
-  from catboost.utils import get_roc_curve
+  from catboost.utils import get_roc_curve, get_confusion_matrix
   import sklearn
-  from sklearn import metrics
+  # from sklearn import metrics
 
-  # Set Model
-  model_01 = CatBoostClassifier(
+  X = df_train[features + cols_indicator]
+  y = df_train[target_col].astype('float')
+  X['in_top30'] = X.in_top30.astype('int')
+  df_pred['in_top30'] = df_pred.in_top30.astype('int')
+
+  # Run prediction 3 times
+  i=0
+  df_pred_final_01 = pd.DataFrame()
+
+  while i < 3 :
+
+    # Set Model
+    model_01 = CatBoostClassifier(
             # random_seed = 42,
             # task_type = 'GPU',
             # iterations=3000,
@@ -1048,34 +1082,61 @@ def create_model_and_prediction_01(
             verbose=500
         )
 
-  categorical_features_names = ['in_top30',
-                              'dayofweek']
+    X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-  X = df_06[features + cols_indicator]
-  y = df_06[target_col].astype('float')
-  X['in_top30'] = X.in_top30.astype('int')
+    X_train_indictor = X_train[cols_indicator]
+    X_test_indictor = X_test[cols_indicator]
 
-  X_train, X_test, y_train, y_test = train_test_split(X, y)
+    X_train = X_train[features]
+    X_test = X_test[features]
 
-  X_train_indictor = X_train[cols_indicator]
-  X_test_indictor = X_test[cols_indicator]
+    print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
+    print('No. of true : ', y.sum() )
 
-  X_train = X_train[features]
-  X_test = X_test[features]
+    model_01.fit(X_train, y_train, verbose=200, plot=True, 
+              cat_features=['in_top30','dayofweek'])
 
-  print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
-  print('No. of true : ', y.sum() )
+    print(f'model score : {model_01.score(X_test, y_test)}')
 
-  model_01.fit(X_train, y_train, verbose=200, plot=True, 
-            cat_features=['in_top30','dayofweek'])
+    model_01.save_model(model_01_artifact.path)
 
-  score = model_01.score(X_test, y_test)
-  print(f'model score : {model_01.score(X_test, y_test)}')
+    # Prediction
 
-  model_01_artifact.metadata["train_score"] = float(score)
-  model_01_artifact.metadata["framework"] = "CatBoost"
-  
-  model_01.save_model(model_01_artifact.path)
+    pred_stocks_01 = model_01.predict(df_pred[features])    
+    pred_proba_01 = model_01.predict_proba(df_pred[features])
+    
+    df_pred_stocks_01 = pd.DataFrame(pred_stocks_01, columns=['Prediction']).reset_index(drop=True)
+    df_pred_proba_01 = pd.DataFrame(pred_proba_01, columns=['Proba01', 'Proba02']).reset_index(drop=True)
+
+    df_pred_name_code = df_pred[cols_indicator].reset_index(drop=True)
+
+    print('results', df_pred_stocks_01, df_pred_stocks_01.shape)
+    print('results', df_pred_proba_01, df_pred_proba_01.shape)
+    print('result', df_pred_name_code.head(), df_pred_name_code.shape)
+
+    df_pred_r_01 = pd.concat(
+                    [
+                      df_pred_name_code,
+                      df_pred_stocks_01,
+                      df_pred_proba_01
+                      ],
+                      axis=1)
+
+    df_pred_r_01 = df_pred_r_01[df_pred_r_01.Prediction > 0]
+    print('results', df_pred_r_01.code)
+    df_pred_final_01 = df_pred_final_01.append(df_pred_r_01)
+
+    i = i + 1
+
+  print(f'columns of df : {df_pred_final_01.columns}' )
+  df_pred_final_01 = df_pred_final_01.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
+  df_pred_final_01 = df_pred_final_01.reset_index()
+  df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
+
+  df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True) # remove duplicates
+  df_pred_final_01.to_pickle(prediction_result_01.path) # save 
+
+
 
 
 #########################################
@@ -1150,10 +1211,14 @@ def create_awesome_pipeline():
     tech_indi_dataset04 = op_get_techindi_04.outputs['df_techini_dataset'],
     tech_indi_dataset05 = op_get_techindi_05.outputs['df_techini_dataset'])
 
-  get_ml_dataset(
+  op_get_ml_dataset = get_ml_dataset(
     features_dataset= op_get_features.outputs['features_dataset'],
     target_dataset= op_get_target.outputs['df_target_dataset'],
     tech_indi_dataset= op_get_full_tech_indi.outputs['full_tech_indi_dataset'])
+
+  op_create_model_and_prediction_01 = create_model_and_prediction_01(
+    ml_dataset= op_get_ml_dataset.outputs['ml_dataset']
+  )
 
   
 compiler.Compiler().compile(
