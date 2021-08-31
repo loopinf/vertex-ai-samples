@@ -471,6 +471,17 @@ def get_tech_indi(
         main method to do the feature engineering
 
     """
+    TECHNICAL_INDICATORS_LIST = ['macd',
+      'boll_ub',
+      'boll_lb',
+      'rsi_30',
+      'dx_30',
+      'close_30_sma',
+      'close_60_sma',
+      # 'mfi',
+      ]
+
+    # PERIOD_MAX = 60,
 
     def __init__(
       self,
@@ -488,7 +499,7 @@ def get_tech_indi(
       @:return: a DataMatrices object
       """
       #clean data
-      df = self.clean_data(df)
+      # df = self.clean_data(df)
       
       # add technical indicators using stockstats
       if self.use_technical_indicator == True:
