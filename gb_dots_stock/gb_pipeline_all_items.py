@@ -700,8 +700,7 @@ def get_features(
   def get_upbro_ratio(df):
       '''df : '''
       return (
-              sum(df.target_return > 0) /
-              df.shape[0], # 그날 상승한 친구들의 비율
+            sum(df.target_return > 0) / df.shape[0], # 그날 상승한 친구들의 비율
               df.shape[0], # 그날 친구들 수
               df.target_return.mean(), # 그날 모든 친구들 상승률의 평균
               df[df.target_return > 0].target_return.mean(), # 그날 오른 친구들의 평균
@@ -868,7 +867,7 @@ def get_ml_dataset(
                               right_on=['code', 'date'],
                               how='left'))
 
-  df_ml_dataset.dropna(inplace=True)
+  # df_ml_dataset.dropna(inplace=True)
 
   df_ml_dataset.to_pickle(ml_dataset.path)
 
@@ -927,15 +926,20 @@ def create_awesome_pipeline():
     op_get_full_adj_prices.outputs['full_adj_prices_dataset'])
 
   op_get_techindi_01 = get_tech_indi(
-    op_get_adj_prices_01.outputs['adj_price_dataset'])
+    # date_ref=op_set_defaults.outputs['date_ref'],
+    df_price_dataset = op_get_adj_prices_01.outputs['adj_price_dataset'])
   op_get_techindi_02 = get_tech_indi(
-    op_get_adj_prices_02.outputs['adj_price_dataset'])
+    # date_ref=op_set_defaults.outputs['date_ref'],
+    df_price_dataset = op_get_adj_prices_02.outputs['adj_price_dataset'])
   op_get_techindi_03 = get_tech_indi(
-    op_get_adj_prices_03.outputs['adj_price_dataset'])
+    # date_ref=op_set_defaults.outputs['date_ref'],
+    df_price_dataset = op_get_adj_prices_03.outputs['adj_price_dataset'])
   op_get_techindi_04 = get_tech_indi(
-    op_get_adj_prices_04.outputs['adj_price_dataset'])
+    # date_ref=op_set_defaults.outputs['date_ref'],
+    df_price_dataset = op_get_adj_prices_04.outputs['adj_price_dataset'])
   op_get_techindi_05 = get_tech_indi(
-    op_get_adj_prices_05.outputs['adj_price_dataset'])
+    # date_ref=op_set_defaults.outputs['date_ref'],
+    df_price_dataset = op_get_adj_prices_05.outputs['adj_price_dataset'])
   
   op_get_full_tech_indi = get_full_tech_indi(
     tech_indi_dataset01 = op_get_techindi_01.outputs['df_techini_dataset'],
