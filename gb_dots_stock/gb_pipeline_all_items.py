@@ -24,7 +24,8 @@ from kfp.v2.dsl import (Artifact,
 from kfp.v2.google.client import AIPlatformClient
 
 @component(
-  base_image='gcr.io/dots-stock/py38-pandas-cal'
+  # base_image='gcr.io/dots-stock/py38-pandas-cal'
+    base_image="gcr.io/dots-stock/python-img-v5.2",
 )
 def set_defaults()-> NamedTuple(
   'Outputs',
@@ -130,7 +131,7 @@ def get_market_info(
   
   df_market = get_markets_aws(date_ref=date_ref, n_days=n_days)
 
-  df_market.to_pickle(market_info_dataset.path)
+  df_market.to_pickle(market_info_dataset.path, protocol=4)
 
 #######################
 # get bros ############
@@ -206,7 +207,7 @@ def get_bros(
     df = find_gang(date_ref=date)  
     df_bros = df_bros.append(df)
 
-  df_bros.to_pickle(bros_univ_dataset.path)
+  df_bros.to_pickle(bros_univ_dataset.path, protocol=4)
 
 
 ###############################
@@ -254,7 +255,7 @@ def get_adj_prices(
   df_adj_price = df_adj_price.reset_index()
   print('df_adj_cols =>', df_adj_price.columns)
 
-  df_adj_price.to_pickle(adj_price_dataset.path)
+  df_adj_price.to_pickle(adj_price_dataset.path, protocol=4)
 
   ae_log.debug(df_adj_price.shape)
 
@@ -318,7 +319,7 @@ def get_full_adj_prices(
                                 df_adj_price_05])
 
   # df_full_adj_prices.to_csv(full_adj_prices_dataset.path)
-  df_full_adj_prices.to_pickle(full_adj_prices_dataset.path)
+  df_full_adj_prices.to_pickle(full_adj_prices_dataset.path, protocol=4)
   # with open(full_adj_prices_dataset.path, 'wb') as f:
   #   pickle.dump(df_full_adj_prices, f)
 
@@ -423,7 +424,7 @@ def get_target(
 
   df_target = get_target_df(df_price=df_price)
   # df_target.to_csv(df_target_dataset.path)
-  df_target.to_pickle(df_target_dataset.path)
+  df_target.to_pickle(df_target_dataset.path, protocol=4)
   # with open(df_target_dataset.path, 'wb') as f:
   #   pickle.dump(df_target, f)
 
@@ -610,7 +611,7 @@ def get_tech_indi(
   df_process.rename(columns={'tic':'code'}, inplace=True)
 
   # df_process.to_csv(df_techini_dataset.path)
-  df_process.to_pickle(df_techini_dataset.path)
+  df_process.to_pickle(df_techini_dataset.path, protocol=4)
   # with open(df_techini_dataset.path, 'wb') as f:
   #   pickle.dump(df_process, f)
 
@@ -641,7 +642,7 @@ def get_full_tech_indi(
   
   df_full = pd.concat([df_01, df_02, df_03,df_04, df_05])
 
-  df_full.to_pickle(full_tech_indi_dataset.path)
+  df_full.to_pickle(full_tech_indi_dataset.path, protocol=4)
 
 #########################################
 # get feature ###########################
@@ -834,7 +835,7 @@ def get_features(
   df_feats.rename(columns={'종목코드':'code', '종목명':'name', '순위_상승률':'rank', '날짜':'date'}, inplace=True)
   df_feats.fillna(0, inplace=True)
   
-  df_feats.to_pickle(features_dataset.path)
+  df_feats.to_pickle(features_dataset.path, protocol=4)
 
 @component(
   base_image="gcr.io/dots-stock/python-img-v5.2",
@@ -869,7 +870,7 @@ def get_ml_dataset(
 
   # df_ml_dataset.dropna(inplace=True)
 
-  df_ml_dataset.to_pickle(ml_dataset.path)
+  df_ml_dataset.to_pickle(ml_dataset.path, protocol=4)
 
 #########################################
 # create pipeline #######################
