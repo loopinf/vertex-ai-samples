@@ -24,7 +24,8 @@ from kfp.v2.dsl import (Artifact,
 from kfp.v2.google.client import AIPlatformClient
 
 @component(
-  base_image='gcr.io/dots-stock/py38-pandas-cal'
+  # base_image='gcr.io/dots-stock/py38-pandas-cal',
+  base_image="gcr.io/dots-stock/python-img-v5.2"
 )
 def set_defaults()-> NamedTuple(
   'Outputs',
