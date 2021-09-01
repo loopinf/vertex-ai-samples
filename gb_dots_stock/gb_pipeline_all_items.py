@@ -31,7 +31,8 @@ def set_defaults()-> NamedTuple(
   'Outputs',
   [
     ('date_ref',str),
-    ('n_days', int)
+    ('n_days', int),
+    ('period_extra', int)
   ]):
 
   import pandas as pd
@@ -39,8 +40,10 @@ def set_defaults()-> NamedTuple(
 
   today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')
   # today = '20210809'
+  today = '20210831'
   period_to_train = 20
-  n_days = period_to_train + 20
+  period_extra = 30
+  n_days = period_to_train + period_extra
 
   cal_KRX = get_calendar('XKRX')
 
@@ -59,10 +62,7 @@ def set_defaults()-> NamedTuple(
     date_ref = today
   else :
     date_ref = dates_krx_on[-1]
-
-  print(f'date_ref : {date_ref}')
-
-  return (date_ref, n_days)
+  return (date_ref, n_days, period_extra)
 
 ##############################
 # get market info ############
@@ -135,7 +135,7 @@ def get_market_info(
   
   df_market = get_markets_aws(date_ref=date_ref, n_days=n_days)
 
-  df_market.to_pickle(market_info_dataset.path)
+  df_market.to_pickle(market_info_dataset.path, protocol=4)
 
 #######################
 # get bros ############
@@ -211,7 +211,7 @@ def get_bros(
     df = find_gang(date_ref=date)  
     df_bros = df_bros.append(df)
 
-  df_bros.to_pickle(bros_univ_dataset.path)
+  df_bros.to_pickle(bros_univ_dataset.path, protocol=4)
 
 
 ###############################
@@ -259,7 +259,7 @@ def get_adj_prices(
   df_adj_price = df_adj_price.reset_index()
   print('df_adj_cols =>', df_adj_price.columns)
 
-  df_adj_price.to_pickle(adj_price_dataset.path)
+  df_adj_price.to_pickle(adj_price_dataset.path, protocol=4)
 
   ae_log.debug(df_adj_price.shape)
 
@@ -296,7 +296,7 @@ def get_full_adj_prices(
                                 df_adj_price_05])
 
   # df_full_adj_prices.to_csv(full_adj_prices_dataset.path)
-  df_full_adj_prices.to_pickle(full_adj_prices_dataset.path)
+  df_full_adj_prices.to_pickle(full_adj_prices_dataset.path, protocol=4)
   # with open(full_adj_prices_dataset.path, 'wb') as f:
   #   pickle.dump(df_full_adj_prices, f)
 
@@ -400,10 +400,7 @@ def get_target(
   print('df cols =>', df_price.columns)
 
   df_target = get_target_df(df_price=df_price)
-  # df_target.to_csv(df_target_dataset.path)
-  df_target.to_pickle(df_target_dataset.path)
-  # with open(df_target_dataset.path, 'wb') as f:
-  #   pickle.dump(df_target, f)
+  df_target.to_pickle(df_target_dataset.path, protocol=4)
 
 ###############################
 # get tech indicator ##########
@@ -414,16 +411,11 @@ def get_target(
     packages_to_install=["stockstats", "scikit-learn"]
 )
 def get_tech_indi(
+  # date_ref: str,
   df_price_dataset: Input[Dataset],
-  df_techini_dataset: Output[Dataset]
+  df_techini_dataset: Output[Dataset],
+  
 ):
-  TECHNICAL_INDICATORS_LIST = ['macd',
-  'boll_ub',
-  'boll_lb',
-  'rsi_30',
-  'dx_30',
-  'close_30_sma',
-  'close_60_sma']
   from stockstats import StockDataFrame as Sdf
   # from sklearn.preprocessing import MaxAbsScaler
   from sklearn.preprocessing import maxabs_scale
@@ -449,6 +441,17 @@ def get_tech_indi(
         main method to do the feature engineering
 
     """
+    TECHNICAL_INDICATORS_LIST = ['macd',
+      'boll_ub',
+      'boll_lb',
+      'rsi_30',
+      'dx_30',
+      'close_30_sma',
+      'close_60_sma',
+      # 'mfi',
+      ]
+
+    # PERIOD_MAX = 60,
 
     def __init__(
       self,
@@ -466,7 +469,7 @@ def get_tech_indi(
       @:return: a DataMatrices object
       """
       #clean data
-      df = self.clean_data(df)
+      # df = self.clean_data(df)
       
       # add technical indicators using stockstats
       if self.use_technical_indicator == True:
@@ -545,6 +548,11 @@ def get_tech_indi(
         df['bb_u_ratio'] = df.boll_ub / df.close # without groupby
         df['bb_l_ratio'] = df.boll_lb / df.close # don't need groupby
 
+        # oh oc ol ratio 
+        df['oh_ratio'] = (df.high - df.open) / df.open
+        df['oc_ratio'] = (df.close - df.open) / df.open
+        df['ol_ratio'] = (df.low - df.open) / df.open
+
         # macd - relative
         df['max_scale_MACD'] = df.groupby('tic').macd.transform(
             lambda x: maxabs_scale(x))
@@ -565,6 +573,24 @@ def get_tech_indi(
             .apply(lambda df: volume_change_wrt_10_mean(df))
             .reset_index(drop=True)
             )
+
+        # close ratio rolling min max
+        def close_ratio_wrt_10_max(df):
+          return df.close / df.close.rolling(10).max() 
+        def close_ratio_wrt_10_min(df):
+          return df.close / df.close.rolling(10).min() 
+
+        df['close_ratio_wrt_10max'] = (
+          df.groupby('tic')
+          .apply(lambda df: close_ratio_wrt_10_max(df))
+          .reset_index(drop=True)
+        )
+        df['close_ratio_wrt_10min'] = (
+          df.groupby('tic')
+          .apply(lambda df: close_ratio_wrt_10_min(df))
+          .reset_index(drop=True)
+        )
+        
         return df
   
   df_price = pd.read_pickle(df_price_dataset.path)
@@ -578,7 +604,7 @@ def get_tech_indi(
   df_process = fe.preprocess_data(df_price)
   df_process.rename(columns={'tic':'code'}, inplace=True)
 
-  df_process.to_pickle(df_techini_dataset.path)
+  df_process.to_pickle(df_techini_dataset.path, protocol=4)
 
 
 ###############################
@@ -607,7 +633,7 @@ def get_full_tech_indi(
   
   df_full = pd.concat([df_01, df_02, df_03,df_04, df_05])
 
-  df_full.to_pickle(full_tech_indi_dataset.path)
+  df_full.to_pickle(full_tech_indi_dataset.path, protocol=4)
 
 #########################################
 # get feature ###########################
@@ -666,8 +692,7 @@ def get_features(
   def get_upbro_ratio(df):
       '''df : '''
       return (
-              sum(df.target_return > 0) /
-              df.shape[0], # 그날 상승한 친구들의 비율
+            sum(df.target_return > 0) / df.shape[0], # 그날 상승한 친구들의 비율
               df.shape[0], # 그날 친구들 수
               df.target_return.mean(), # 그날 모든 친구들 상승률의 평균
               df[df.target_return > 0].target_return.mean(), # 그날 오른 친구들의 평균
@@ -772,6 +797,10 @@ def get_features(
                               lambda x : x.rolling(10, min_periods=1).sum()
                           )
 
+  df_rank['in_top_30_20'] = df_rank.groupby('종목코드')['in_top30'].transform(
+                              lambda x : x.rolling(20, min_periods=1).sum()
+                          )
+
   # Merge DataFrames
   # cols_rank = ['종목코드', '날짜', 'in_top30', 'rank_mean_10', 'rank_mean_5', 'in_top_30_5', 'in_top_30_10']
   cols_tmp = ['source', 'date',
@@ -809,7 +838,7 @@ def get_features(
                 
   df_feats.fillna(0, inplace=True)
   
-  df_feats.to_pickle(features_dataset.path)
+  df_feats.to_pickle(features_dataset.path, protocol=4)
 
 @component(
   base_image="gcr.io/dots-stock/python-img-v5.2",
@@ -844,7 +873,7 @@ def get_ml_dataset(
 
   # df_ml_dataset.dropna(inplace=True)
 
-  df_ml_dataset.to_pickle(ml_dataset.path)
+  df_ml_dataset.to_pickle(ml_dataset.path, protocol=4)
 
 
 @component(
@@ -892,8 +921,6 @@ def create_model_and_prediction_01(
          left_on='code', right_on='Symbol', how='left')
   
   print(f'size04 {df_preP.shape}')
-  cols_date = ['date', 'DesignationDate']
-  cols_base = ['code','name']
 
   df_preP['date'] = pd.to_datetime(df_preP.date)
   df_preP['admin_stock'] = df_preP.DesignationDate <= df_preP.date
@@ -932,6 +959,7 @@ def create_model_and_prediction_01(
                 'rank_mean_5',
                 'in_top_30_5',
                 'in_top_30_10',
+                'in_top_30_20',
                 'up_bro_ratio_20',
                 'up_bro_ratio_40',
                 'up_bro_ratio_60',
@@ -1020,6 +1048,11 @@ def create_model_and_prediction_01(
                 'max_scale_MACD',
                 'volume_change_wrt_10max',
                 'volume_change_wrt_10mean',
+                'close_ratio_wrt_10max',
+                'close_ratio_wrt_10min',
+                'oh_ratio',
+                'oc_ratio',
+                'ol_ratio',
                 #  'Symbol',
                 #  'DesignationDate',
                 #  'admin_stock',
@@ -1031,13 +1064,15 @@ def create_model_and_prediction_01(
   # Split Dataset into For Training & For Prediction
   l_dates = df_preP.date.unique().tolist()
   print(f'size06 {l_dates.__len__()}')
+
   dates_for_train = l_dates[-23:-3] # 며칠전까지 볼것인가!! 20일만! 일단은
   print(f'size07 {dates_for_train.__len__()}')
-  date_for_pred = l_dates[-1]
+
+  date_for_pred = l_dates[-1]  # prediction date
   print(f'size08 {date_for_pred}')
 
   df_train = df_preP[df_preP.date.isin(dates_for_train)]
-  df_train = df_train.dropna(axis=0, subset=target_col)
+  df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
 
   df_pred = df_preP[df_preP.date == date_for_pred] 
 
@@ -1057,10 +1092,8 @@ def create_model_and_prediction_01(
   df_pred['in_top30'] = df_pred.in_top30.astype('int')
 
   # Run prediction 3 times
-  i=0
   df_pred_final_01 = pd.DataFrame()
-
-  while i < 5 :
+  for _ in range(3):
 
     # Set Model
     model_01 = CatBoostClassifier(
@@ -1083,7 +1116,9 @@ def create_model_and_prediction_01(
     print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
     print('No. of true : ', y.sum() )
 
-    model_01.fit(X_train, y_train, verbose=200, plot=True, 
+    model_01.fit(X_train, y_train,
+              # , verbose=200
+              # , plot=True, 
               cat_features=['in_top30','dayofweek', 'mkt_cap_cat'])
 
     print(f'model score : {model_01.score(X_test, y_test)}')
@@ -1091,7 +1126,6 @@ def create_model_and_prediction_01(
     model_01.save_model(model_01_artifact.path)
 
     # Prediction
-
     pred_stocks_01 = model_01.predict(df_pred[features])    
     pred_proba_01 = model_01.predict_proba(df_pred[features])
     
@@ -1116,8 +1150,6 @@ def create_model_and_prediction_01(
     print('results', df_pred_r_01.code)
     df_pred_final_01 = df_pred_final_01.append(df_pred_r_01)
 
-    i = i + 1
-
   print(f'columns of df : {df_pred_final_01.columns}' )
   df_pred_final_01 = df_pred_final_01.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
   df_pred_final_01 = df_pred_final_01.reset_index()
@@ -1125,8 +1157,6 @@ def create_model_and_prediction_01(
 
   df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True) # remove duplicates
   df_pred_final_01.to_pickle(prediction_result_01.path) # save 
-
-
 
 
 #########################################
@@ -1184,15 +1214,20 @@ def create_awesome_pipeline():
     op_get_full_adj_prices.outputs['full_adj_prices_dataset'])
 
   op_get_techindi_01 = get_tech_indi(
-    op_get_adj_prices_01.outputs['adj_price_dataset'])
+    # date_ref=op_set_defaults.outputs['date_ref'],
+    df_price_dataset = op_get_adj_prices_01.outputs['adj_price_dataset'])
   op_get_techindi_02 = get_tech_indi(
-    op_get_adj_prices_02.outputs['adj_price_dataset'])
+    # date_ref=op_set_defaults.outputs['date_ref'],
+    df_price_dataset = op_get_adj_prices_02.outputs['adj_price_dataset'])
   op_get_techindi_03 = get_tech_indi(
-    op_get_adj_prices_03.outputs['adj_price_dataset'])
+    # date_ref=op_set_defaults.outputs['date_ref'],
+    df_price_dataset = op_get_adj_prices_03.outputs['adj_price_dataset'])
   op_get_techindi_04 = get_tech_indi(
-    op_get_adj_prices_04.outputs['adj_price_dataset'])
+    # date_ref=op_set_defaults.outputs['date_ref'],
+    df_price_dataset = op_get_adj_prices_04.outputs['adj_price_dataset'])
   op_get_techindi_05 = get_tech_indi(
-    op_get_adj_prices_05.outputs['adj_price_dataset'])
+    # date_ref=op_set_defaults.outputs['date_ref'],
+    df_price_dataset = op_get_adj_prices_05.outputs['adj_price_dataset'])
   
   op_get_full_tech_indi = get_full_tech_indi(
     tech_indi_dataset01 = op_get_techindi_01.outputs['df_techini_dataset'],
