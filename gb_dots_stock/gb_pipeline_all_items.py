@@ -1086,10 +1086,8 @@ def create_model_and_prediction_01(
   df_pred['in_top30'] = df_pred.in_top30.astype('int')
 
   # Run prediction 3 times
-  i=0
   df_pred_final_01 = pd.DataFrame()
-
-  while i < 3 :
+  for _ in range(3):
 
     # Set Model
     model_01 = CatBoostClassifier(
@@ -1112,7 +1110,9 @@ def create_model_and_prediction_01(
     print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
     print('No. of true : ', y.sum() )
 
-    model_01.fit(X_train, y_train, verbose=200, plot=True, 
+    model_01.fit(X_train, y_train,
+              # , verbose=200
+              # , plot=True, 
               cat_features=['in_top30','dayofweek', 'mkt_cap_cat'])
 
     print(f'model score : {model_01.score(X_test, y_test)}')
@@ -1120,7 +1120,6 @@ def create_model_and_prediction_01(
     model_01.save_model(model_01_artifact.path)
 
     # Prediction
-
     pred_stocks_01 = model_01.predict(df_pred[features])    
     pred_proba_01 = model_01.predict_proba(df_pred[features])
     
@@ -1145,8 +1144,6 @@ def create_model_and_prediction_01(
     print('results', df_pred_r_01.code)
     df_pred_final_01 = df_pred_final_01.append(df_pred_r_01)
 
-    i = i + 1
-
   print(f'columns of df : {df_pred_final_01.columns}' )
   df_pred_final_01 = df_pred_final_01.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
   df_pred_final_01 = df_pred_final_01.reset_index()
@@ -1154,8 +1151,6 @@ def create_model_and_prediction_01(
 
   df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True) # remove duplicates
   df_pred_final_01.to_pickle(prediction_result_01.path) # save 
-
-
 
 
 #########################################
