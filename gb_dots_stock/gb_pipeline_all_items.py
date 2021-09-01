@@ -31,7 +31,8 @@ def set_defaults()-> NamedTuple(
   'Outputs',
   [
     ('date_ref',str),
-    ('n_days', int)
+    ('n_days', int),
+    ('period_extra', int)
   ]):
 
   import pandas as pd
@@ -41,7 +42,8 @@ def set_defaults()-> NamedTuple(
   # today = '20210809'
   today = '20210831'
   period_to_train = 20
-  n_days = period_to_train + 20
+  period_extra = 30
+  n_days = period_to_train + period_extra
 
   cal_KRX = get_calendar('XKRX')
 
@@ -59,7 +61,7 @@ def set_defaults()-> NamedTuple(
     date_ref = today
   else :
     date_ref = dates_krx_on[-1]
-  return (date_ref, n_days)
+  return (date_ref, n_days, period_extra)
 
 ##############################
 # get market info ############
