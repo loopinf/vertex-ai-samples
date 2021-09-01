@@ -1164,8 +1164,8 @@ def create_model_and_prediction_01(
 )
 def create_model_and_prediction_02(
   ml_dataset : Input[Dataset],
-  prediction_result_01 : Output[Dataset],
-  model_01_artifact: Output[Model],
+  prediction_result_02 : Output[Dataset],
+  model_02_artifact: Output[Model],
   # metrics: Output[ClassificationMetrics],
 ):
 
@@ -1353,13 +1353,17 @@ def create_model_and_prediction_02(
   for i in range(idx_start, l_dates.__len__()):
 
     dates_for_train = l_dates[i-23: i-3] # 며칠전까지 볼것인가!! 20일만! 일단은
-    date_for_pred = l_dates[-1]  # prediction date
+    date_for_pred = l_dates[i]  # prediction date
+
+    print(f'train date :  from {dates_for_train[0]} to {dates_for_train[-1]}')
+    print(f'prediction date : {date_for_pred}')
 
     df_train = df_preP[df_preP.date.isin(dates_for_train)]
     df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
 
     df_pred = df_preP[df_preP.date == date_for_pred] 
 
+    print(f'check01 : train size {df_train.shape} / pred size {df_pred.shape}')
     # ML Model
     from catboost import CatBoostClassifier
     from sklearn.model_selection import train_test_split
@@ -1405,7 +1409,7 @@ def create_model_and_prediction_02(
 
       print(f'model score : {model_01.score(X_test, y_test)}')
 
-      model_01.save_model(model_01_artifact.path)
+      model_01.save_model(model_02_artifact.path)
 
       # Prediction
       pred_stocks_01 = model_01.predict(df_pred[features])    
@@ -1416,10 +1420,6 @@ def create_model_and_prediction_02(
 
       df_pred_name_code = df_pred[cols_indicator].reset_index(drop=True)
 
-      print('results', df_pred_stocks_01, df_pred_stocks_01.shape)
-      print('results', df_pred_proba_01, df_pred_proba_01.shape)
-      print('result', df_pred_name_code.head(), df_pred_name_code.shape)
-
       df_pred_r_01 = pd.concat(
                       [
                         df_pred_name_code,
@@ -1429,19 +1429,22 @@ def create_model_and_prediction_02(
                         axis=1)
 
       df_pred_r_01 = df_pred_r_01[df_pred_r_01.Prediction > 0]
-      print('results', df_pred_r_01.code)
+      print('prediction results', df_pred_r_01)
       df_pred_final_01 = df_pred_final_01.append(df_pred_r_01)
 
-    print(f'columns of df : {df_pred_final_01.columns}' )
+    print(f'size of df_pred_final_01_1 : {df_pred_final_01.shape}' )
     df_pred_final_01 = df_pred_final_01.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
     df_pred_final_01 = df_pred_final_01.reset_index()
     df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
+    print(f'size of df_pred_final_01_2 : {df_pred_final_01.shape}' )
 
     df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True) # remove duplicates
+    print(f'size of df_pred_final_01_3 : {df_pred_final_01.shape}' )
 
-    df_pred_all.append(df_pred_final_01)
-    
-  df_pred_all.to_pickle(prediction_result_01.path) # save 
+    df_pred_all = df_pred_all.append(df_pred_final_01)
+    print(f'size of df_pred_all : {df_pred_all.shape}' )
+
+  df_pred_all.to_pickle(prediction_result_02.path) # save 
 
 
 #########################################
