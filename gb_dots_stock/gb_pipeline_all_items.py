@@ -24,7 +24,7 @@ from kfp.v2.dsl import (Artifact,
 from kfp.v2.google.client import AIPlatformClient
 
 @component(
-  base_image='gcr.io/dots-stock/py38-pandas-cal'
+  base_image="gcr.io/dots-stock/python-img-v5.2",
 )
 def set_defaults()-> NamedTuple(
   'Outputs',
@@ -51,12 +51,16 @@ def set_defaults()-> NamedTuple(
           holidays=cal_KRX.precomputed_holidays)
       ]
 
+  print(f'today : {today}')
   dates_krx_on = get_krx_on_dates_start_end('20210104', today)
 
   if today in dates_krx_on :
     date_ref = today
   else :
     date_ref = dates_krx_on[-1]
+
+  print(f'date_ref : {date_ref}')
+
   return (date_ref, n_days)
 
 ##############################
