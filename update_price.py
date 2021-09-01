@@ -8,7 +8,7 @@ import FinanceDataReader as fdr
 
 # set date
 
-today = '20210831'
+today = '20210901'
 
 #%%
 # loading dfs
@@ -16,7 +16,7 @@ today = '20210831'
 # 이전 컴포넌트에서 나온 예측 결과는 기존 예측 결과와 이미 합쳐저 있어야 함
 # 이 컴포넌트에서는 합쳐져 있는 결과를 불러오는 것을 가정하였음
 
-path_df_pred_result = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210901105954/create-model-and-prediction-01_-2817977933245710336/prediction_result_01'
+path_df_pred_result = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210901202144/create-model-and-prediction-02_6704883478829203456/prediction_result_01'
 # path_df_pred_result = 'gs://pipeline-dots-stock/prediction_results_3d_close_10_v01/df_predic_result_3d_close_10_v01_price_updated.pkl'
 df_pred_result = pd.read_pickle(path_df_pred_result)
 # df_pred_result.rename(columns={'날짜':'date', '종목코드':'code'}, inplace=True)
