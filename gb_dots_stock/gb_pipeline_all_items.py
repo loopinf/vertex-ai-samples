@@ -1106,7 +1106,7 @@ def create_model_and_prediction_01(
     print('No. of true : ', y.sum() )
 
     model_01.fit(X_train, y_train, verbose=200, plot=True, 
-              cat_features=['in_top30','dayofweek'])
+              cat_features=['in_top30','dayofweek', 'mkt_cap_cat'])
 
     print(f'model score : {model_01.score(X_test, y_test)}')
 
