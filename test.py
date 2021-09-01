@@ -87,3 +87,10 @@ df_to_update = df_to_update.merge(
                         left_on=['date', 'code'],
                         right_on=['date', 'code'] )
 # %%
+
+# 1. get prediction result (df)
+# select dates
+# 2. get codes from the df
+# 3. get price from fdr
+# 4. shift
+# 5. merge by code and date
