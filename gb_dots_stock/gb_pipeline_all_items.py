@@ -796,6 +796,10 @@ def get_features(
                               lambda x : x.rolling(10, min_periods=1).sum()
                           )
 
+  df_rank['in_top_30_20'] = df_rank.groupby('종목코드')['in_top30'].transform(
+                              lambda x : x.rolling(20, min_periods=1).sum()
+                          )
+
   # Merge DataFrames
   # cols_rank = ['종목코드', '날짜', 'in_top30', 'rank_mean_10', 'rank_mean_5', 'in_top_30_5', 'in_top_30_10']
   cols_tmp = ['source', 'date',
@@ -956,6 +960,7 @@ def create_model_and_prediction_01(
                 'rank_mean_5',
                 'in_top_30_5',
                 'in_top_30_10',
+                'in_top_30_20',
                 'up_bro_ratio_20',
                 'up_bro_ratio_40',
                 'up_bro_ratio_60',
