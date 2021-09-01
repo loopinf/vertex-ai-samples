@@ -24,8 +24,8 @@ from kfp.v2.dsl import (Artifact,
 from kfp.v2.google.client import AIPlatformClient
 
 @component(
-  # base_image='gcr.io/dots-stock/py38-pandas-cal'
-    base_image="gcr.io/dots-stock/python-img-v5.2",
+  # base_image='gcr.io/dots-stock/py38-pandas-cal',
+  base_image="gcr.io/dots-stock/python-img-v5.2"
 )
 def set_defaults()-> NamedTuple(
   'Outputs',
@@ -39,6 +39,7 @@ def set_defaults()-> NamedTuple(
 
   today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')
   # today = '20210809'
+  today = '20210831'
   period_to_train = 20
   n_days = period_to_train + 20
 
@@ -277,34 +278,7 @@ def get_full_adj_prices(
 ):
 
   import pandas as pd
-  import pickle
-
-  # df_adj_price_01 = pd.read_csv(adj_price_dataset01.path,                          
-  #                         ).reset_index(drop=True)
-  # df_adj_price_02 = pd.read_csv(adj_price_dataset02.path,                          
-  #                         ).reset_index(drop=True)
-  # df_adj_price_03 = pd.read_csv(adj_price_dataset03.path,
-  #                         ).reset_index(drop=True)                      
-  # df_adj_price_04 = pd.read_csv(adj_price_dataset04.path,
-  #                         ).reset_index(drop=True)
-  # df_adj_price_05 = pd.read_csv(adj_price_dataset05.path,
-  #                         ).reset_index(drop=True)
   
-  # with open(adj_price_dataset01.path, 'rb') as f:
-  #   df_adj_price_01 = pickle.load(f)
-
-  # with open(adj_price_dataset02.path, 'rb') as f:
-  #   df_adj_price_02 = pickle.load(f)
-
-  # with open(adj_price_dataset03.path, 'rb') as f:
-  #   df_adj_price_03 = pickle.load(f)
-
-  # with open(adj_price_dataset04.path, 'rb') as f:
-  #   df_adj_price_04 = pickle.load(f)
-
-  # with open(adj_price_dataset05.path, 'rb') as f:
-  #   df_adj_price_05 = pickle.load(f)
-
   df_adj_price_01 = pd.read_pickle(adj_price_dataset01.path)
   df_adj_price_02 = pd.read_pickle(adj_price_dataset02.path)
   df_adj_price_03 = pd.read_pickle(adj_price_dataset03.path)
@@ -423,10 +397,7 @@ def get_target(
   print('df cols =>', df_price.columns)
 
   df_target = get_target_df(df_price=df_price)
-  # df_target.to_csv(df_target_dataset.path)
   df_target.to_pickle(df_target_dataset.path, protocol=4)
-  # with open(df_target_dataset.path, 'wb') as f:
-  #   pickle.dump(df_target, f)
 
 ###############################
 # get tech indicator ##########
@@ -619,11 +590,8 @@ def get_tech_indi(
         
         return df
   
-  # df_price = pd.read_csv(df_price_dataset.path)
   df_price = pd.read_pickle(df_price_dataset.path)
-  # with open(df_price_dataset.path, 'rb') as f:
-  #   df_price = pickle.load(f)
-
+  
   print('size =>', df_price.shape)
   print('cols =>', df_price.columns)
 
@@ -633,10 +601,7 @@ def get_tech_indi(
   df_process = fe.preprocess_data(df_price)
   df_process.rename(columns={'tic':'code'}, inplace=True)
 
-  # df_process.to_csv(df_techini_dataset.path)
   df_process.to_pickle(df_techini_dataset.path, protocol=4)
-  # with open(df_techini_dataset.path, 'wb') as f:
-  #   pickle.dump(df_process, f)
 
 
 ###############################
@@ -697,7 +662,7 @@ def get_features(
   df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
-  cols = ['종목코드', '종목명', '날짜', '순위_상승률']
+  cols = ['종목코드', '종목명', '날짜', '순위_상승률', '시가총액']
   df_mkt_ = df_market[cols]
 
   cols_market = [ '종목코드','날짜','등락률','return_-1']
@@ -855,7 +820,15 @@ def get_features(
 
   # df_feats.fillna(0, inplace=True)
   df_feats.drop(columns=['source', 'date'], inplace=True)
-  df_feats.rename(columns={'종목코드':'code', '종목명':'name', '순위_상승률':'rank', '날짜':'date'}, inplace=True)
+  df_feats.rename(
+            columns={
+                '종목코드':'code',
+                '종목명':'name',
+                '순위_상승률':'rank',
+                '날짜':'date',
+                '시가총액':'mkt_cap',
+                }, inplace=True)
+                
   df_feats.fillna(0, inplace=True)
   
   df_feats.to_pickle(features_dataset.path, protocol=4)
@@ -894,6 +867,289 @@ def get_ml_dataset(
   # df_ml_dataset.dropna(inplace=True)
 
   df_ml_dataset.to_pickle(ml_dataset.path, protocol=4)
+
+
+@component(
+  base_image="gcr.io/dots-stock/python-img-v5.2",
+  packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
+)
+def create_model_and_prediction_01(
+  ml_dataset : Input[Dataset],
+  prediction_result_01 : Output[Dataset],
+  model_01_artifact: Output[Model],
+  # metrics: Output[ClassificationMetrics],
+):
+
+  import pandas as pd
+  import numpy as np
+  from pykrx import stock
+  import FinanceDataReader as fdr
+
+  df_dataset = pd.read_pickle(ml_dataset.path)
+
+  df_preP = df_dataset.copy()
+
+  print(f'size01 {df_preP.shape}')
+
+  # drop duplicated column
+  cols_ohlcv_x = ['open_x', 'high_x', 'low_x', 'close_x', 'volume_x', 'change_x']
+  cols_ohlcv_y = ['open_y', 'high_y', 'low_y', 'close_y', 'volume_y', 'change_y']
+  df_preP = df_preP.drop(columns=cols_ohlcv_x+cols_ohlcv_y)
+
+  print(f'size02 {df_preP.shape}')
+
+  # drop SPACs
+  stock_names = pd.Series(df_preP.name.unique())
+  stock_names_SPAC = stock_names[ stock_names.str.contains('스팩')].tolist()
+
+  df_preP = df_preP.where( 
+            lambda df : ~df.name.isin(stock_names_SPAC)
+            ).dropna(subset=['name'])
+
+  print(f'size03 {df_preP.shape}')
+
+  # Remove administrative items
+  krx_adm = fdr.StockListing('KRX-ADMINISTRATIVE') # 관리종목
+  df_preP = df_preP.merge(krx_adm[['Symbol','DesignationDate']], 
+         left_on='code', right_on='Symbol', how='left')
+  
+  print(f'size04 {df_preP.shape}')
+  cols_date = ['date', 'DesignationDate']
+  cols_base = ['code','name']
+
+  df_preP['date'] = pd.to_datetime(df_preP.date)
+  df_preP['admin_stock'] = df_preP.DesignationDate <= df_preP.date
+  df_preP = (
+        df_preP.where(
+            lambda df: df.admin_stock == 0
+        ).dropna(subset=['admin_stock'])
+        ) 
+  print(f'size05 {df_preP.shape}')
+  # Add day of week
+  df_preP['dayofweek'] = pd.to_datetime(df_preP.date.astype('str')).dt.dayofweek.astype('category')
+
+  # Add market_cap categotu
+  df_preP['mkt_cap_cat'] = pd.cut(
+                            df_preP['mkt_cap'],
+                            bins=[0, 1000, 5000, 10000, 50000, np.inf],
+                            include_lowest=True,
+                            labels=['A', 'B', 'C', 'D', 'E'])
+
+  # Set Target & Features
+  target_col = ['target_close_over_10']
+  cols_indicator = [
+                    'code',
+                    'name',
+                    'date',
+                    ]
+  features = [
+                #  'code',
+                #  'name',
+                #  'date',
+                'rank',
+                'mkt_cap',
+                'mkt_cap_cat',
+                'in_top30',
+                'rank_mean_10',
+                'rank_mean_5',
+                'in_top_30_5',
+                'in_top_30_10',
+                'up_bro_ratio_20',
+                'up_bro_ratio_40',
+                'up_bro_ratio_60',
+                'up_bro_ratio_90',
+                'up_bro_ratio_120',
+                'n_bro_20',
+                'n_bro_40',
+                'n_bro_60',
+                'n_bro_90',
+                'n_bro_120',
+                'all_bro_rtrn_mean_20',
+                'all_bro_rtrn_mean_40',
+                'all_bro_rtrn_mean_60',
+                'all_bro_rtrn_mean_90',
+                'all_bro_rtrn_mean_120',
+                'up_bro_rtrn_mean_20',
+                'up_bro_rtrn_mean_40',
+                'up_bro_rtrn_mean_60',
+                'up_bro_rtrn_mean_90',
+                'up_bro_rtrn_mean_120',
+                'all_bro_rtrn_mean_ystd_20',
+                'all_bro_rtrn_mean_ystd_40',
+                'all_bro_rtrn_mean_ystd_60',
+                'all_bro_rtrn_mean_ystd_90',
+                'all_bro_rtrn_mean_ystd_120',
+                'bro_up_ratio_ystd_20',
+                'bro_up_ratio_ystd_40',
+                'bro_up_ratio_ystd_60',
+                'bro_up_ratio_ystd_90',
+                'bro_up_ratio_ystd_120',
+                'up_bro_rtrn_mean_ystd_20',
+                'up_bro_rtrn_mean_ystd_40',
+                'up_bro_rtrn_mean_ystd_60',
+                'up_bro_rtrn_mean_ystd_90',
+                'up_bro_rtrn_mean_ystd_120',
+                #  'index',
+                #  'open_x',
+                #  'high_x',
+                #  'low_x',
+                #  'close_x',
+                #  'volume_x',
+                #  'change_x',
+                #  'high_p1',
+                #  'high_p2',
+                #  'high_p3',
+                #  'close_p1',
+                #  'close_p2',
+                #  'close_p3',
+                #  'change_p1',
+                #  'change_p2',
+                #  'change_p3',
+                #  'change_p1_over5',
+                #  'change_p2_over5',
+                #  'change_p3_over5',
+                #  'change_p1_over10',
+                #  'change_p2_over10',
+                #  'change_p3_over10',
+                #  'close_high_1',
+                #  'close_high_2',
+                #  'close_high_3',
+                #  'close_high_1_over10',
+                #  'close_high_2_over10',
+                #  'close_high_3_over10',
+                #  'close_high_1_over5',
+                #  'close_high_2_over5',
+                #  'close_high_3_over5',
+                #  'open_y',
+                #  'high_y',
+                #  'low_y',
+                #  'close_y',
+                #  'volume_y',
+                #  'change_y',
+                #  'macd',
+                #  'boll_ub',
+                #  'boll_lb',
+                'rsi_30',
+                'dx_30',
+                #  'close_30_sma',
+                #  'close_60_sma',
+                #  'daily_return',
+                'return_lag_1',
+                'return_lag_2',
+                'return_lag_3',
+                'bb_u_ratio',
+                'bb_l_ratio',
+                'max_scale_MACD',
+                'volume_change_wrt_10max',
+                'volume_change_wrt_10mean',
+                #  'Symbol',
+                #  'DesignationDate',
+                #  'admin_stock',
+                'dayofweek']        
+
+  # Change datetime format to str
+  df_preP['date'] = df_preP.date.dt.strftime('%Y%m%d')
+
+  # Split Dataset into For Training & For Prediction
+  l_dates = df_preP.date.unique().tolist()
+  print(f'size06 {l_dates.__len__()}')
+  dates_for_train = l_dates[-23:-3] # 며칠전까지 볼것인가!! 20일만! 일단은
+  print(f'size07 {dates_for_train.__len__()}')
+  date_for_pred = l_dates[-1]
+  print(f'size08 {date_for_pred}')
+
+  df_train = df_preP[df_preP.date.isin(dates_for_train)]
+  df_train = df_train.dropna(axis=0, subset=target_col)
+
+  df_pred = df_preP[df_preP.date == date_for_pred] 
+
+  print(f'size of train {df_train.shape} size of pred {df_pred.shape}')
+
+  # ML Model
+  from catboost import CatBoostClassifier
+  from sklearn.model_selection import train_test_split
+  from catboost import Pool
+  from catboost.utils import get_roc_curve, get_confusion_matrix
+  import sklearn
+  # from sklearn import metrics
+
+  X = df_train[features + cols_indicator]
+  y = df_train[target_col].astype('float')
+  X['in_top30'] = X.in_top30.astype('int')
+  df_pred['in_top30'] = df_pred.in_top30.astype('int')
+
+  # Run prediction 3 times
+  i=0
+  df_pred_final_01 = pd.DataFrame()
+
+  while i < 3 :
+
+    # Set Model
+    model_01 = CatBoostClassifier(
+            # random_seed = 42,
+            # task_type = 'GPU',
+            # iterations=3000,
+            iterations=2000,
+            train_dir = '/tmp',
+            verbose=500
+        )
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y)
+
+    X_train_indictor = X_train[cols_indicator]
+    X_test_indictor = X_test[cols_indicator]
+
+    X_train = X_train[features]
+    X_test = X_test[features]
+
+    print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
+    print('No. of true : ', y.sum() )
+
+    model_01.fit(X_train, y_train, verbose=200, plot=True, 
+              cat_features=['in_top30','dayofweek'])
+
+    print(f'model score : {model_01.score(X_test, y_test)}')
+
+    model_01.save_model(model_01_artifact.path)
+
+    # Prediction
+
+    pred_stocks_01 = model_01.predict(df_pred[features])    
+    pred_proba_01 = model_01.predict_proba(df_pred[features])
+    
+    df_pred_stocks_01 = pd.DataFrame(pred_stocks_01, columns=['Prediction']).reset_index(drop=True)
+    df_pred_proba_01 = pd.DataFrame(pred_proba_01, columns=['Proba01', 'Proba02']).reset_index(drop=True)
+
+    df_pred_name_code = df_pred[cols_indicator].reset_index(drop=True)
+
+    print('results', df_pred_stocks_01, df_pred_stocks_01.shape)
+    print('results', df_pred_proba_01, df_pred_proba_01.shape)
+    print('result', df_pred_name_code.head(), df_pred_name_code.shape)
+
+    df_pred_r_01 = pd.concat(
+                    [
+                      df_pred_name_code,
+                      df_pred_stocks_01,
+                      df_pred_proba_01
+                      ],
+                      axis=1)
+
+    df_pred_r_01 = df_pred_r_01[df_pred_r_01.Prediction > 0]
+    print('results', df_pred_r_01.code)
+    df_pred_final_01 = df_pred_final_01.append(df_pred_r_01)
+
+    i = i + 1
+
+  print(f'columns of df : {df_pred_final_01.columns}' )
+  df_pred_final_01 = df_pred_final_01.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
+  df_pred_final_01 = df_pred_final_01.reset_index()
+  df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
+
+  df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True) # remove duplicates
+  df_pred_final_01.to_pickle(prediction_result_01.path) # save 
+
+
+
 
 #########################################
 # create pipeline #######################
@@ -977,9 +1233,9 @@ def create_awesome_pipeline():
     target_dataset= op_get_target.outputs['df_target_dataset'],
     tech_indi_dataset= op_get_full_tech_indi.outputs['full_tech_indi_dataset'])
 
-  # op_create_model_and_prediction_01 = create_model_and_prediction_01(
-    # ml_dataset= op_get_ml_dataset.outputs['ml_dataset']
-  # )
+  op_create_model_and_prediction_01 = create_model_and_prediction_01(
+    ml_dataset= op_get_ml_dataset.outputs['ml_dataset']
+  )
 
   
 compiler.Compiler().compile(
