@@ -24,7 +24,8 @@ from kfp.v2.dsl import (Artifact,
 from kfp.v2.google.client import AIPlatformClient
 
 @component(
-  base_image="gcr.io/dots-stock/python-img-v5.2",
+  # base_image='gcr.io/dots-stock/py38-pandas-cal',
+  base_image="gcr.io/dots-stock/python-img-v5.2"
 )
 def set_defaults()-> NamedTuple(
   'Outputs',
@@ -280,34 +281,7 @@ def get_full_adj_prices(
 ):
 
   import pandas as pd
-  import pickle
-
-  # df_adj_price_01 = pd.read_csv(adj_price_dataset01.path,                          
-  #                         ).reset_index(drop=True)
-  # df_adj_price_02 = pd.read_csv(adj_price_dataset02.path,                          
-  #                         ).reset_index(drop=True)
-  # df_adj_price_03 = pd.read_csv(adj_price_dataset03.path,
-  #                         ).reset_index(drop=True)                      
-  # df_adj_price_04 = pd.read_csv(adj_price_dataset04.path,
-  #                         ).reset_index(drop=True)
-  # df_adj_price_05 = pd.read_csv(adj_price_dataset05.path,
-  #                         ).reset_index(drop=True)
   
-  # with open(adj_price_dataset01.path, 'rb') as f:
-  #   df_adj_price_01 = pickle.load(f)
-
-  # with open(adj_price_dataset02.path, 'rb') as f:
-  #   df_adj_price_02 = pickle.load(f)
-
-  # with open(adj_price_dataset03.path, 'rb') as f:
-  #   df_adj_price_03 = pickle.load(f)
-
-  # with open(adj_price_dataset04.path, 'rb') as f:
-  #   df_adj_price_04 = pickle.load(f)
-
-  # with open(adj_price_dataset05.path, 'rb') as f:
-  #   df_adj_price_05 = pickle.load(f)
-
   df_adj_price_01 = pd.read_pickle(adj_price_dataset01.path)
   df_adj_price_02 = pd.read_pickle(adj_price_dataset02.path)
   df_adj_price_03 = pd.read_pickle(adj_price_dataset03.path)
@@ -593,11 +567,8 @@ def get_tech_indi(
             )
         return df
   
-  # df_price = pd.read_csv(df_price_dataset.path)
   df_price = pd.read_pickle(df_price_dataset.path)
-  # with open(df_price_dataset.path, 'rb') as f:
-  #   df_price = pickle.load(f)
-
+  
   print('size =>', df_price.shape)
   print('cols =>', df_price.columns)
 
@@ -607,10 +578,7 @@ def get_tech_indi(
   df_process = fe.preprocess_data(df_price)
   df_process.rename(columns={'tic':'code'}, inplace=True)
 
-  # df_process.to_csv(df_techini_dataset.path)
   df_process.to_pickle(df_techini_dataset.path)
-  # with open(df_techini_dataset.path, 'wb') as f:
-  #   pickle.dump(df_process, f)
 
 
 ###############################
@@ -671,7 +639,7 @@ def get_features(
   df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
   df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
-  cols = ['종목코드', '종목명', '날짜', '순위_상승률']
+  cols = ['종목코드', '종목명', '날짜', '순위_상승률', '시가총액']
   df_mkt_ = df_market[cols]
 
   cols_market = [ '종목코드','날짜','등락률','return_-1']
@@ -830,7 +798,15 @@ def get_features(
 
   # df_feats.fillna(0, inplace=True)
   df_feats.drop(columns=['source', 'date'], inplace=True)
-  df_feats.rename(columns={'종목코드':'code', '종목명':'name', '순위_상승률':'rank', '날짜':'date'}, inplace=True)
+  df_feats.rename(
+            columns={
+                '종목코드':'code',
+                '종목명':'name',
+                '순위_상승률':'rank',
+                '날짜':'date',
+                '시가총액':'mkt_cap',
+                }, inplace=True)
+                
   df_feats.fillna(0, inplace=True)
   
   df_feats.to_pickle(features_dataset.path)
@@ -883,6 +859,7 @@ def create_model_and_prediction_01(
 ):
 
   import pandas as pd
+  import numpy as np
   from pykrx import stock
   import FinanceDataReader as fdr
 
@@ -929,6 +906,13 @@ def create_model_and_prediction_01(
   # Add day of week
   df_preP['dayofweek'] = pd.to_datetime(df_preP.date.astype('str')).dt.dayofweek.astype('category')
 
+  # Add market_cap categotu
+  df_preP['mkt_cap_cat'] = pd.cut(
+                            df_preP['mkt_cap'],
+                            bins=[0, 1000, 5000, 10000, 50000, np.inf],
+                            include_lowest=True,
+                            labels=['A', 'B', 'C', 'D', 'E'])
+
   # Set Target & Features
   target_col = ['target_close_over_10']
   cols_indicator = [
@@ -941,6 +925,8 @@ def create_model_and_prediction_01(
                 #  'name',
                 #  'date',
                 'rank',
+                'mkt_cap',
+                'mkt_cap_cat',
                 'in_top30',
                 'rank_mean_10',
                 'rank_mean_5',
@@ -1098,7 +1084,7 @@ def create_model_and_prediction_01(
     print('No. of true : ', y.sum() )
 
     model_01.fit(X_train, y_train, verbose=200, plot=True, 
-              cat_features=['in_top30','dayofweek'])
+              cat_features=['in_top30','dayofweek', 'mkt_cap_cat'])
 
     print(f'model score : {model_01.score(X_test, y_test)}')
 
