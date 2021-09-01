@@ -1047,6 +1047,11 @@ def create_model_and_prediction_01(
                 'max_scale_MACD',
                 'volume_change_wrt_10max',
                 'volume_change_wrt_10mean',
+                'close_ratio_wrt_10max',
+                'close_ratio_wrt_10min',
+                'oh_ratio',
+                'oc_ratio',
+                'ol_ratio',
                 #  'Symbol',
                 #  'DesignationDate',
                 #  'admin_stock',
@@ -1058,13 +1063,15 @@ def create_model_and_prediction_01(
   # Split Dataset into For Training & For Prediction
   l_dates = df_preP.date.unique().tolist()
   print(f'size06 {l_dates.__len__()}')
+
   dates_for_train = l_dates[-23:-3] # 며칠전까지 볼것인가!! 20일만! 일단은
   print(f'size07 {dates_for_train.__len__()}')
-  date_for_pred = l_dates[-1]
+
+  date_for_pred = l_dates[-1]  # prediction date
   print(f'size08 {date_for_pred}')
 
   df_train = df_preP[df_preP.date.isin(dates_for_train)]
-  df_train = df_train.dropna(axis=0, subset=target_col)
+  df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
 
   df_pred = df_preP[df_preP.date == date_for_pred] 
 
