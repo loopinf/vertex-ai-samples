@@ -920,8 +920,6 @@ def create_model_and_prediction_01(
          left_on='code', right_on='Symbol', how='left')
   
   print(f'size04 {df_preP.shape}')
-  cols_date = ['date', 'DesignationDate']
-  cols_base = ['code','name']
 
   df_preP['date'] = pd.to_datetime(df_preP.date)
   df_preP['admin_stock'] = df_preP.DesignationDate <= df_preP.date
