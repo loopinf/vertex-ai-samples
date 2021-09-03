@@ -1,9 +1,10 @@
 #%%
 
 # imports
+from typing import Protocol
 import pandas as pd
 import FinanceDataReader as fdr
-import pickle
+import pickle5 as pickle
 
 #%%
 
@@ -73,6 +74,8 @@ def get_price_tracked(df):
 
     return df_
 
+#%%
+
 df_price_updated  = df_price.groupby('code').apply(lambda df: get_price_tracked(df))
 df_price_updated = df_price_updated.reset_index(drop=True)
 
@@ -87,7 +90,20 @@ df_to_update = df_to_update.merge(
                         df_price_updated,
                         left_on=['date', 'code'],
                         right_on=['date', 'code'] )
+df_to_update.fillna(0, inplace=True)
+
+
+
+# with open('genesis08_result.pkl', 'wb') as f:
+#     pickle.dump(df_to_update, f)
+
+#%%
+
+# df_to_update.to_pickle('genesis08_result.pkl', protocol=1)
 
 with open('genesis08_result.pkl', 'wb') as f:
     pickle.dump(df_to_update, f)
+# %%
+
+df_x = pd.read_pickle('gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210902011300/update-price_-3360661688343855104/updated_result_02')
 # %%
