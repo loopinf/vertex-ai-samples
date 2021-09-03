@@ -1877,6 +1877,16 @@ def create_awesome_pipeline():
     ml_dataset= op_get_ml_dataset.outputs['ml_dataset']
   )
 
+  op_create_model_and_prediction_02 = create_model_and_prediction_02(
+    ml_dataset= op_get_ml_dataset.outputs['ml_dataset']
+  )
+  
+  op_create_model_and_prediction_03 = create_model_and_prediction_03(
+    bros_dataset= op_get_bros.outputs['bros_univ_dataset'], 
+    ml_dataset= op_get_ml_dataset.outputs['ml_dataset']
+  )
+
+
   
 compiler.Compiler().compile(
   pipeline_func=create_awesome_pipeline,
