@@ -6,11 +6,7 @@ import pandas as pd
 import FinanceDataReader as fdr
 import pickle5 as pickle
 
-#%%
 
-# set date
-
-today = '20210901'
 
 #%%
 # loading dfs
@@ -18,9 +14,9 @@ today = '20210901'
 # 이전 컴포넌트에서 나온 예측 결과는 기존 예측 결과와 이미 합쳐저 있어야 함
 # 이 컴포넌트에서는 합쳐져 있는 결과를 불러오는 것을 가정하였음
 
-path_df_pred_result = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210901225806/create-model-and-prediction-02_5031796217261064192/prediction_result_02'
+# path_df_pred_result = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210901225806/create-model-and-prediction-02_5031796217261064192/prediction_result_02'
 # path_df_pred_result = 'gs://pipeline-dots-stock/prediction_results_3d_close_10_v01/df_predic_result_3d_close_10_v01_price_updated.pkl'
-df_pred_result = pd.read_pickle(path_df_pred_result)
+df_pred_result = pd.read_pickle('result_bong04_06_rp02.pkl')
 # df_pred_result.rename(columns={'날짜':'date', '종목코드':'code'}, inplace=True)
 
 # %%
@@ -29,7 +25,7 @@ df_pred_result = pd.read_pickle(path_df_pred_result)
 
 l_dates = df_pred_result.date.unique().tolist()
 
-dates_to_update = l_dates #[-4:]
+dates_to_update = l_dates[:-3]
 
 # df_to_hold = df_pred_result[~df_pred_result.date.isin(dates_to_update)]
 df_to_update = df_pred_result[df_pred_result.date.isin(dates_to_update)]
@@ -101,9 +97,38 @@ df_to_update.fillna(0, inplace=True)
 
 # df_to_update.to_pickle('genesis08_result.pkl', protocol=1)
 
-with open('genesis08_result.pkl', 'wb') as f:
-    pickle.dump(df_to_update, f)
+# with open('bong01.pkl', 'wb') as f:
+#     pickle.dump(df_to_update, f)
 # %%
 
-df_x = pd.read_pickle('gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/ml-with-all-items-20210902011300/update-price_-3360661688343855104/updated_result_02')
+df_x = df_to_update[['name', 'code', 'date', 'close', 'c_1', 'c_2', 'c_3']]
+df_y = df_to_update[['name', 'code', 'date']]
+
+df_y['c1_r'] = df_to_update['c_1']/df_to_update['close']
+df_y['c2_r'] = df_to_update['c_2']/df_to_update['close']
+df_y['c3_r'] = df_to_update['c_3']/df_to_update['close']
+# %%
+l_dates = df_y.date.unique().tolist()
+
+return_mean = []
+for date in l_dates :
+    df_ = df_y[df_y.date == date].head(10)
+    # print(date, df_.shape)
+
+    mean_ = df_['c3_r'].mean()
+    print(mean_)
+    return_mean.append(mean_)
+
+df__ = pd.DataFrame(list(zip(l_dates, return_mean)),
+                        columns=['date', 'mean'])
+
+a = 0
+
+for r in return_mean:
+    a = a + (r-1)*100
+
+print('sum', a)
+#%%
+df__.to_excel('output04_06_rp02.xlsx')
+print('done!')
 # %%
