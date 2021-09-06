@@ -143,6 +143,8 @@ def get_tech_indi(
         df['oc_ratio'] = (df.close - df.open) / df.open
         df['ol_ratio'] = (df.low - df.open) / df.open
 
+        df['ch_ratio'] = (df.high - df.close) / df.close
+
         # macd - relative
         df['max_scale_MACD'] = df.groupby('tic').macd.transform(
             lambda x: maxabs_scale(x))
@@ -150,19 +152,52 @@ def get_tech_indi(
         # custom volume indicator
         def volume_change_wrt_10_max(df):
           return df.volume / df.volume.rolling(10).max()
+        def volume_change_wrt_5_max(df):
+          return df.volume / df.volume.rolling(5).max()
+        def volume_change_wrt_20_max(df):
+          return df.volume / df.volume.rolling(20).max()
+
         def volume_change_wrt_10_mean(df):
           return df.volume / df.volume.rolling(10).mean()
+        def volume_change_wrt_5_mean(df):
+          return df.volume / df.volume.rolling(5).mean()
+        def volume_change_wrt_20_mean(df):
+          return df.volume / df.volume.rolling(20).mean()
 
         df['volume_change_wrt_10max'] = (
             df.groupby('tic')
             .apply(lambda df: volume_change_wrt_10_max(df))
             .reset_index(drop=True)
             )
+        df['volume_change_wrt_5max'] = (
+            df.groupby('tic')
+            .apply(lambda df: volume_change_wrt_5_max(df))
+            .reset_index(drop=True)
+            )
+        df['volume_change_wrt_20max'] = (
+            df.groupby('tic')
+            .apply(lambda df: volume_change_wrt_20_max(df))
+            .reset_index(drop=True)
+            )
+
+
         df['volume_change_wrt_10mean'] = (
             df.groupby('tic')
             .apply(lambda df: volume_change_wrt_10_mean(df))
             .reset_index(drop=True)
             )
+        df['volume_change_wrt_5mean'] = (
+            df.groupby('tic')
+            .apply(lambda df: volume_change_wrt_5_mean(df))
+            .reset_index(drop=True)
+            )
+        df['volume_change_wrt_20mean'] = (
+            df.groupby('tic')
+            .apply(lambda df: volume_change_wrt_20_mean(df))
+            .reset_index(drop=True)
+            )
+
+        
 
         # close ratio rolling min max
         def close_ratio_wrt_10_max(df):

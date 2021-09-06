@@ -5,11 +5,15 @@ def get_model_backtesting(
   ml_dataset_path : InputPath('DataFrame'),
   bros_univ_dataset_path: InputPath('DataFrame'),
   predictions_path : OutputPath('DataFrame')
-):
+) -> NamedTuple(
+  'Outputs',
+  [
+    ('ver',str)
+  ]):
 
 
 
-    ver = '10'
+    ver = 'add_vol_feats'
 
     import pandas as pd
     import numpy as np
@@ -84,7 +88,7 @@ def get_model_backtesting(
             # 'mkt_cap_cat',
             # 'in_top30',
             # 'rank_mean_10',
-            # 'rank_mean_5',
+            'rank_mean_5',
             'in_top_30_5',
             'in_top_30_10',
             'in_top_30_20',
@@ -167,24 +171,24 @@ def get_model_backtesting(
             # 'dx_30',
              'close_30_sma',
              'close_60_sma',
-            #  'daily_return',
-            'return_lag_1',
-            'return_lag_2',
-            'return_lag_3',
-            'bb_u_ratio',
-            'bb_l_ratio',
+             'daily_return',
+            # 'return_lag_1',
+            # 'return_lag_2',
+            # 'return_lag_3',
+            # 'bb_u_ratio',
+            # 'bb_l_ratio',
             # 'max_scale_MACD',
             'volume_change_wrt_10max',
             'volume_change_wrt_5max',
-            # 'volume_change_wrt_20max',
+            'volume_change_wrt_20max',
             'volume_change_wrt_10mean',
             'volume_change_wrt_5mean',
-            # 'volume_change_wrt_20mean',
+            'volume_change_wrt_20mean',
             # 'close_ratio_wrt_10max',
             # 'close_ratio_wrt_10min',
-            'oh_ratio',
-            'oc_ratio',
-            'ol_ratio',
+            # 'oh_ratio',
+            # 'oc_ratio',
+            # 'ol_ratio',
             'ch_ratio',
             #  'Symbol',
             #  'DesignationDate',
@@ -209,7 +213,7 @@ def get_model_backtesting(
             df_of_the_day = df[df.date == date]
             df_of_the_day = df_of_the_day.sort_values(by='rank', ascending=True)
             # print('df_of_the_date', df_of_the_day)
-            df_top30_in_date = df_of_the_day.head(30)
+            df_top30_in_date = df_of_the_day.head(40)
             l_top30s_in_date = df_top30_in_date.code.to_list()
             # print(f'size of top30 in the date : {df_top30_in_date.shape}')
             
@@ -345,3 +349,5 @@ def get_model_backtesting(
         pickle.dump(df_pred_all, f)
 
     df_pred_all.to_pickle(predictions_path) # save
+
+    return (ver)

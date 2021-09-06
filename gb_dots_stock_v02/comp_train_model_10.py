@@ -1,13 +1,11 @@
 from kfp.components import InputPath, OutputPath
 from typing import NamedTuple
 
-def get_model_backtesting(
+def get_model_trained_10(
   ml_dataset_path : InputPath('DataFrame'),
   bros_univ_dataset_path: InputPath('DataFrame'),
   predictions_path : OutputPath('DataFrame')
 ):
-
-
 
     ver = '10'
 
@@ -197,7 +195,7 @@ def get_model_backtesting(
 
     # Split Dataset into For Training & For Prediction
     l_dates = df_preP.date.unique().tolist()
-    idx_start = l_dates.index('20210802')
+    # idx_start = l_dates.index('20210802')
 
     # Filtering function
     def get_univ_bh01(df, l_dates): # input dataframe : top30s in the period

@@ -9,7 +9,7 @@ def get_model_backtesting(
 
 
 
-    ver = '10'
+    ver = 'all'
 
     import pandas as pd
     import numpy as np
@@ -23,7 +23,7 @@ def get_model_backtesting(
     print(f'size01 {df_preP.shape}')
 
     df_bros = pd.read_pickle(bros_univ_dataset_path)
-    df_bros = df_bros[df_bros.period.isin(['60', '90', '120'])]
+    # df_bros = df_bros[df_bros.period.isin(['60', '90', '120'])]
 
     # drop duplicated column
     cols_ohlcv_x = ['open_x', 'high_x', 'low_x', 'close_x', 'volume_x', 'change_x']
@@ -79,50 +79,50 @@ def get_model_backtesting(
             #  'code',
             #  'name',
             #  'date',
-            # 'rank',
+            'rank',
             'mkt_cap',
-            # 'mkt_cap_cat',
-            # 'in_top30',
-            # 'rank_mean_10',
-            # 'rank_mean_5',
+            'mkt_cap_cat',
+            'in_top30',
+            'rank_mean_10',
+            'rank_mean_5',
             'in_top_30_5',
             'in_top_30_10',
             'in_top_30_20',
-            # 'up_bro_ratio_20',
-            # 'up_bro_ratio_40',
+            'up_bro_ratio_20',
+            'up_bro_ratio_40',
             'up_bro_ratio_60',
             'up_bro_ratio_90',
             'up_bro_ratio_120',
-            # 'n_bro_20',
-            # 'n_bro_40',
+            'n_bro_20',
+            'n_bro_40',
             'n_bro_60',
             'n_bro_90',
             'n_bro_120',
-            # 'all_bro_rtrn_mean_20',
-            # 'all_bro_rtrn_mean_40',
+            'all_bro_rtrn_mean_20',
+            'all_bro_rtrn_mean_40',
             'all_bro_rtrn_mean_60',
             'all_bro_rtrn_mean_90',
             'all_bro_rtrn_mean_120',
-            # 'up_bro_rtrn_mean_20',
-            # 'up_bro_rtrn_mean_40',
+            'up_bro_rtrn_mean_20',
+            'up_bro_rtrn_mean_40',
             'up_bro_rtrn_mean_60',
             'up_bro_rtrn_mean_90',
             'up_bro_rtrn_mean_120',
-            # 'all_bro_rtrn_mean_ystd_20',
-            # 'all_bro_rtrn_mean_ystd_40',
-            # 'all_bro_rtrn_mean_ystd_60',
-            # 'all_bro_rtrn_mean_ystd_90',
-            # 'all_bro_rtrn_mean_ystd_120',
-            # 'bro_up_ratio_ystd_20',
-            # 'bro_up_ratio_ystd_40',
-            # 'bro_up_ratio_ystd_60',
-            # 'bro_up_ratio_ystd_90',
-            # 'bro_up_ratio_ystd_120',
-            # 'up_bro_rtrn_mean_ystd_20',
-            # 'up_bro_rtrn_mean_ystd_40',
-            # 'up_bro_rtrn_mean_ystd_60',
-            # 'up_bro_rtrn_mean_ystd_90',
-            # 'up_bro_rtrn_mean_ystd_120',
+            'all_bro_rtrn_mean_ystd_20',
+            'all_bro_rtrn_mean_ystd_40',
+            'all_bro_rtrn_mean_ystd_60',
+            'all_bro_rtrn_mean_ystd_90',
+            'all_bro_rtrn_mean_ystd_120',
+            'bro_up_ratio_ystd_20',
+            'bro_up_ratio_ystd_40',
+            'bro_up_ratio_ystd_60',
+            'bro_up_ratio_ystd_90',
+            'bro_up_ratio_ystd_120',
+            'up_bro_rtrn_mean_ystd_20',
+            'up_bro_rtrn_mean_ystd_40',
+            'up_bro_rtrn_mean_ystd_60',
+            'up_bro_rtrn_mean_ystd_90',
+            'up_bro_rtrn_mean_ystd_120',
             #  'index',
             #  'open_x',
             #  'high_x',
@@ -163,25 +163,25 @@ def get_model_backtesting(
             #  'macd',
             #  'boll_ub',
             #  'boll_lb',
-            # 'rsi_30',
-            # 'dx_30',
+            'rsi_30',
+            'dx_30',
              'close_30_sma',
              'close_60_sma',
-            #  'daily_return',
+             'daily_return',
             'return_lag_1',
             'return_lag_2',
             'return_lag_3',
             'bb_u_ratio',
             'bb_l_ratio',
-            # 'max_scale_MACD',
+            'max_scale_MACD',
             'volume_change_wrt_10max',
             'volume_change_wrt_5max',
-            # 'volume_change_wrt_20max',
+            'volume_change_wrt_20max',
             'volume_change_wrt_10mean',
             'volume_change_wrt_5mean',
-            # 'volume_change_wrt_20mean',
-            # 'close_ratio_wrt_10max',
-            # 'close_ratio_wrt_10min',
+            'volume_change_wrt_20mean',
+            'close_ratio_wrt_10max',
+            'close_ratio_wrt_10min',
             'oh_ratio',
             'oc_ratio',
             'ol_ratio',
@@ -189,7 +189,7 @@ def get_model_backtesting(
             #  'Symbol',
             #  'DesignationDate',
             #  'admin_stock',
-            # 'dayofweek'
+            'dayofweek'
             ]         
 
     # Change datetime format to str
@@ -235,8 +235,11 @@ def get_model_backtesting(
         print(f'train date :  from {dates_for_train[0]} to {dates_for_train[-1]}')
         print(f'prediction date : from {dates_for_pred[0]} to {dates_for_pred[-1]}')
 
-        df_train = get_univ_bh01(df_preP, dates_for_train)
-        df_pred = get_univ_bh01(df_preP, dates_for_pred)
+        # df_train = get_univ_bh01(df_preP, dates_for_train)
+        # df_pred = get_univ_bh01(df_preP, dates_for_pred)
+
+        df_train = df_preP[df_preP.date.isin(dates_for_train)]
+        df_pred = df_preP[df_preP.date == date_ref]
         df_pred['date'] = date_ref
 
         # df_train = df_preP[df_preP.date.isin(dates_for_train)]
@@ -264,8 +267,8 @@ def get_model_backtesting(
 
         X = df_train[features + cols_indicator]
         y = df_train[target_col].astype('float')
-        # X['in_top30'] = X.in_top30.astype('int')
-        # df_pred['in_top30'] = df_pred.in_top30.astype('int')
+        X['in_top30'] = X.in_top30.astype('int')
+        df_pred['in_top30'] = df_pred.in_top30.astype('int')
 
         # Run prediction 3 times
         df_pred_final_01 = pd.DataFrame()
@@ -281,8 +284,7 @@ def get_model_backtesting(
 
             eval_dataset = Pool(
                     X_test, y_test,
-                    # cat_features=['mkt_cap_cat']
-                    # cat_features=['in_top30']
+                    cat_features=['in_top30','dayofweek', 'mkt_cap_cat']
                     )
 
             print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
@@ -293,7 +295,7 @@ def get_model_backtesting(
                         # eval_set = eval_dataset,
                         # , verbose=200
                         # , plot=True, 
-                        # cat_features=['in_top30','dayofweek', 'mkt_cap_cat']
+                        cat_features=['in_top30','dayofweek', 'mkt_cap_cat']
                         # cat_features=['in_top30']
                         )
 
