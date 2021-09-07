@@ -18,12 +18,12 @@ def train_model_10(
 #   predictions_path : OutputPath('DataFrame')
 ) -> NamedTuple(
     'Outputs',
-    [ ('ver', str)
-  ]
-):
+    [ ('ver', str)  
+]):
 
     ver = '10'
 
+    import collections
     import pandas as pd
     import numpy as np
     import FinanceDataReader as fdr
@@ -81,10 +81,7 @@ def train_model_10(
 
     # Set Target & Features
     target_col = ['target_close_over_10']
-    cols_indicator = [ 'code',
-                        'name',
-                        'date',
-                        ]
+    cols_indicator = [ 'code', 'name', 'date', ]
 
     features = [
             #  'code',
@@ -242,7 +239,7 @@ def train_model_10(
 
     # Export prediction set
     df_prep_pred = get_univ_bh01(df_preP, dates_pred)
-    df_prep_pred[features].to_pickle(predict_dataset.path)
+    df_prep_pred[cols_indicator + features].to_pickle(predict_dataset.path)
 
     # df_train = df_preP[df_preP.date.isin(dates_for_train)]
     df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
@@ -305,5 +302,8 @@ def train_model_10(
             model.save_model(model02.path)
         if iter_n == 2:
             model.save_model(model03.path)
-
-    return (ver)
+    outputs = collections.namedtuple(
+        "Outputs",
+        ["ver"]
+    )
+    return outputs(ver)

@@ -35,7 +35,7 @@ from comp_get_tech_indi import get_tech_indi
 from comp_get_full_tech_indi import get_full_tech_indi
 from comp_get_ml_dataset import get_ml_dataset
 
-from comp_model_backtesting_04 import get_model_backtesting
+from comp_model_backtesting_10 import get_model_backtesting
 from comp_update_price import update_price
 
 from comp_test import test
