@@ -1,28 +1,36 @@
 from kfp.components import InputPath, OutputPath
 from typing import NamedTuple
+from kfp.v2.dsl import (Artifact,
+                        Dataset,
+                        Input,
+                        Model,
+                        Output,
+                        Metrics,
+                        ClassificationMetrics)
 
-def get_model_backtesting(
-  ml_dataset_path : InputPath('DataFrame'),
-  bros_univ_dataset_path: InputPath('DataFrame'),
-  predictions_path : OutputPath('DataFrame')
+def train_model_10(
+  ml_dataset : Input[Dataset],
+  bros_univ_dataset: Input[Dataset],
+  predict_dataset: Output[Dataset],
+  model01 : Output[Model],
+  model02 : Output[Model],
+  model03 : Output[Model],
+#   predictions_path : OutputPath('DataFrame')
 ):
 
-
-    hi = '1'
     ver = '10'
 
     import pandas as pd
     import numpy as np
-    from pykrx import stock
     import FinanceDataReader as fdr
     import os
-    import pickle
 
-    df_dataset = pd.read_pickle(ml_dataset_path)
+    df_dataset = pd.read_pickle(ml_dataset.path)
     df_preP = df_dataset.copy()
     print(f'size01 {df_preP.shape}')
 
-    df_bros = pd.read_pickle(bros_univ_dataset_path)
+    # bros
+    df_bros = pd.read_pickle(bros_univ_dataset.path)
     df_bros = df_bros[df_bros.period.isin(['60', '90', '120'])]
 
     # drop duplicated column
@@ -69,8 +77,7 @@ def get_model_backtesting(
 
     # Set Target & Features
     target_col = ['target_close_over_10']
-    cols_indicator = [
-                        'code',
+    cols_indicator = [ 'code',
                         'name',
                         'date',
                         ]
@@ -195,9 +202,11 @@ def get_model_backtesting(
     # Change datetime format to str
     df_preP['date'] = df_preP.date.dt.strftime('%Y%m%d')
 
-    # Split Dataset into For Training & For Prediction
-    l_dates = df_preP.date.unique().tolist()
-    idx_start = l_dates.index('20210802')
+    date_ref = df_preP.date.max()
+
+    # Extract dataframe for train : 
+    dates_train = sorted(df_preP.date.unique())[-23:-3]
+    dates_pred = [date_ref]
 
     # Filtering function
     def get_univ_bh01(df, l_dates): # input dataframe : top30s in the period
@@ -225,123 +234,70 @@ def get_model_backtesting(
         # print('size of returned :', df_univ.shape)
         return df_univ
 
-    df_pred_all = pd.DataFrame()
-    for i in range(idx_start, l_dates.__len__()):
+    df_train = get_univ_bh01(df_preP, dates_train)
 
-        dates_for_train = l_dates[i-23: i-3] # 며칠전까지 볼것인가!! 20일만! 일단은
-        dates_for_pred = l_dates[i-9:i+1]  # prediction date
-        date_ref = dates_for_pred[-1]
+    # Export prediction set
+    df_prep_pred = get_univ_bh01(df_preP, dates_pred)
+    df_prep_pred[features].to_pickle(predict_dataset.path)
 
-        print(f'train date :  from {dates_for_train[0]} to {dates_for_train[-1]}')
-        print(f'prediction date : from {dates_for_pred[0]} to {dates_for_pred[-1]}')
+    # df_train = df_preP[df_preP.date.isin(dates_for_train)]
+    df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
 
-        df_train = get_univ_bh01(df_preP, dates_for_train)
-        df_pred = get_univ_bh01(df_preP, dates_for_pred)
-        df_pred['date'] = date_ref
+    # ML Model
+    from catboost import CatBoostClassifier
+    from sklearn.model_selection import train_test_split
+    from catboost import Pool
+    from catboost.utils import get_roc_curve, get_confusion_matrix
 
-        # df_train = df_preP[df_preP.date.isin(dates_for_train)]
-        df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
+    # Set Model
+    model = CatBoostClassifier(
+            # random_seed = 42,
+            # task_type = 'GPU',
+            # iterations=3000,
+            iterations=3000,
+            train_dir = '/tmp',
+            # verbose=500,
+            silent=True
+        )
 
-        # df_pred = df_preP[df_preP.date == date_for_pred] 
+    X = df_train[features] 
+    y = df_train[target_col].astype('float')
+    # X['in_top30'] = X.in_top30.astype('int')
+    # df_pred['in_top30'] = df_pred.in_top30.astype('int')
 
-        # print(f'check01 : train size {df_train.shape} / pred size {df_pred.shape}')
-        # ML Model
-        from catboost import CatBoostClassifier
-        from sklearn.model_selection import train_test_split
-        from catboost import Pool
-        from catboost.utils import get_roc_curve, get_confusion_matrix
+    # Run prediction 3 times
+    for iter_n in range(3):
 
-        # Set Model
-        model_01 = CatBoostClassifier(
-                # random_seed = 42,
-                # task_type = 'GPU',
-                # iterations=3000,
-                iterations=3000,
-                train_dir = '/tmp',
-                # verbose=500,
-                silent=True
-            )
+        X_train, X_test, y_train, y_test = train_test_split(X, y)
 
-        X = df_train[features + cols_indicator]
-        y = df_train[target_col].astype('float')
-        # X['in_top30'] = X.in_top30.astype('int')
-        # df_pred['in_top30'] = df_pred.in_top30.astype('int')
+        X_train = X_train[features]
+        X_test = X_test[features]
 
-        # Run prediction 3 times
-        df_pred_final_01 = pd.DataFrame()
-        for iter_n in range(3):
+        eval_dataset = Pool(
+                X_test, y_test,
+                # cat_features=['mkt_cap_cat']
+                # cat_features=['in_top30']
+                )
 
-            X_train, X_test, y_train, y_test = train_test_split(X, y)
+        print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
+        print('No. of true : ', y_train.sum() )
 
-            X_train_indictor = X_train[cols_indicator]
-            X_test_indictor = X_test[cols_indicator]
-
-            X_train = X_train[features]
-            X_test = X_test[features]
-
-            eval_dataset = Pool(
-                    X_test, y_test,
-                    # cat_features=['mkt_cap_cat']
+        model.fit(X_train, y_train,
+                    use_best_model=True,
+                    eval_set = eval_dataset,
+                    # , verbose=200
+                    # , plot=True, 
+                    # cat_features=['in_top30','dayofweek', 'mkt_cap_cat']
                     # cat_features=['in_top30']
                     )
 
-            print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
-            print('No. of true : ', y.sum() )
+        print(f'model score : {model.score(X_test, y_test)}')
+        model_path = f"/gcs/pipeline-dots-stock/bong_model/bong_model_{ver}_{date_ref}_{iter_n}"
 
-            model_01.fit(X_train, y_train,
-                        # use_best_model=True,
-                        # eval_set = eval_dataset,
-                        # , verbose=200
-                        # , plot=True, 
-                        # cat_features=['in_top30','dayofweek', 'mkt_cap_cat']
-                        # cat_features=['in_top30']
-                        )
-
-            print(f'model score : {model_01.score(X_test, y_test)}')
-            model_folder = "/gcs/pipeline-dots-stock/bong_model"
-            model_name = f'bong_model_{ver}_{date_ref}_{iter_n}'
-            path = os.path.join(model_folder, model_name)
-
-            model_01.save_model(path)
-
-            # Prediction
-            pred_stocks_01 = model_01.predict(df_pred[features])    
-            pred_proba_01 = model_01.predict_proba(df_pred[features])
-            
-            df_pred_stocks_01 = pd.DataFrame(pred_stocks_01, columns=['Prediction']).reset_index(drop=True)
-            df_pred_proba_01 = pd.DataFrame(pred_proba_01, columns=['Proba01', 'Proba02']).reset_index(drop=True)
-
-            df_pred_name_code = df_pred[cols_indicator].reset_index(drop=True)
-
-            df_pred_r_01 = pd.concat(
-                            [
-                            df_pred_name_code,
-                            df_pred_stocks_01,
-                            df_pred_proba_01
-                            ],
-                            axis=1)
-
-            df_pred_r_01 = df_pred_r_01[df_pred_r_01.Prediction > 0]
-            # print('prediction results', df_pred_r_01)
-            df_pred_final_01 = df_pred_final_01.append(df_pred_r_01)
-
-        # print(f'size of df_pred_final_01_1 : {df_pred_final_01.shape}' )
-        df_pred_final_01 = df_pred_final_01.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
-        df_pred_final_01 = df_pred_final_01.reset_index()
-        df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
-        # print(f'size of df_pred_final_01_2 : {df_pred_final_01.shape}' )
-
-        df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True) # remove duplicates
-        # print(f'size of df_pred_final_01_3 : {df_pred_final_01.shape}' )
-
-        df_pred_all = df_pred_all.append(df_pred_final_01)
-        print(f'size of df_pred_all : {df_pred_all.shape}' )
-
-    prediction_folder = '/gcs/pipeline-dots-stock/bong_predictions'
-    prediction_name = f'bong_{ver}.pkl'
-    path_pred = os.path.join(prediction_folder, prediction_name)
-
-    with open(path_pred, 'wb') as f:
-        pickle.dump(df_pred_all, f)
-
-    df_pred_all.to_pickle(predictions_path) # save
+        model.save_model(model_path)
+        if iter_n == 0:
+            model.save_model(model01.path)
+        if iter_n == 1:
+            model.save_model(model02.path)
+        if iter_n == 2:
+            model.save_model(model03.path)
