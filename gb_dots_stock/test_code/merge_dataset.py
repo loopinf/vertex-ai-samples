@@ -1,28 +1,27 @@
 #%%
 
 import pandas as pd
-# import pickle
 import numpy as np
 from collections import Counter
 
 import FinanceDataReader as fdr
-# import pickle
+import os
 
 # %%
 folder = '/Users/seunghankim/Downloads/'
-feat = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823113318_get-features_-363683262096211968_features_dataset'
-target = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823002313_get-target_-1738969998304477184_df_target_dataset'
-tech = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823003125_get-full-tech-indi_217281089834582016_full_tech_indi_dataset'
+name = 'bong_predictions_bong_04.pkl'
+
+load_from_local_pc = os.path.join(folder, name)
+# feat = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823113318_get-features_-363683262096211968_features_dataset'
+# target = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823002313_get-target_-1738969998304477184_df_target_dataset'
+# tech = 'pipeline_root_shkim01_516181956427_ml-with-all-items-20210823003125_get-full-tech-indi_217281089834582016_full_tech_indi_dataset'
 
 
-path = 'gs://pipeline-dots-stock/bong_price_updated/bong_04.pkl'
+# path = 'gs://pipeline-dots-stock/bong_price_updated/bong_04.pkl'
 #%%
-df__ = pd.read_pickle(path) 
+df_ = pd.read_pickle(load_from_local_pc) 
 
-df_ = df__.copy()
 
-# with open(path, 'rb') as f:
-  # df_ = pickle.load(f)
 
 #%%
 

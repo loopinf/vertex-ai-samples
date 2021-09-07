@@ -106,13 +106,15 @@ comp_get_update_price = comp.create_component_from_func(
 #########################################
 # create pipeline #######################
 #########################################
+
 job_file_name='gb-pipeline-backtesting-module.json'
+
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT
 )    
 def create_awesome_pipeline():
-    op_set_default = comp_set_default()
+    op_set_default = comp_set_default() # this component is ver01. Need no arg. input. # check the start date in the file.
 
     op_get_market_info = comp_get_market_info(
             date_ref=op_set_default.outputs['date_ref'],
@@ -195,12 +197,6 @@ def create_awesome_pipeline():
         predictions = op_get_model_backtesting.outputs['predictions'],
     )
 
-    # op_test = comp_test(
-    #     market_info_dataset = op_get_market_info.outputs['market_info_dataset']
-    # )
-
-    # print(op_get_market_info.keys())
-
 
 compiler.Compiler().compile(
   pipeline_func=create_awesome_pipeline,
@@ -214,6 +210,6 @@ api_client = AIPlatformClient(
 
 response = api_client.create_run_from_job_spec(
   job_spec_path=job_file_name,
-  enable_caching= True,
+  enable_caching= False,
   pipeline_root=PIPELINE_ROOT
 )

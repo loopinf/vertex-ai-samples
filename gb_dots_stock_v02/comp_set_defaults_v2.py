@@ -1,6 +1,6 @@
 from typing import NamedTuple
 
-def set_defaults()-> NamedTuple(
+def set_defaults(mode:str)-> NamedTuple(
   'Outputs',
   [ ('isBusinessDay', str),
     ('date_ref',str),
@@ -13,9 +13,15 @@ def set_defaults()-> NamedTuple(
 
   today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')
   # today = '20210903'
+
   period_to_train = 20
   period_extra = 100
-  n_days = period_to_train + period_extra
+
+  if mode == 'pred' :
+    n_days = 25
+
+  elif mode == 'train':    
+    n_days = period_to_train + period_extra
 
   cal_KRX = get_calendar('XKRX')
 

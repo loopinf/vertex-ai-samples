@@ -1,7 +1,9 @@
+# Writer : S H Kim
+# Date : 2021. 09. 07.
+
 # -*- coding: utf-8 -*-
 import sys
 import os
-# import pandas as pd
 
 PROJECT_ID = "dots-stock"  # @param {type:"string"}
 REGION = "us-central1"  # @param {type:"string"}
@@ -35,11 +37,9 @@ from comp_get_tech_indi import get_tech_indi
 from comp_get_full_tech_indi import get_full_tech_indi
 from comp_get_ml_dataset import get_ml_dataset
 
-from comp_model_backtesting import get_model_backtesting #######
+from comp_prediction_daily_04 import get_prediction_04
 
-from comp_update_price import update_price
-
-from comp_test import test
+from comp_update_price_daily import update_price_daily
 
 comp_set_default = comp.create_component_from_func(
                                             set_defaults,
@@ -92,29 +92,29 @@ comp_get_ml_dataset = comp.create_component_from_func(
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
                                             )                                            
 
-comp_get_model_backtest = comp.create_component_from_func(
-                                            get_model_backtesting,
+comp_get_prediction_04 = comp.create_component_from_func(
+                                            get_prediction_04,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
                                             packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
                                             )    
 
-comp_get_update_price = comp.create_component_from_func(
-                                            update_price,
+        
+comp_get_update_price_daily = comp.create_component_from_func(
+                                            update_price_daily,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
-                                            )                                            
-
+                                            )       
 
 #########################################
 # create pipeline #######################
 #########################################
-job_file_name='gb-pipeline-backtesting-module.json'
+job_file_name='gb-pipeline-prediction-daily.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT
 )    
 def create_awesome_pipeline():
 
-        op_set_default = comp_set_default()
+        op_set_default = comp_set_default('pred')
 
         with dsl.Condition(op_set_default.outputs['isBusinessDay'] == 'yes'):
 
@@ -190,13 +190,13 @@ def create_awesome_pipeline():
                         tech_indi_dataset = op_get_full_tech_indi.outputs['full_tech_indi_dataset'],
                 )
 
-                op_get_model_backtesting = comp_get_model_backtest(
+                op_get_prediction_04 = comp_get_prediction_04(
                         ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
                         bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
                 )
 
-                op_get_update_price = comp_get_update_price(
-                        predictions = op_get_model_backtesting.outputs['predictions'],
+                op_get_update_price = comp_get_update_price_daily(
+                        predictions = op_get_prediction_04.outputs['predictions'],
                 )
 
 
@@ -213,15 +213,15 @@ api_client = AIPlatformClient(
     region=REGION,
 )
 
-response = api_client.create_run_from_job_spec(
-  job_spec_path=job_file_name,
-  enable_caching= True,
-  pipeline_root=PIPELINE_ROOT
-)
-
-# response = api_client.create_schedule_from_job_spec(
-#     job_spec_path=job_file_name,
-#     schedule="43 15 * * 1-5",
-#     time_zone="Asia/Seoul",
-#     enable_caching = False,
+# response = api_client.create_run_from_job_spec(
+#   job_spec_path=job_file_name,
+#   enable_caching= True,
+#   pipeline_root=PIPELINE_ROOT
 # )
+
+response = api_client.create_schedule_from_job_spec(
+    job_spec_path=job_file_name,
+    schedule="30 14 * * 1-5",
+    time_zone="Asia/Seoul",
+    enable_caching = False,
+)
