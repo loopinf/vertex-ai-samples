@@ -74,4 +74,4 @@ def get_market_info(
   
   df_market = get_markets_aws(date_ref=date_ref, n_days=n_days)
 
-  df_market.to_pickle(market_info_dataset_path)
+  df_market.to_pickle(market_info_dataset.path)
