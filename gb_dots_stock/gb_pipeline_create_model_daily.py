@@ -39,7 +39,7 @@ def set_defaults()-> NamedTuple(
   from trading_calendars import get_calendar
 
   today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')
-  today = '20210903'
+  # today = '20210903'
   period_to_train = 20
   period_extra = 100
   n_days = period_to_train + period_extra
@@ -659,14 +659,10 @@ def get_features(
   #df_ed 가져오기
   df_ed = pd.read_pickle(bros_dataset.path)
 
-  def bidirect_edge(df_ed):
-    df_ed_r = df_ed.copy() 
-    df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
-    df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
-    df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
-    return df_ed2
-
-  df_ed2 = bidirect_edge(df_ed)
+  df_ed_r = df_ed.copy() 
+  df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
+  df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
+  df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
   cols = ['종목코드', '종목명', '날짜', '순위_상승률', '시가총액']
   df_mkt_ = df_market[cols]

@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 import sys
 import os
+
+from pandas.io import pickle
 # import pandas as pd
 
 PROJECT_ID = "dots-stock"  # @param {type:"string"}
@@ -659,14 +661,10 @@ def get_features(
   #df_ed 가져오기
   df_ed = pd.read_pickle(bros_dataset.path)
 
-  def bidirect_edge(df_ed):
-    df_ed_r = df_ed.copy() 
-    df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
-    df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
-    df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
-    return df_ed2
-
-  df_ed2 = bidirect_edge(df_ed)
+  df_ed_r = df_ed.copy() 
+  df_ed_r.rename(columns={'target':'source', 'source':'target'}, inplace=True)
+  df_ed2 = df_ed.append(df_ed_r, ignore_index=True)
+  df_ed2['date'] = pd.to_datetime(df_ed2.date).dt.strftime('%Y%m%d')
 
   cols = ['종목코드', '종목명', '날짜', '순위_상승률', '시가총액']
   df_mkt_ = df_market[cols]
@@ -1455,7 +1453,7 @@ def create_model_and_prediction_02(
   base_image="gcr.io/dots-stock/python-img-v5.2",
   packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
 )
-def univ_top30_10days_and_friends(
+def back_testing(
   ml_dataset : Input[Dataset],
   bros_dataset: Input[Dataset],
   predictions : Output[Dataset]
@@ -1465,6 +1463,8 @@ def univ_top30_10days_and_friends(
   import numpy as np
   from pykrx import stock
   import FinanceDataReader as fdr
+  import os
+  import pickle
 
   df_dataset = pd.read_pickle(ml_dataset.path)
   df_preP = df_dataset.copy()
@@ -1528,7 +1528,7 @@ def univ_top30_10days_and_friends(
             # 'rank',
             'mkt_cap',
             # 'mkt_cap_cat',
-            # 'in_top30',
+            'in_top30',
             # 'rank_mean_10',
             # 'rank_mean_5',
             'in_top_30_5',
@@ -1551,24 +1551,24 @@ def univ_top30_10days_and_friends(
             'all_bro_rtrn_mean_120',
             # 'up_bro_rtrn_mean_20',
             # 'up_bro_rtrn_mean_40',
-            # 'up_bro_rtrn_mean_60',
-            # 'up_bro_rtrn_mean_90',
-            # 'up_bro_rtrn_mean_120',
+            'up_bro_rtrn_mean_60',
+            'up_bro_rtrn_mean_90',
+            'up_bro_rtrn_mean_120',
             # 'all_bro_rtrn_mean_ystd_20',
             # 'all_bro_rtrn_mean_ystd_40',
-            # 'all_bro_rtrn_mean_ystd_60',
-            # 'all_bro_rtrn_mean_ystd_90',
-            # 'all_bro_rtrn_mean_ystd_120',
+            'all_bro_rtrn_mean_ystd_60',
+            'all_bro_rtrn_mean_ystd_90',
+            'all_bro_rtrn_mean_ystd_120',
             # 'bro_up_ratio_ystd_20',
             # 'bro_up_ratio_ystd_40',
-            # 'bro_up_ratio_ystd_60',
-            # 'bro_up_ratio_ystd_90',
-            # 'bro_up_ratio_ystd_120',
+            'bro_up_ratio_ystd_60',
+            'bro_up_ratio_ystd_90',
+            'bro_up_ratio_ystd_120',
             # 'up_bro_rtrn_mean_ystd_20',
             # 'up_bro_rtrn_mean_ystd_40',
-            # 'up_bro_rtrn_mean_ystd_60',
-            # 'up_bro_rtrn_mean_ystd_90',
-            # 'up_bro_rtrn_mean_ystd_120',
+            'up_bro_rtrn_mean_ystd_60',
+            'up_bro_rtrn_mean_ystd_90',
+            'up_bro_rtrn_mean_ystd_120',
             #  'index',
             #  'open_x',
             #  'high_x',
@@ -1617,13 +1617,13 @@ def univ_top30_10days_and_friends(
             # 'return_lag_1',
             # 'return_lag_2',
             # 'return_lag_3',
-            # 'bb_u_ratio',
-            # 'bb_l_ratio',
+            'bb_u_ratio',
+            'bb_l_ratio',
             # 'max_scale_MACD',
             'volume_change_wrt_10max',
             'volume_change_wrt_10mean',
-            # 'close_ratio_wrt_10max',
-            # 'close_ratio_wrt_10min',
+            'close_ratio_wrt_10max',
+            'close_ratio_wrt_10min',
             'oh_ratio',
             'oc_ratio',
             'ol_ratio',
@@ -1631,7 +1631,7 @@ def univ_top30_10days_and_friends(
             #  'DesignationDate',
             #  'admin_stock',
             # 'dayofweek'
-            ]         
+            ]        
 
   # Change datetime format to str
   df_preP['date'] = df_preP.date.dt.strftime('%Y%m%d')
@@ -1641,8 +1641,7 @@ def univ_top30_10days_and_friends(
   idx_start = l_dates.index('20210802')
 
   # Filtering function
-  def get_univ_df(df, l_dates): # input dataframe : top30s in the period
-    # 로컬에서 변경 및 확인하고 여기에 올린다.
+  def get_univ_bh01(df, l_dates): # input dataframe : top30s in the period
 
     # l_dates = df.date.unique().tolist()
     print(f'length of l_date : {l_dates.__len__()}')
@@ -1653,32 +1652,32 @@ def univ_top30_10days_and_friends(
         # print('df_of_the_date', df_of_the_day)
         df_top30_in_date = df_of_the_day.head(30)
         l_top30s_in_date = df_top30_in_date.code.to_list()
-        print(f'size of top30 in the date : {df_top30_in_date.shape}')
+        # print(f'size of top30 in the date : {df_top30_in_date.shape}')
         
         df_bros_in_date = df_bros[df_bros.date == date]
         l_bros_of_top30s = df_bros_in_date[\
                 df_bros_in_date.source.isin(l_top30s_in_date)].target.unique().tolist()
         df_bros_of_top30 = df_of_the_day[df_of_the_day.code.isin(l_bros_of_top30s)]
-        print(f'size of top30 + friends in the date : {df_bros_of_top30.shape}')
+        # print(f'size of top30 + friends in the date : {df_bros_of_top30.shape}')
 
         df_ = df_top30_in_date.append(df_bros_of_top30)
-        print('size of the day : ', df_.shape)
+        # print('size of the day : ', df_.shape)
         df_univ = df_univ.append(df_)
-    print('size of returned :', df_univ.shape)
+    # print('size of returned :', df_univ.shape)
     return df_univ
 
   df_pred_all = pd.DataFrame()
   for i in range(idx_start, l_dates.__len__()):
 
-    dates_for_train = l_dates[i-23: i-3] # 며칠전까지 볼것인가!! 20일만! 일단은
+    dates_for_train = l_dates[i-18: i-3] # 며칠전까지 볼것인가!! 20일만! 일단은
     dates_for_pred = l_dates[i-9:i+1]  # prediction date
     date_ref = dates_for_pred[-1]
 
     print(f'train date :  from {dates_for_train[0]} to {dates_for_train[-1]}')
     print(f'prediction date : from {dates_for_pred[0]} to {dates_for_pred[-1]}')
 
-    df_train = get_univ_df(df_preP, dates_for_train)
-    df_pred = get_univ_df(df_preP, dates_for_pred)
+    df_train = get_univ_bh01(df_preP, dates_for_train)
+    df_pred = get_univ_bh01(df_preP, dates_for_pred)
     df_pred['date'] = date_ref
 
     # df_train = df_preP[df_preP.date.isin(dates_for_train)]
@@ -1695,46 +1694,53 @@ def univ_top30_10days_and_friends(
     import sklearn
     # from sklearn import metrics
 
+    # Set Model
+    model_01 = CatBoostClassifier(
+            # random_seed = 42,
+            # task_type = 'GPU',
+            # iterations=3000,
+            iterations=3000,
+            train_dir = '/tmp',
+            # verbose=500
+            silent=True
+        )
+
     X = df_train[features + cols_indicator]
     y = df_train[target_col].astype('float')
-    # X['in_top30'] = X.in_top30.astype('int')
-    # df_pred['in_top30'] = df_pred.in_top30.astype('int')
+    X['in_top30'] = X.in_top30.astype('int')
+    df_pred['in_top30'] = df_pred.in_top30.astype('int')
 
     # Run prediction 3 times
     df_pred_final_01 = pd.DataFrame()
-    for _ in range(3):
-
-      # Set Model
-      model_01 = CatBoostClassifier(
-              # random_seed = 42,
-              # task_type = 'GPU',
-              # iterations=3000,
-              iterations=2000,
-              train_dir = '/tmp',
-              # verbose=500
-              silent=True
-          )
+    for iter_n in range(5):
 
       X_train, X_test, y_train, y_test = train_test_split(X, y)
-
-      X_train_indictor = X_train[cols_indicator]
-      X_test_indictor = X_test[cols_indicator]
 
       X_train = X_train[features]
       X_test = X_test[features]
 
+      eval_dataset = Pool(
+                          X_test, y_test,
+                          # cat_features=['mkt_cap_cat']
+                          cat_features=['in_top30']
+                          )
+
       print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
-      print('No. of true : ', y.sum() )
+      print('No. of true : ', y_train.sum() )
 
       model_01.fit(X_train, y_train,
-                # , verbose=200
-                # , plot=True, 
-                # cat_features=['in_top30','dayofweek', 'mkt_cap_cat']
-                )
+                  use_best_model=True,
+                  eval_set = eval_dataset,
+                  cat_features=['in_top30']
+                  )
 
       print(f'model score : {model_01.score(X_test, y_test)}')
 
-      # model_01.save_model(model_02_artifact.path)
+      model_folder = "/gcs/pipeline-dots-stock/bong_model"
+      model_name = f'bong_model_u06_{date_ref}_{iter_n}'
+      path = os.path.join(model_folder, model_name)
+
+      model_01.save_model(path)
 
       # Prediction
       pred_stocks_01 = model_01.predict(df_pred[features])    
@@ -1768,6 +1774,13 @@ def univ_top30_10days_and_friends(
 
     df_pred_all = df_pred_all.append(df_pred_final_01)
     print(f'size of df_pred_all : {df_pred_all.shape}' )
+
+  prediction_folder = '/gcs/pipeline-dots-stock/bong_predictions'
+  prediction_name = f'bong_u06.pkl'
+  path_pred = os.path.join(prediction_folder, prediction_name)
+
+  with open(path_pred, 'wb') as f:
+    pickle.dump(df_pred_all, f)
 
   df_pred_all.to_pickle(predictions.path) # save
 
@@ -1844,8 +1857,8 @@ def update_price(
                           right_on=['date', 'code'] )
   df_to_update.fillna(0, inplace=True)
 
-  dir = "/gcs/pipeline-dots-stock/result_bong"  
-  file_name = 'bong04.pkl'
+  dir = "/gcs/pipeline-dots-stock/bong_price_update"  
+  file_name = 'bong_u06.pkl'
   path = os.path.join(dir, file_name)
 
   with open(path, 'wb') as f:
@@ -1943,13 +1956,13 @@ def create_awesome_pipeline():
   #   ml_dataset= op_get_ml_dataset.outputs['ml_dataset']
   # )
 
-  op_univ_top30_10days_and_friends = univ_top30_10days_and_friends(
+  op_back_testing = back_testing(
     bros_dataset= op_get_bros.outputs['bros_univ_dataset'],
     ml_dataset= op_get_ml_dataset.outputs['ml_dataset']
   )
 
   op_update_price = update_price(
-    predictions=op_univ_top30_10days_and_friends.outputs['predictions']
+    predictions=op_back_testing.outputs['predictions']
   )
 
 compiler.Compiler().compile(
