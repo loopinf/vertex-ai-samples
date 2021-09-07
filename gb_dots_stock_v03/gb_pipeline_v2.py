@@ -36,6 +36,7 @@ from comp_get_full_tech_indi import get_full_tech_indi
 from comp_get_ml_dataset import get_ml_dataset
 from comp_model_train_10 import train_model_10
 from comp_update_price import update_price
+from comp_get_pred import predict
 
 from comp_test import test
 
@@ -95,6 +96,12 @@ comp_get_model_10 = comp.create_component_from_func_v2(
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
                                             packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
                                             )    
+
+comp_get_pred = comp.create_component_from_func_v2(
+                                            predict,
+                                            base_image="gcr.io/dots-stock/python-img-v5.2",
+                                            packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
+                                            )   
 
 #########################################
 # create pipeline #######################
@@ -242,6 +249,14 @@ def create_awesome_pipeline():
     op_get_model_10 = comp_get_model_10(
         ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
         bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
+    )
+
+    op_comp_get_pred = comp_get_pred(
+        ver = op_get_model_10.outputs['ver'],
+        model01 = op_get_model_10.outputs['model01'],
+        model02 = op_get_model_10.outputs['model02'],
+        model03 = op_get_model_10.outputs['model03'],
+        predict_dataset = op_get_model_10.outputs['predict_dataset'],
     )
 
     
