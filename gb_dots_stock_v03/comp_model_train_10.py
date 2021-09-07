@@ -16,6 +16,10 @@ def train_model_10(
   model02 : Output[Model],
   model03 : Output[Model],
 #   predictions_path : OutputPath('DataFrame')
+) -> NamedTuple(
+    'Outputs',
+    [ ('ver', str)
+  ]
 ):
 
     ver = '10'
@@ -301,3 +305,5 @@ def train_model_10(
             model.save_model(model02.path)
         if iter_n == 2:
             model.save_model(model03.path)
+
+    return (ver)
