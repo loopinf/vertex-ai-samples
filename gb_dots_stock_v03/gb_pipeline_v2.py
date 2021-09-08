@@ -34,7 +34,7 @@ from comp_get_target import get_target
 from comp_get_tech_indi import get_tech_indi
 from comp_get_full_tech_indi import get_full_tech_indi
 from comp_get_ml_dataset import get_ml_dataset
-from comp_model_train_10 import train_model_10
+from comp_model_train_11 import train_model_10
 from comp_update_price import update_price
 from comp_get_pred import predict
 
