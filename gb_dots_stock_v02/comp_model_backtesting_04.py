@@ -9,7 +9,7 @@ def get_model_backtesting(
 
 
     hi = 'hi'
-    ver = '04'
+    ver = '04r'
 
     import pandas as pd
     import numpy as np
@@ -256,7 +256,7 @@ def get_model_backtesting(
                 # random_seed = 42,
                 # task_type = 'GPU',
                 # iterations=3000,
-                iterations=3000,
+                iterations=2000,
                 train_dir = '/tmp',
                 # verbose=500,
                 silent=True

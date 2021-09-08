@@ -9,7 +9,7 @@ def get_model_backtesting(
 
 
     hi = '1'
-    ver = '10'
+    ver = '10r'
 
     import pandas as pd
     import numpy as np

@@ -9,7 +9,7 @@ def update_price(
   import pickle
   import os
 
-  ver = '10'
+  ver = '10r'
   df_pred_result = pd.read_pickle(predictions_path)
 
   # check date

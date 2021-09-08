@@ -21,7 +21,7 @@ def train_model_10(
     [ ('ver', str)  
 ]):
 
-    ver = '10'
+    ver = '10a'
 
     import collections
     import pandas as pd
@@ -207,7 +207,7 @@ def train_model_10(
 
     # Extract dataframe for train : 
     dates_train = sorted(df_preP.date.unique())[-23:-3]
-    dates_pred = [date_ref]
+    dates_pred = sorted(df_preP.date.unique())[-10:]
 
     # Filtering function
     def get_univ_bh01(df, l_dates): # input dataframe : top30s in the period
