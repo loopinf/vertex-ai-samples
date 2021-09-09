@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 from collections import Counter
 
+import sys
 import FinanceDataReader as fdr
 from catboost import CatBoostClassifier
 # import pickle
@@ -14,16 +15,17 @@ from catboost import CatBoostClassifier
 #     model02 : Input[Model],
 #     model03 : Input[Model],
 #     predict_dataset: Input[Dataset],
-#%%
-for i in []:
-    print('a')
+
 # %%
-results = 'gs://pipeline-dots-stock/bong_price_updated/bong_12.pkl'
+results = 'gs://pipeline-dots-stock/prediction_results_3d_close_10_v01/df_predic_result_3d_close_10_v01_price_updated.pkl'
 
 df = pd.read_pickle(results)
 
-# df = df_[['날짜', '종목명', '현재가', 'd_1', 'd_2', 'd_3']]
+df = df[['날짜', '종목명', '현재가', 'd_1', 'd_2', 'd_3']]
+df['ratio%'] = (df['d_3'] / df['현재가'])*100 - 100
 
+#%%
+df['ratio%'].mean()
 #%%
 
 cols_indicator = ['code', 'name','date']

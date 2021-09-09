@@ -42,6 +42,7 @@ from comp_model_train_11 import train_model_11
 from comp_model_train_12 import train_model_12
 from comp_model_train_13 import train_model_13
 from comp_model_train_14 import train_model_14
+from comp_model_train_15 import train_model_15
 
 comp_set_default = comp.create_component_from_func_v2(
                                             set_defaults,
@@ -114,6 +115,12 @@ comp_get_model_13 = comp.create_component_from_func_v2(
 
 comp_get_model_14 = comp.create_component_from_func_v2(
                                            train_model_14,
+                                            base_image="gcr.io/dots-stock/python-img-v5.2",
+                                            packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
+                                            ) 
+
+comp_get_model_15 = comp.create_component_from_func_v2(
+                                           train_model_15,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
                                             packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
                                             )                                                                                           
@@ -272,6 +279,7 @@ def create_awesome_pipeline():
         tech_indi_dataset = op_get_full_tech_indi.outputs['full_tech_indi_dataset'],
     )
 
+    # model 11
     op_get_model_11 = comp_get_model_11(
         ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
         bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
@@ -291,6 +299,7 @@ def create_awesome_pipeline():
         predict_dataset = op_comp_get_pred_11.outputs['daily_recom_dataset']
     )
 
+    # model 12
     op_get_model_12 = comp_get_model_12(
         ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
         bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
@@ -350,6 +359,26 @@ def create_awesome_pipeline():
         predict_dataset = op_comp_get_pred_14.outputs['daily_recom_dataset']
     )
 
+    # model 15
+    op_get_model_15 = comp_get_model_15(
+        ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
+        bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
+    )
+
+    op_comp_get_pred_15 = comp_get_pred(
+        ver = op_get_model_15.outputs['ver'],
+        model01 = op_get_model_15.outputs['model01'],
+        model02 = op_get_model_15.outputs['model02'],
+        model03 = op_get_model_15.outputs['model03'],
+        predict_dataset = op_get_model_15.outputs['predict_dataset'],
+    )
+
+    op_comp_update_pred_result_15 = comp_update_pred_result(
+        ver = op_comp_get_pred_15.outputs['ver'],
+        market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
+        predict_dataset = op_comp_get_pred_15.outputs['daily_recom_dataset']
+    )
+
 compiler.Compiler().compile(
   pipeline_func=create_awesome_pipeline,
   package_path=job_file_name
@@ -362,7 +391,7 @@ api_client = AIPlatformClient(
 
 response = api_client.create_run_from_job_spec(
   job_spec_path=job_file_name,
-  enable_caching= False,
+  enable_caching= True,
   pipeline_root=PIPELINE_ROOT
 )
 
