@@ -5,6 +5,7 @@ from kfp.v2.dsl import (Artifact,
                         Output,
                         Metrics,
                         ClassificationMetrics)
+from typing import NamedTuple
 
 def predict(
     ver : str,
@@ -13,9 +14,14 @@ def predict(
     model03 : Input[Model],
     predict_dataset: Input[Dataset],
     daily_recom_dataset: Output[Dataset]
-):
+)-> NamedTuple(
+    'Outputs',
+    [ ('ver', str)  
+]):
+
     import pandas as pd
     from catboost import CatBoostClassifier
+    import collections
 
 
     df_predict = pd.read_pickle(predict_dataset.path)
@@ -32,8 +38,8 @@ def predict(
         pred = pd.DataFrame(pred, columns=['Prediction']).reset_index(drop=True)
       
         pred_prob = model_.predict_proba(X_pred)
-        pred_prob = pd.DataFrame(pred_prob, columns=['Prob01','Prob02']).reset_index(drop=True)
-       
+        pred_prob = pd.DataFrame(pred_prob, columns=['Proba01','Proba02']).reset_index(drop=True)
+        
         pred_each = pd.concat([X_indi, pred, pred_prob], axis=1)
         pred_each = pred_each[pred_each.Prediction > 0]
         print('a', pred_each)
@@ -48,29 +54,41 @@ def predict(
     print('b', df_pred_all)
     df_pred_mean= df_pred_all.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
     df_pred_mean = df_pred_mean.reset_index()
-    df_pred_mean = df_pred_mean.sort_values(by='Prob02', ascending=False) # high probability first
+    df_pred_mean = df_pred_mean.sort_values(by='Proba02', ascending=False) # high probability first
 
     df_pred_mean.drop_duplicates(subset=['code', 'date'], inplace=True) 
     print('c', df_pred_mean)
 
-    # # Load stored prediction result
-    # try :        
-    #     df_pred_stored = pd.read_pickle(f'/gcs/pipeline-dots-stock/bong_predictions/bong_{ver}.pkl')
-    #     dates_in_stored = df_pred_stored.date.unique().tolist()
-    # except :
-    #     print('exception')
-    #     df_pred_stored = pd.DataFrame()
-    #     dates_in_stored = []
+    # Load stored prediction result
+    try :        
+        df_pred_stored = pd.read_pickle(f'/gcs/pipeline-dots-stock/bong_predictions/bong_{ver}.pkl')
+        dates_in_stored = df_pred_stored.date.unique().tolist()
+    except :
+        print('exception')
+        df_pred_stored = pd.DataFrame()
+        dates_in_stored = []
     
 
-    # if df_pred_mean.date.iloc[0] not in dates_in_stored:
-    #     df_pred_new = df_pred_stored.append(df_pred_mean)
-    # else :
-    #     df_pred_new = df_pred_stored
+    if df_pred_mean.shape[0] == 0:
+        df_pred_new = df_pred_stored
 
-    # df_pred_new.to_pickle(daily_recom_dataset.path)
-    df_pred_mean.to_pickle(daily_recom_dataset.path)
-    # df_pred_new.to_pickle(f'/gcs/pipeline-dots-stock/bong_predictions/bong_{ver}.pkl')
+    elif df_pred_mean.date.iloc[0] not in dates_in_stored:
+        df_pred_new = df_pred_stored.append(df_pred_mean)
+
+    else :
+        df_pred_new = df_pred_stored
     
-
+    try:
+        df_pred_new.sort_values(by=['date', 'Proba02'], ascending=[True, False], inplace=True)
+    except:
+        print('error')
+        
+    df_pred_new.to_pickle(daily_recom_dataset.path)
+    df_pred_new.to_pickle(f'/gcs/pipeline-dots-stock/bong_predictions/bong_{ver}.pkl')
+    
+    outputs = collections.namedtuple(
+        "Outputs",
+        ["ver"]
+    )
+    return outputs(ver)
 

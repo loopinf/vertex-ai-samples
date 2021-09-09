@@ -14,11 +14,15 @@ from catboost import CatBoostClassifier
 #     model02 : Input[Model],
 #     model03 : Input[Model],
 #     predict_dataset: Input[Dataset],
-
+#%%
+for i in []:
+    print('a')
 # %%
-results = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/gb-pipeline-training-daily-20210908213312/predict_3446458779682471936/daily_recom_dataset'
+results = 'gs://pipeline-dots-stock/bong_price_updated/bong_12.pkl'
 
-df_ = pd.read_pickle(results)
+df = pd.read_pickle(results)
+
+# df = df_[['날짜', '종목명', '현재가', 'd_1', 'd_2', 'd_3']]
 
 #%%
 

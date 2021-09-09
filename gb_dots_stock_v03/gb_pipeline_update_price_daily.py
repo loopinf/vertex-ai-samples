@@ -39,7 +39,7 @@ comp_get_update_price_daily = comp.create_component_from_func(
 
 
 
-job_file_name='gb-pipeline-update-price-daily.json'
+job_file_name='gb-pipeline-update-price-daily-20210909.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT

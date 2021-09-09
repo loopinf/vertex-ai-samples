@@ -11,27 +11,40 @@ def update_price_daily(
 
   file_list = os.listdir(folder)
 
+  cols_to_keep = ['name', 'code', 'date', 'Prediction', 'Proba01', 'Proba02',
+                  # 'high', 'low', 'volume', 
+                  'change', 'c_1', 'c_2', 'c_3', 'close'
+                  ]
+
   for f in file_list:
     print(f)
     path = os.path.join(folder, f)
 
     df_ = pd.read_pickle(path)
+    # df_ = df_[cols_to_keep]
     df_ = df_.reset_index(drop=True)
 
-    df_ = df_[['name', 'code', 'date', 'Prediction', 'Proba01', 'Proba02',
-                'high', 'low', 'volume', 'change', 'c_1', 'c_2', 'c_3', 'close'
-                ]]
+    try : # for the datasets, not updated ever before
+     
+      df_ = df_[cols_to_keep]
 
-    print(f'shape of {f} : {df_.shape}')
+      l_dates = df_.date.unique().tolist()
+      l_dates_to_update = l_dates[-5:]
 
-    l_dates = df_.date.unique().tolist()
+      df_to_hold = df_[~df_.date.isin(l_dates_to_update)]
+      df_to_update = df_[df_.date.isin(l_dates_to_update)]
 
-    l_dates_to_update = l_dates[-5:]
+    except :
+      print('newbie')
+      l_dates = df_.date.unique().tolist()
+      l_dates_to_update = l_dates#[-5:]
+      # df_to_hold = df_[~df_.date.isin(l_dates_to_update)]
+      df_to_update = df_[df_.date.isin(l_dates_to_update)]
 
-    df_to_hold = df_[~df_.date.isin(l_dates_to_update)]
-    df_to_update = df_[df_.date.isin(l_dates_to_update)]
+    
 
     codes_to_update = df_to_update.code.unique().tolist()
+
     print(f'codes to update : {codes_to_update}')
 
     def get_price_adj(code, start):
@@ -74,9 +87,16 @@ def update_price_daily(
                           df_price_updated,
                           left_on=['date', 'code'],
                           right_on=['date', 'code'] )
+
     df_to_update.fillna(0, inplace=True)
 
-    df_updated = df_to_hold.append(df_to_update)
+    try :
+      df_updated = df_to_hold.append(df_to_update)
+      df_updated = df_updated[cols_to_keep]
+    except :
+      print('newbie')
+      df_updated = df_to_update
+      df_updated = df_updated[cols_to_keep]
 
     df_updated.to_pickle(path)
     
