@@ -21,8 +21,8 @@ results = 'gs://pipeline-dots-stock/prediction_results_3d_close_10_v01/df_predic
 
 df = pd.read_pickle(results)
 
-df = df[['날짜', '종목명', '현재가', 'd_1', 'd_2', 'd_3']]
-df['ratio%'] = (df['d_3'] / df['현재가'])*100 - 100
+# df = df[['날짜', '종목명', '현재가', 'd_1', 'd_2', 'd_3']]
+# df['ratio%'] = (df['d_3'] / df['현재가'])*100 - 100
 
 #%%
 df['ratio%'].mean()
