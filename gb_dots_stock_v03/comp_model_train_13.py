@@ -8,7 +8,7 @@ from kfp.v2.dsl import (Artifact,
                         Metrics,
                         ClassificationMetrics)
 
-def train_model_11(
+def train_model_13(
   ml_dataset : Input[Dataset],
   bros_univ_dataset: Input[Dataset],
   predict_dataset: Output[Dataset],
@@ -21,7 +21,7 @@ def train_model_11(
     [ ('ver', str)  
 ]):
 
-    ver = '11'
+    ver = '13'
 
     import collections
     import pandas as pd
@@ -73,9 +73,15 @@ def train_model_11(
     df_preP['dayofweek'] = pd.to_datetime(df_preP.date.astype('str')).dt.dayofweek.astype('category')
 
     # Add market_cap categotu
+    # df_preP['mkt_cap_cat'] = pd.cut(
+    #                             df_preP['mkt_cap'],
+    #                             bins=[0, 1000, 5000, 10000, 50000, np.inf],
+    #                             include_lowest=True,
+    #                             labels=['A', 'B', 'C', 'D', 'E'])
+    
     df_preP['mkt_cap_cat'] = pd.cut(
                                 df_preP['mkt_cap'],
-                                bins=[0, 1000, 5000, 10000, 50000, np.inf],
+                                bins=[0, 100, 2000, 5000, 10000, np.inf],
                                 include_lowest=True,
                                 labels=['A', 'B', 'C', 'D', 'E'])
 
@@ -88,9 +94,9 @@ def train_model_11(
             #  'name',
             #  'date',
             # 'rank',
-            'mkt_cap',
-            # 'mkt_cap_cat',
-            # 'in_top30',
+            # 'mkt_cap',
+            'mkt_cap_cat',
+            'in_top30',
             # 'rank_mean_10',
             # 'rank_mean_5',
             'in_top_30_5',
@@ -184,12 +190,12 @@ def train_model_11(
             # 'max_scale_MACD',
             'volume_change_wrt_10max',
             'volume_change_wrt_5max',
-            # 'volume_change_wrt_20max',
+            'volume_change_wrt_20max',
             'volume_change_wrt_10mean',
             'volume_change_wrt_5mean',
-            # 'volume_change_wrt_20mean',
-            # 'close_ratio_wrt_10max',
-            # 'close_ratio_wrt_10min',
+            'volume_change_wrt_20mean',
+            'close_ratio_wrt_10max',
+            'close_ratio_wrt_10min',
             'oh_ratio',
             'oc_ratio',
             'ol_ratio',
@@ -217,7 +223,7 @@ def train_model_11(
             df_of_the_day = df[df.date == date]
             df_of_the_day = df_of_the_day.sort_values(by='rank', ascending=True)
            
-            df_top30_in_date = df_of_the_day.head(30) #top30 df of the day
+            df_top30_in_date = df_of_the_day.head(44) #top30 df of the day
             l_top30s_in_date = df_top30_in_date.code.to_list() # top30 codes if the day
            
             df_bros_in_date = df_bros[df_bros.date == date] # bros of the day
@@ -247,6 +253,8 @@ def train_model_11(
     
     # Export prediction set
     df_pred = get_df_univ_for_pred_01(df_preP, dates_pred)
+    df_pred = df_pred[cols_indicator + features]
+    df_pred['in_top30'] = df_pred.in_top30.astype('int')
     df_pred[cols_indicator + features].to_pickle(predict_dataset.path)
 
     # ML Model
@@ -268,8 +276,8 @@ def train_model_11(
 
     X = df_train[features] 
     y = df_train[target_col].astype('float')
-    # X['in_top30'] = X.in_top30.astype('int')
-    # df_pred['in_top30'] = df_pred.in_top30.astype('int')
+    X['in_top30'] = X.in_top30.astype('int')
+   
 
     # Run prediction 3 times
     for iter_n in range(3):
@@ -282,19 +290,19 @@ def train_model_11(
         eval_dataset = Pool(
                 X_test, y_test,
                 # cat_features=['mkt_cap_cat']
-                # cat_features=['in_top30']
+                cat_features=['in_top30', 'mkt_cap_cat']
                 )
 
         print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
         print('No. of true : ', y_train.sum() )
 
         model.fit(X_train, y_train,
-                    use_best_model=True,
-                    eval_set = eval_dataset,
+                    # use_best_model=True,
+                    # eval_set = eval_dataset,
                     # , verbose=200
                     # , plot=True, 
                     # cat_features=['in_top30','dayofweek', 'mkt_cap_cat']
-                    # cat_features=['in_top30']
+                    cat_features=['in_top30', 'mkt_cap_cat']
                     )
 
         print(f'model score : {model.score(X_test, y_test)}')

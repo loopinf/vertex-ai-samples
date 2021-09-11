@@ -8,7 +8,7 @@ from kfp.v2.dsl import (Artifact,
                         Metrics,
                         ClassificationMetrics)
 
-def train_model_11(
+def train_model_12(
   ml_dataset : Input[Dataset],
   bros_univ_dataset: Input[Dataset],
   predict_dataset: Output[Dataset],
@@ -21,7 +21,7 @@ def train_model_11(
     [ ('ver', str)  
 ]):
 
-    ver = '11'
+    ver = '12'
 
     import collections
     import pandas as pd
@@ -90,7 +90,7 @@ def train_model_11(
             # 'rank',
             'mkt_cap',
             # 'mkt_cap_cat',
-            # 'in_top30',
+            'in_top30',
             # 'rank_mean_10',
             # 'rank_mean_5',
             'in_top_30_5',
@@ -188,8 +188,8 @@ def train_model_11(
             'volume_change_wrt_10mean',
             'volume_change_wrt_5mean',
             # 'volume_change_wrt_20mean',
-            # 'close_ratio_wrt_10max',
-            # 'close_ratio_wrt_10min',
+            'close_ratio_wrt_10max',
+            'close_ratio_wrt_10min',
             'oh_ratio',
             'oc_ratio',
             'ol_ratio',
@@ -247,6 +247,8 @@ def train_model_11(
     
     # Export prediction set
     df_pred = get_df_univ_for_pred_01(df_preP, dates_pred)
+    df_pred = df_pred[cols_indicator + features]
+    df_pred['in_top30'] = df_pred.in_top30.astype('int')
     df_pred[cols_indicator + features].to_pickle(predict_dataset.path)
 
     # ML Model
@@ -268,8 +270,8 @@ def train_model_11(
 
     X = df_train[features] 
     y = df_train[target_col].astype('float')
-    # X['in_top30'] = X.in_top30.astype('int')
-    # df_pred['in_top30'] = df_pred.in_top30.astype('int')
+    X['in_top30'] = X.in_top30.astype('int')
+   
 
     # Run prediction 3 times
     for iter_n in range(3):
@@ -282,19 +284,19 @@ def train_model_11(
         eval_dataset = Pool(
                 X_test, y_test,
                 # cat_features=['mkt_cap_cat']
-                # cat_features=['in_top30']
+                cat_features=['in_top30']
                 )
 
         print('X Train Size : ', X_train.shape, 'Y Train Size : ', y_train.shape)
         print('No. of true : ', y_train.sum() )
 
         model.fit(X_train, y_train,
-                    use_best_model=True,
-                    eval_set = eval_dataset,
+                    # use_best_model=True,
+                    # eval_set = eval_dataset,
                     # , verbose=200
                     # , plot=True, 
                     # cat_features=['in_top30','dayofweek', 'mkt_cap_cat']
-                    # cat_features=['in_top30']
+                    cat_features=['in_top30']
                     )
 
         print(f'model score : {model.score(X_test, y_test)}')
