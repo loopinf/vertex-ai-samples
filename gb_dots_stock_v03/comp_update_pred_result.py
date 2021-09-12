@@ -21,7 +21,9 @@ def update_pred_result(
   # Prediction result / All period / Comes from prev comp
   df_preded = pd.read_pickle(predict_dataset.path) # comes from prev comp.
 
-
+  df_preded['c_1'] = 0
+  df_preded['c_2'] = 0
+  df_preded['c_3'] = 0
 
   cols_to_kepp = ['name', 'code', 'date',
                   'Prediction', 'Proba01', 'Proba02',
@@ -79,10 +81,6 @@ def update_pred_result(
       # 기존 추천 종목이 없는 경우 df_preded에 컬럼 몇 개를 추가해 줘야 함
       
       s_dates_to_add = l_dates_of_pred
-
-      df_preded['c_1'] = 0
-      df_preded['c_2'] = 0
-      df_preded['c_3'] = 0
 
       df_pred_w_price_new =add_close(df_preded, s_dates_to_add)
 

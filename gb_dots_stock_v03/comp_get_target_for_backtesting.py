@@ -37,6 +37,8 @@ def get_target(
     df_['change_p2_over5'] = df_['change_p2'] > 0.05
     df_['change_p3_over5'] = df_['change_p3'] > 0.05
 
+    df_['change_p1_over1'] = df_['change_p1'] > 0.01
+
     df_['change_p1_over10'] = df_['change_p1'] > 0.1
     df_['change_p2_over10'] = df_['change_p2'] > 0.1
     df_['change_p3_over10'] = df_['change_p3'] > 0.1
