@@ -35,6 +35,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
 ('Num_of_Predicted_day', int),
 ('Max_return', float),
 ('Min_return', float),
+('Period', int)
 ]):
         
 
@@ -114,6 +115,8 @@ def model_backtesting(surfix : str) -> NamedTuple(
     # Dates things ...
     l_dates = df_preP.date.unique().tolist()
     idx_start = l_dates.index('20210802')
+
+    period = int(l_dates.__len__() - idx_start)
 
     # Filtering functions
     def get_top30_bros_dfs_in_period(df, l_dates): # input dataframe : top30s in the period
@@ -511,7 +514,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
     min_r = float(min(daily_return))
     max_r = float(max(daily_return))
 
-    return (surfix, sum_of_period, num_of_p_day, max_r, min_r)
+    return (surfix, sum_of_period, num_of_p_day, max_r, min_r, period)
 
 # create pipeline 
 #########################################
