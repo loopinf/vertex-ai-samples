@@ -55,8 +55,8 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
     #%%
     # #2 Loading Files
-    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210910_120.pkl'
-    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210910_120'
+    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210914_240.pkl'
+    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210914_240'
 
     df_ml_dataset = pd.read_pickle(ml_dataset)
     df_bros_dataset = pd.read_pickle(bros_dataset)
@@ -114,7 +114,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
     # Dates things ...
     l_dates = df_preP.date.unique().tolist()
-    idx_start = l_dates.index('20210802')
+    idx_start = l_dates.index('20201109')
 
     period = int(l_dates.__len__() - idx_start)
 
@@ -309,7 +309,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
         dic_pred[f'{date_ref}'] = df_pred[features] # df_pred 모아두기
 
         # df_train = df_preP[df_preP.date.isin(dates_for_train)]
-        df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
+        # df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
 
         # df_pred = df_preP[df_preP.date == date_for_pred] 
 
@@ -387,14 +387,21 @@ def model_backtesting(surfix : str) -> NamedTuple(
                             axis=1)
 
             df_pred_r_01 = df_pred_r_01[df_pred_r_01.Prediction > 0]
+            print(f'iter_number_{iter_n}')
             df_pred_final_01 = df_pred_final_01.append(df_pred_r_01)
+            # df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True)
 
         df_pred_final_01 = df_pred_final_01.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
         df_pred_final_01 = df_pred_final_01.reset_index()
         df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
+
+        # print(f'one_day_prediction = {df_pred_final_01}')
         
         df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True) # remove duplicates
-        
+        # df_pred_final_01_ = df_pred_final_01[df_pred_final_01.duplicated(subset=['code', 'date'], keep='last')] # keep duplicated
+        df_pred_final_01 = df_pred_final_01.reset_index()
+        df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
+
         df_pred_all = df_pred_all.append(df_pred_final_01)
         print(f'size of df_pred_all : {df_pred_all.shape}' )
 
@@ -499,7 +506,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
     daily_return = []
     def calc_daily_return(df):
         df_ = df.sort_values(by='Proba02', ascending=False)
-        df_ = df.head(10)
+        df_ = df.head(20)
         # print(df_)
         rr = df_.f_r.mean()
         daily_return.append(rr)
@@ -525,7 +532,7 @@ job_file_name='gb-model-backtesting-0912.json'
 )    
 def we_would_be_gb_in_this_year():
 
-    op_model_backtesting = model_backtesting('m14_repeat_01')
+    op_model_backtesting = model_backtesting('m14_long_Days_rp3_01')
 
 compiler.Compiler().compile(
   pipeline_func=we_would_be_gb_in_this_year,

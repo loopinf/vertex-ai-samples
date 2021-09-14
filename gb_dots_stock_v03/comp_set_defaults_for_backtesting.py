@@ -8,9 +8,9 @@ def set_defaults()-> NamedTuple(
     ('period_extra', int)
   ]):
 
-  date_ref = '20210910'
+  date_ref = '20210914'
   period_to_train = 20
-  period_extra = 100
+  period_extra = 220
   n_days = period_to_train + period_extra
 
   return (date_ref, n_days, period_extra)
