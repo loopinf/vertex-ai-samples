@@ -24,7 +24,7 @@ def get_adj_prices(
   df_market = pd.read_pickle(market_info_dataset.path)
 
   date_ref = df_market.날짜.max()
-  date_start = df_market.날짜.min() #'20210101'
+  date_start = df_market.날짜.min()
 
   codes_stock = df_market[df_market.날짜 == date_ref].종목코드.to_list()
 

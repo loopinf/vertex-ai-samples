@@ -17,7 +17,7 @@ from catboost import CatBoostClassifier
 #     predict_dataset: Input[Dataset],
 
 # %%
-results = 'gs://pipeline-dots-stock/prediction_results_3d_close_10_v01/df_predic_result_3d_close_10_v01_price_updated.pkl'
+results = 'gs://pipeline-dots-stock/ml_dataset/ml_dataset_20210914_240.pkl'
 
 df = pd.read_pickle(results)
 

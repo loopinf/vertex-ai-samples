@@ -28,9 +28,9 @@ from kfp.v2.google.client import AIPlatformClient
     base_image="gcr.io/dots-stock/python-img-v5.2",
     packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
 )
-def model_backtesting(surffix : str) -> NamedTuple(
+def model_backtesting(surfix : str) -> NamedTuple(
 'Outputs',
-[('surffix', str),
+[('surfix', str),
 ('Return_sum_period',float),
 ('Num_of_Predicted_day', int),
 ('Max_return', float),
@@ -55,8 +55,8 @@ def model_backtesting(surffix : str) -> NamedTuple(
 
     #%%
     # #2 Loading Files
-    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210910_120.pkl'
-    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210910_120'
+    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210914_240.pkl'
+    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210914_240'
 
     df_ml_dataset = pd.read_pickle(ml_dataset)
     df_bros_dataset = pd.read_pickle(bros_dataset)
@@ -114,7 +114,7 @@ def model_backtesting(surffix : str) -> NamedTuple(
 
     # Dates things ...
     l_dates = df_preP.date.unique().tolist()
-    idx_start = l_dates.index('20210802')
+    idx_start = l_dates.index('20201109')
 
     period = int(l_dates.__len__() - idx_start)
 
@@ -170,8 +170,8 @@ def model_backtesting(surffix : str) -> NamedTuple(
             'mkt_cap',
             # 'mkt_cap_cat',
             'in_top30',
-            'rank_mean_10',
-            'rank_mean_5',
+            # 'rank_mean_10',
+            # 'rank_mean_5',
             'in_top_30_5',
             'in_top_30_10',
             'in_top_30_20',
@@ -250,23 +250,23 @@ def model_backtesting(surffix : str) -> NamedTuple(
             #  'macd',
             #  'boll_ub',
             #  'boll_lb',
-            'rsi_30',
-            'dx_30',
+            # 'rsi_30',
+            # 'dx_30',
              'close_30_sma',
              'close_60_sma',
-             'daily_return',
-            'return_lag_1',
-            'return_lag_2',
-            'return_lag_3',
+            #  'daily_return',
+            # 'return_lag_1',
+            # 'return_lag_2',
+            # 'return_lag_3',
             'bb_u_ratio',
             'bb_l_ratio',
             # 'max_scale_MACD',
             'volume_change_wrt_10max',
-            'volume_change_wrt_5max',
-            'volume_change_wrt_20max',
+            # 'volume_change_wrt_5max',
+            # 'volume_change_wrt_20max',
             'volume_change_wrt_10mean',
-            'volume_change_wrt_5mean',
-            'volume_change_wrt_20mean',
+            # 'volume_change_wrt_5mean',
+            # 'volume_change_wrt_20mean',
             'close_ratio_wrt_10max',
             'close_ratio_wrt_10min',
             'oh_ratio',
@@ -277,7 +277,7 @@ def model_backtesting(surffix : str) -> NamedTuple(
             #  'DesignationDate',
             #  'admin_stock',
             # 'dayofweek'
-            ]   
+            ]    
 
 
 
@@ -298,25 +298,18 @@ def model_backtesting(surffix : str) -> NamedTuple(
         df_train = get_top30_bros_dfs_in_period(df_preP, dates_for_train)
         df_train = df_train.dropna(axis=0, subset=target_col) 
 
-        # # Use All items
-        # df_train = df_preP[df_preP.date.isin(dates_for_train)] #t_df_univ_for_train_01(df_preP, dates_train)
-        # df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
-
-        # Original Prediction Dataset Concept
-        df_pred = get_df_univ_for_pred_01(df_preP, dates_for_pred, date_ref)
-        df_pred['date'] = date_ref
-
-        # # Prediction Dataset Concept used by mistake
-        # df_pred = get_top30_bros_dfs_in_period(df_preP, dates_for_pred)
+        # # Original Prediction Dataset Concept
+        # df_pred = get_df_univ_for_pred_01(df_preP, dates_for_pred, date_ref)
         # df_pred['date'] = date_ref
 
-        # Use all items
-        df_pred = df_preP[df_preP.date == date_ref]
+        # Prediction Dataset Concept used by mistake
+        df_pred = get_top30_bros_dfs_in_period(df_preP, dates_for_pred)
+        df_pred['date'] = date_ref
 
         dic_pred[f'{date_ref}'] = df_pred[features] # df_pred 모아두기
 
         # df_train = df_preP[df_preP.date.isin(dates_for_train)]
-        df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
+        # df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
 
         # df_pred = df_preP[df_preP.date == date_for_pred] 
 
@@ -394,21 +387,28 @@ def model_backtesting(surffix : str) -> NamedTuple(
                             axis=1)
 
             df_pred_r_01 = df_pred_r_01[df_pred_r_01.Prediction > 0]
+            print(f'iter_number_{iter_n}')
             df_pred_final_01 = df_pred_final_01.append(df_pred_r_01)
+            # df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True)
 
         df_pred_final_01 = df_pred_final_01.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
         df_pred_final_01 = df_pred_final_01.reset_index()
         df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
+
+        # print(f'one_day_prediction = {df_pred_final_01}')
         
         df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True) # remove duplicates
-        
+        # df_pred_final_01_ = df_pred_final_01[df_pred_final_01.duplicated(subset=['code', 'date'], keep='last')] # keep duplicated
+        df_pred_final_01 = df_pred_final_01.reset_index()
+        df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
+
         df_pred_all = df_pred_all.append(df_pred_final_01)
         print(f'size of df_pred_all : {df_pred_all.shape}' )
 
 
     # Save dic_model / dic_df_pred
-    path_dic_model = f'/gcs/pipeline-dots-stock/gb_backtesting_results/dic_model_{surffix}'
-    path_dic_df_pred = f'/gcs/pipeline-dots-stock/gb_backtesting_results/dic_df_pred_{surffix}'
+    path_dic_model = f'/gcs/pipeline-dots-stock/gb_backtesting_results/dic_model_{surfix}'
+    path_dic_df_pred = f'/gcs/pipeline-dots-stock/gb_backtesting_results/dic_df_pred_{surfix}'
 
     with open(path_dic_model, 'wb') as f:
         pickle.dump(dic_model, f)
@@ -484,7 +484,7 @@ def model_backtesting(surffix : str) -> NamedTuple(
     df_return_updated = df_price_updated.apply(lambda row: calc_return(row), axis=1)
 
     # Save return calculated df
-    df_return_updated.to_pickle(f'/gcs/pipeline-dots-stock/gb_backtesting_results/df_return_updated_{surffix}')
+    df_return_updated.to_pickle(f'/gcs/pipeline-dots-stock/gb_backtesting_results/df_return_updated_{surfix}')
 
     # %%
     # #9 Apply sell condition and calc final return
@@ -506,7 +506,7 @@ def model_backtesting(surffix : str) -> NamedTuple(
     daily_return = []
     def calc_daily_return(df):
         df_ = df.sort_values(by='Proba02', ascending=False)
-        df_ = df.head(10)
+        df_ = df.head(20)
         # print(df_)
         rr = df_.f_r.mean()
         daily_return.append(rr)
@@ -521,7 +521,7 @@ def model_backtesting(surffix : str) -> NamedTuple(
     min_r = float(min(daily_return))
     max_r = float(max(daily_return))
 
-    return (surffix, sum_of_period, num_of_p_day, max_r, min_r, period)
+    return (surfix, sum_of_period, num_of_p_day, max_r, min_r, period)
 
 # create pipeline 
 #########################################
@@ -532,7 +532,7 @@ job_file_name='gb-model-backtesting-0912.json'
 )    
 def we_would_be_gb_in_this_year():
 
-    op_model_backtesting = model_backtesting('m16_repeat_05') # 설명은 여기에 적기
+    op_model_backtesting = model_backtesting('m14_long_Days_rp3_01')
 
 compiler.Compiler().compile(
   pipeline_func=we_would_be_gb_in_this_year,

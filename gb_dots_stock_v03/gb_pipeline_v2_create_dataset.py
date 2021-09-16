@@ -27,7 +27,7 @@ from kfp.v2.google.client import AIPlatformClient
 from comp_set_defaults_for_backtesting import set_defaults
 from comp_get_market_info import get_market_info
 from comp_get_bros_for_backtesting import get_bros
-from comp_get_adj_price import get_adj_prices
+from comp_get_adj_price_backtesting import get_adj_prices
 from comp_get_full_adj_prices import get_full_adj_prices
 from comp_get_features import get_features
 from comp_get_target_for_backtesting import get_target
