@@ -55,8 +55,8 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
     #%%
     # #2 Loading Files
-    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210914_240.pkl'
-    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210914_240'
+    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210914_260.pkl'
+    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210914_260'
 
     df_ml_dataset = pd.read_pickle(ml_dataset)
     df_bros_dataset = pd.read_pickle(bros_dataset)
@@ -159,7 +159,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
     # #6 Set Target and Feats
 
     # target_col = ['target_close_over_10']
-    target_col = ['target_close_over_10']
+    target_col = ['target_low_over_10']
     cols_indicator = [ 'code', 'name', 'date', ]
 
     features = [
@@ -450,10 +450,18 @@ def model_backtesting(surfix : str) -> NamedTuple(
         df_['c_2'] = df_.close.shift(-2)
         df_['c_3'] = df_.close.shift(-3)
 
+        df_['l_1'] = df_.low.shift(-1)
+        df_['l_2'] = df_.low.shift(-2)
+        df_['l_3'] = df_.low.shift(-3)
+
+        df_['o_1'] = df_.open.shift(-1)
+        df_['o_2'] = df_.open.shift(-2)
+        df_['o_3'] = df_.open.shift(-3)
+
         return df_
 
     df_price_updated  = df_price.groupby('code').apply(lambda df: get_price_tracked(df))
-    df_price_updated = df_price_updated[['date', 'code', 'c_1', 'c_2', 'c_3', 'close']]
+    df_price_updated = df_price_updated[['date', 'code', 'c_1', 'c_2', 'c_3', 'l_1', 'l_2', 'l_3','o_1','o_2','o_3','close']]
     df_price_updated = df_price_updated.reset_index(drop=True)
 
     df_price_updated = df_pred_all.merge(
@@ -475,9 +483,22 @@ def model_backtesting(surfix : str) -> NamedTuple(
         r3 = (df.c_3 / df.close - 1) * 100
         r3 = format(r3, '.1f')
 
+        lr1 = (df.l_1 / df.close - 1) * 100
+        lr1 = format(lr1, '.1f')
+
+        lr2 = (df.l_2 / df.close - 1) * 100
+        lr2 = format(lr2, '.1f')
+
+        lr3 = (df.l_3 / df.close - 1) * 100
+        lr3 = format(lr3, '.1f')
+
         df['r1'] = float(r1)
         df['r2'] = float(r2)
         df['r3'] = float(r3)
+
+        df['lr1'] = float(lr1)
+        df['lr2'] = float(lr2)
+        df['lr3'] = float(lr3)
 
         return df
 
@@ -490,8 +511,8 @@ def model_backtesting(surfix : str) -> NamedTuple(
     # #9 Apply sell condition and calc final return
 
     def return_final(df):
-        if df.r1 <= -3.0 or df.r2 <= -3.0 or df.r3 <= -3.0:
-            f_r = -3.0
+        if df.lr1 <= -1.5 or df.lr2 <= -1.5 or df.lr3 <= -1.5:
+            f_r = -1.5
         else :
             f_r = df.r3
         
@@ -506,7 +527,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
     daily_return = []
     def calc_daily_return(df):
         df_ = df.sort_values(by='Proba02', ascending=False)
-        df_ = df.head(20)
+        df_ = df.head(10)
         # print(df_)
         rr = df_.f_r.mean()
         daily_return.append(rr)
@@ -525,14 +546,14 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
 # create pipeline 
 #########################################
-job_file_name='gb-model-backtesting-0912.json'
+job_file_name='gb-model-backtesting-m14-long-rp3.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT
 )    
 def we_would_be_gb_in_this_year():
 
-    op_model_backtesting = model_backtesting('m14_long_Days_rp3_01')
+    op_model_backtesting = model_backtesting('m14_lp_rp3_target_low_03')
 
 compiler.Compiler().compile(
   pipeline_func=we_would_be_gb_in_this_year,

@@ -99,7 +99,7 @@ comp_get_ml_dataset = comp.create_component_from_func_v2(
 
 # create pipeline 
 #########################################
-job_file_name='gb-create-dtaset-for-backtesting.json'
+job_file_name='gb-create-dataset-for-backtesting.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT
