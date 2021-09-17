@@ -526,7 +526,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
         else :
             f_r = df.r3
         
-        df['f_r'] = f_r
+        df['f_r'] = df.r1
         return df
 
 
@@ -556,14 +556,14 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
 # create pipeline 
 #########################################
-job_file_name='gb-model-backtesting-m14-long-rp3.json'
+job_file_name='gb-model-backtesting-m14-regressor-02.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT
 )    
 def we_would_be_gb_in_this_year():
 
-    op_model_backtesting = model_backtesting('m14_regressor_02_lp')
+    op_model_backtesting = model_backtesting('m14_regressor_02')
 
 compiler.Compiler().compile(
   pipeline_func=we_would_be_gb_in_this_year,
