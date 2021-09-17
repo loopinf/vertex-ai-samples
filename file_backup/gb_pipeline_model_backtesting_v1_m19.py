@@ -1,3 +1,5 @@
+
+
 # -*- coding: utf-8 -*-
 import sys
 import os
@@ -524,10 +526,10 @@ def model_backtesting(surfix : str) -> NamedTuple(
     # #9 Apply sell condition and calc final return
 
     def return_final(df):
-        if df.lr1 <= -1.5 or df.lr2 <= -1.5 or df.lr3 <= -1.5:
-            f_r = -1.5
-        else :
-            f_r = df.r3
+        # if df.lr1 <= -1.5 or df.lr2 <= -1.5 or df.lr3 <= -1.5:
+        #     f_r = -1.5
+        # else :
+        #     f_r = df.r3
         
         df['f_r'] = df.r1
         return df
@@ -559,14 +561,14 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
 # create pipeline 
 #########################################
-job_file_name='gb-model-backtesting-m14-regressor-02.json'
+job_file_name='gb-model-backtesting-m19-regressor.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT
 )    
 def we_would_be_gb_in_this_year():
 
-    op_model_backtesting = model_backtesting('m14_regressor_15pct_unive_01')
+    op_model_backtesting = model_backtesting('m19_regressor_15pct_univ_05')
 
 compiler.Compiler().compile(
   pipeline_func=we_would_be_gb_in_this_year,
