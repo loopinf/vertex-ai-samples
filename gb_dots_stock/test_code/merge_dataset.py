@@ -1,28 +1,27 @@
 #%%
 
 import pandas as pd
-# import pickle
 import numpy as np
 from collections import Counter
 
 import sys
 import FinanceDataReader as fdr
 from catboost import CatBoostClassifier
-# import pickle
 
-# ver : str,
-#     model01 : Input[Model],
-#     model02 : Input[Model],
-#     model03 : Input[Model],
-#     predict_dataset: Input[Dataset],
+import hvplot.pandas
+import holoviews as hv
+
 
 # %%
-results = 'gs://pipeline-dots-stock/ml_dataset/ml_dataset_20210914_240.pkl'
+results = 'gs://pipeline-dots-stock/gb_backtesting_results/df_return_updated_m14_regressor_01'
 
 df = pd.read_pickle(results)
 
-# df = df[['날짜', '종목명', '현재가', 'd_1', 'd_2', 'd_3']]
-# df['ratio%'] = (df['d_3'] / df['현재가'])*100 - 100
+#%%
+hv.extension('bokeh')
+
+df.hvplot(x='Proba02', y='r3', kind='scatter')
+
 
 #%%
 df['ratio%'].mean()

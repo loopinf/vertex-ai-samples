@@ -511,8 +511,13 @@ def model_backtesting(surfix : str) -> NamedTuple(
     # #9 Apply sell condition and calc final return
 
     def return_final(df):
-        if df.lr1 <= -3.0 or df.lr2 <= -3.0 or df.lr3 <= -3.0:
-            f_r = -3.0
+
+        if df.lr1 <= -6.0 :
+            f_r = -6
+        elif df.lr2 <= -3.0 :
+            f_r = -3
+        elif df.lr3 <= -2.0:
+            f_r = -2.0
         else :
             f_r = df.r3
         
@@ -526,7 +531,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
     daily_return = []
     def calc_daily_return(df):
-        df_ = df.sort_values(by='Proba02', ascending=False)
+        df_ = df.sort_values(by='Prediction', ascending=False)
         df_ = df.head(10)
         # print(df_)
         rr = df_.f_r.mean()
@@ -546,14 +551,14 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
 # create pipeline 
 #########################################
-job_file_name='gb-model-backtesting-m14-long-rp3.json'
+job_file_name='gb-model-backtesting-m17-long-rp3.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT
 )    
 def we_would_be_gb_in_this_year():
 
-    op_model_backtesting = model_backtesting('m16_long_Days_rp3_low_top10_05')
+    op_model_backtesting = model_backtesting('m17_long_Days_rp3_low_top10_05')
 
 compiler.Compiler().compile(
   pipeline_func=we_would_be_gb_in_this_year,

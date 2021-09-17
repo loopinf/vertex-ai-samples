@@ -55,8 +55,8 @@ def model_backtesting(surffix : str) -> NamedTuple(
 
     #%%
     # #2 Loading Files
-    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210910_120.pkl'
-    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210910_120'
+    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210914_240.pkl'
+    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210914_240'
 
     df_ml_dataset = pd.read_pickle(ml_dataset)
     df_bros_dataset = pd.read_pickle(bros_dataset)
@@ -449,6 +449,10 @@ def model_backtesting(surffix : str) -> NamedTuple(
         df_['c_1'] = df_.close.shift(-1)
         df_['c_2'] = df_.close.shift(-2)
         df_['c_3'] = df_.close.shift(-3)
+
+        df_['l_1'] = df_.low.shift(-1)
+        df_['l_2'] = df_.low.shift(-2)
+        df_['l_3'] = df_.low.shift(-3)
 
         return df_
 

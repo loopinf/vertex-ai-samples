@@ -1,8 +1,12 @@
+##########
+
+
+DESC_PIPELINE = 'univ_15pcnt_ul_01'
+
+
 # -*- coding: utf-8 -*-
 import sys
 import os
-
-from catboost.core import CatBoostRegressor
 # import pandas as pd
 
 PROJECT_ID = "dots-stock"  # @param {type:"string"}
@@ -57,8 +61,8 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
     #%%
     # #2 Loading Files
-    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210914_260.pkl'
-    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210914_260'
+    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210914_240.pkl'
+    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210914_240'
 
     df_ml_dataset = pd.read_pickle(ml_dataset)
     df_bros_dataset = pd.read_pickle(bros_dataset)
@@ -71,9 +75,11 @@ def model_backtesting(surfix : str) -> NamedTuple(
     #%%
     # #4 Pre-processing
 
-    cols_ohlcv_x = ['open_x', 'high_x', 'low_x', 'close_x', 'volume_x', 'change_x']
+    cols_ohlcv_x = ['open_x', 'high_x', 'low_x', 'close_x', 'volume_x']
     cols_ohlcv_y = ['open_y', 'high_y', 'low_y', 'close_y', 'volume_y', 'change_y']
+
     df_preP = df_preP.drop(columns=cols_ohlcv_x+cols_ohlcv_y)
+    df_preP.rename(columns={'change_x' : 'change'}, inplace=True)
 
     # drop SPACs
     stock_names = pd.Series(df_preP.name.unique())
@@ -116,7 +122,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
     # Dates things ...
     l_dates = df_preP.date.unique().tolist()
-    idx_start = l_dates.index('20201102')
+    idx_start = l_dates.index('20201109')
 
     period = int(l_dates.__len__() - idx_start)
 
@@ -129,8 +135,9 @@ def model_backtesting(surfix : str) -> NamedTuple(
         for date in l_dates :
             df_of_the_day = df[df.date == date]
             df_of_the_day = df_of_the_day.sort_values(by='rank', ascending=True)
+            df_of_the_day = df_of_the_day[(df_of_the_day.change >= -15) & (df_of_the_day.change <= 15)]
             # print('df_of_the_date', df_of_the_day)
-            df_top30_in_date = df_of_the_day.head(30)
+            df_top30_in_date = df_of_the_day #.head(30)
             l_top30s_in_date = df_top30_in_date.code.to_list()
             # print(f'size of top30 in the date : {df_top30_in_date.shape}')
             
@@ -161,7 +168,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
     # #6 Set Target and Feats
 
     # target_col = ['target_close_over_10']
-    target_col = ['change_p1']
+    target_col = ['change_p1_over1']
     cols_indicator = [ 'code', 'name', 'date', ]
 
     features = [
@@ -252,29 +259,29 @@ def model_backtesting(surfix : str) -> NamedTuple(
             #  'macd',
             #  'boll_ub',
             #  'boll_lb',
-            # 'rsi_30',
-            # 'dx_30',
+            'rsi_30',
+            'dx_30',
              'close_30_sma',
              'close_60_sma',
-            #  'daily_return',
-            # 'return_lag_1',
-            # 'return_lag_2',
-            # 'return_lag_3',
+             'daily_return',
+            'return_lag_1',
+            'return_lag_2',
+            'return_lag_3',
             'bb_u_ratio',
             'bb_l_ratio',
             # 'max_scale_MACD',
             'volume_change_wrt_10max',
-            # 'volume_change_wrt_5max',
-            # 'volume_change_wrt_20max',
+            'volume_change_wrt_5max',
+            'volume_change_wrt_20max',
             'volume_change_wrt_10mean',
-            # 'volume_change_wrt_5mean',
-            # 'volume_change_wrt_20mean',
+            'volume_change_wrt_5mean',
+            'volume_change_wrt_20mean',
             'close_ratio_wrt_10max',
             'close_ratio_wrt_10min',
             'oh_ratio',
             'oc_ratio',
             'ol_ratio',
-            # 'ch_ratio',
+            'ch_ratio',
             #  'Symbol',
             #  'DesignationDate',
             #  'admin_stock',
@@ -305,7 +312,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
         # df_pred['date'] = date_ref
 
         # Prediction Dataset Concept used by mistake
-        df_pred = get_top30_bros_dfs_in_period(df_preP, dates_for_pred)
+        df_pred = get_top30_bros_dfs_in_period(df_preP, [date_ref])
         df_pred['date'] = date_ref
 
         dic_pred[f'{date_ref}'] = df_pred[features] # df_pred 모아두기
@@ -317,23 +324,16 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
         # print(f'check01 : train size {df_train.shape} / pred size {df_pred.shape}')
         # ML Model
-        from catboost import CatBoostClassifier, CatBoostRegressor
+        from catboost import CatBoostClassifier
         from sklearn.model_selection import train_test_split
         from catboost import Pool
         from catboost.utils import get_roc_curve, get_confusion_matrix
 
         # Set Model
-        # model_01 = CatBoostClassifier(
-        #         # random_seed = 42,
-        #         # task_type = 'GPU',
-        #         # iterations=3000,
-        #         iterations=1500,
-        #         train_dir = '/tmp',
-        #         # verbose=500,
-        #         silent=True
-        #     )
-
-        model_01 = CatBoostRegressor(
+        model_01 = CatBoostClassifier(
+                # random_seed = 42,
+                # task_type = 'GPU',
+                # iterations=3000,
                 iterations=1500,
                 train_dir = '/tmp',
                 # verbose=500,
@@ -346,7 +346,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
         # Run prediction 3 times
         df_pred_final_01 = pd.DataFrame()
-        for iter_n in range(1):
+        for iter_n in range(3):
 
             X_train, X_test, y_train, y_test = train_test_split(X, y)
 
@@ -380,10 +380,10 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
             # Prediction
             pred_stocks_01 = model_01.predict(df_pred[features])    
-            # pred_proba_01 = model_01.predict_proba(df_pred[features])
+            pred_proba_01 = model_01.predict_proba(df_pred[features])
             
             df_pred_stocks_01 = pd.DataFrame(pred_stocks_01, columns=['Prediction']).reset_index(drop=True)
-            # df_pred_proba_01 = pd.DataFrame(pred_proba_01, columns=['Proba01', 'Proba02']).reset_index(drop=True)
+            df_pred_proba_01 = pd.DataFrame(pred_proba_01, columns=['Proba01', 'Proba02']).reset_index(drop=True)
 
             df_pred_name_code = df_pred[cols_indicator].reset_index(drop=True)
 
@@ -391,7 +391,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
                             [
                             df_pred_name_code,
                             df_pred_stocks_01,
-                            # df_pred_proba_01
+                            df_pred_proba_01
                             ],
                             axis=1)
 
@@ -402,15 +402,14 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
         df_pred_final_01 = df_pred_final_01.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
         df_pred_final_01 = df_pred_final_01.reset_index()
-        # df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
-        df_pred_final_01 = df_pred_final_01.sort_values(by='Prediction', ascending=False) # high probability first
+        df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
 
         # print(f'one_day_prediction = {df_pred_final_01}')
         
         df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True) # remove duplicates
         # df_pred_final_01_ = df_pred_final_01[df_pred_final_01.duplicated(subset=['code', 'date'], keep='last')] # keep duplicated
-        # df_pred_final_01 = df_pred_final_01.reset_index()
-        # df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
+        df_pred_final_01 = df_pred_final_01.reset_index()
+        df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
 
         df_pred_all = df_pred_all.append(df_pred_final_01)
         print(f'size of df_pred_all : {df_pred_all.shape}' )
@@ -464,9 +463,9 @@ def model_backtesting(surfix : str) -> NamedTuple(
         df_['l_2'] = df_.low.shift(-2)
         df_['l_3'] = df_.low.shift(-3)
 
-        df_['o_1'] = df_.open.shift(-1)
-        df_['o_2'] = df_.open.shift(-2)
-        df_['o_3'] = df_.open.shift(-3)
+        df_['o_1'] = df_.low.shift(-1)
+        df_['o_2'] = df_.low.shift(-2)
+        df_['o_3'] = df_.low.shift(-3)
 
         return df_
 
@@ -521,12 +520,18 @@ def model_backtesting(surfix : str) -> NamedTuple(
     # #9 Apply sell condition and calc final return
 
     def return_final(df):
-        if df.lr1 <= -1.5 or df.lr2 <= -1.5 or df.lr3 <= -1.5:
-            f_r = -1.5
-        else :
-            f_r = df.r3
+
+        # if df.lr1 <= -6.0 :
+        #     f_r = -6
+        # elif df.lr2 <= -3.0 :
+        #     f_r = -3
+        # elif df.lr3 <= -2.0:
+        #     f_r = -2.0
+        # else :
+        #     f_r = df.r3
         
-        df['f_r'] = f_r
+        df['f_r'] = df.r1
+
         return df
 
 
@@ -556,14 +561,14 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
 # create pipeline 
 #########################################
-job_file_name='gb-model-backtesting-m14-long-rp3.json'
+job_file_name='gb-model-backtesting-m18-15percnt-univ.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT
 )    
 def we_would_be_gb_in_this_year():
 
-    op_model_backtesting = model_backtesting('m14_regressor_02_lp')
+    op_model_backtesting = model_backtesting(DESC_PIPELINE)
 
 compiler.Compiler().compile(
   pipeline_func=we_would_be_gb_in_this_year,
