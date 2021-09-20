@@ -10,7 +10,7 @@ Target : 'change_p1'
 Model Type : Regressor
 '''
 
-job_file_name='gb-model-backtesting-m19-reg-15pct-univ.json'
+job_file_name='gb-model-backtesting-m19-2-reg-15pct-no-bro-no-top30.json'
 
 
 # -*- coding: utf-8 -*-
@@ -133,7 +133,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
     # Dates things ...
     l_dates = df_preP.date.unique().tolist()
-    idx_start = l_dates.index('20210802')
+    idx_start = l_dates.index('20201102')
 
     period = int(l_dates.__len__() - idx_start)
 
@@ -148,18 +148,18 @@ def model_backtesting(surfix : str) -> NamedTuple(
             
             df_15pct_of_the_day = df_of_the_day[(df_of_the_day.change >= -15) & (df_of_the_day.change <= 15)]
             
-            l_15pcts_in_date = df_15pct_of_the_day.code.to_list()
+            # l_15pcts_in_date = df_15pct_of_the_day.code.to_list()
             
-            df_bros_in_date = df_bros[df_bros.date == date]
+            # df_bros_in_date = df_bros[df_bros.date == date]
 
-            l_bros_of_top30s = df_bros_in_date[\
-                    df_bros_in_date.source.isin(l_15pcts_in_date)].target.unique().tolist()
+            # l_bros_of_top30s = df_bros_in_date[\
+            #         df_bros_in_date.source.isin(l_15pcts_in_date)].target.unique().tolist()
 
-            df_bros_of_top30 = df_of_the_day[df_of_the_day.code.isin(l_bros_of_top30s)]
+            # df_bros_of_top30 = df_of_the_day[df_of_the_day.code.isin(l_bros_of_top30s)]
 
-            df_ = df_15pct_of_the_day.append(df_bros_of_top30)
+            df_ = df_15pct_of_the_day #.append(df_bros_of_top30)
             
-            df_.drop_duplicates(subset=['code'], inplace=True)
+            # df_.drop_duplicates(subset=['code'], inplace=True)
 
             df_univ = df_univ.append(df_)
         # print('size of returned :', df_univ.shape)
@@ -182,44 +182,44 @@ def model_backtesting(surfix : str) -> NamedTuple(
             'in_top30',
             # 'rank_mean_10',
             # 'rank_mean_5',
-            'in_top_30_5',
-            'in_top_30_10',
-            'in_top_30_20',
+            # 'in_top_30_5',
+            # 'in_top_30_10',
+            # 'in_top_30_20',
             # 'up_bro_ratio_20',
             # 'up_bro_ratio_40',
-            'up_bro_ratio_60',
-            'up_bro_ratio_90',
-            'up_bro_ratio_120',
+            # 'up_bro_ratio_60',
+            # 'up_bro_ratio_90',
+            # 'up_bro_ratio_120',
             # 'n_bro_20',
             # 'n_bro_40',
-            'n_bro_60',
-            'n_bro_90',
-            'n_bro_120',
+            # 'n_bro_60',
+            # 'n_bro_90',
+            # 'n_bro_120',
             # 'all_bro_rtrn_mean_20',
             # 'all_bro_rtrn_mean_40',
-            'all_bro_rtrn_mean_60',
-            'all_bro_rtrn_mean_90',
-            'all_bro_rtrn_mean_120',
+            # 'all_bro_rtrn_mean_60',
+            # 'all_bro_rtrn_mean_90',
+            # 'all_bro_rtrn_mean_120',
             # 'up_bro_rtrn_mean_20',
             # 'up_bro_rtrn_mean_40',
-            'up_bro_rtrn_mean_60',
-            'up_bro_rtrn_mean_90',
-            'up_bro_rtrn_mean_120',
+            # 'up_bro_rtrn_mean_60',
+            # 'up_bro_rtrn_mean_90',
+            # 'up_bro_rtrn_mean_120',
             # 'all_bro_rtrn_mean_ystd_20',
             # 'all_bro_rtrn_mean_ystd_40',
-            'all_bro_rtrn_mean_ystd_60',
-            'all_bro_rtrn_mean_ystd_90',
-            'all_bro_rtrn_mean_ystd_120',
+            # 'all_bro_rtrn_mean_ystd_60',
+            # 'all_bro_rtrn_mean_ystd_90',
+            # 'all_bro_rtrn_mean_ystd_120',
             # 'bro_up_ratio_ystd_20',
             # 'bro_up_ratio_ystd_40',
-            'bro_up_ratio_ystd_60',
-            'bro_up_ratio_ystd_90',
-            'bro_up_ratio_ystd_120',
+            # 'bro_up_ratio_ystd_60',
+            # 'bro_up_ratio_ystd_90',
+            # 'bro_up_ratio_ystd_120',
             # 'up_bro_rtrn_mean_ystd_20',
             # 'up_bro_rtrn_mean_ystd_40',
-            'up_bro_rtrn_mean_ystd_60',
-            'up_bro_rtrn_mean_ystd_90',
-            'up_bro_rtrn_mean_ystd_120',
+            # 'up_bro_rtrn_mean_ystd_60',
+            # 'up_bro_rtrn_mean_ystd_90',
+            # 'up_bro_rtrn_mean_ystd_120',
             #  'index',
             #  'open_x',
             #  'high_x',
@@ -432,10 +432,14 @@ def model_backtesting(surfix : str) -> NamedTuple(
         df_['c_2'] = df_.close.shift(-2)
         df_['c_3'] = df_.close.shift(-3)
 
+        df_['l_1'] = df_.low.shift(-1)
+        df_['l_2'] = df_.low.shift(-2)
+        df_['l_3'] = df_.low.shift(-3)
+
         return df_
 
     df_price_updated  = df_price.groupby('code').apply(lambda df: get_price_tracked(df))
-    df_price_updated = df_price_updated[['date', 'code', 'c_1', 'c_2', 'c_3', 'close']]
+    df_price_updated = df_price_updated[['date', 'code', 'c_1', 'c_2', 'c_3', 'l_1', 'l_2', 'l_3', 'close']]
     df_price_updated = df_price_updated.reset_index(drop=True)
 
     df_price_updated = df_pred_all.merge(
@@ -457,9 +461,22 @@ def model_backtesting(surfix : str) -> NamedTuple(
         r3 = (df.c_3 / df.close - 1) * 100
         r3 = format(r3, '.1f')
 
+        lr1 = (df.l_1 / df.close - 1) * 100
+        lr1 = format(lr1, '.1f')
+
+        lr2 = (df.l_2 / df.close - 1) * 100
+        lr2 = format(lr2, '.1f')
+
+        lr3 = (df.l_3 / df.close - 1) * 100
+        lr3 = format(lr3, '.1f')
+
         df['r1'] = float(r1)
         df['r2'] = float(r2)
         df['r3'] = float(r3)
+
+        df['lr1'] = float(lr1)
+        df['lr2'] = float(lr2)
+        df['lr3'] = float(lr3)
 
         return df
 
@@ -512,7 +529,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
 )    
 def we_would_be_gb_in_this_year():
 
-    op_model_backtesting = model_backtesting('m19_regressor_15pct_univ_06')
+    op_model_backtesting = model_backtesting('m19_2_reg_15pct_no_bros_top30_05')
 
 compiler.Compiler().compile(
   pipeline_func=we_would_be_gb_in_this_year,

@@ -1,7 +1,7 @@
 ##########
 
 
-DESC_PIPELINE = 'univ_15pcnt_ul_05'
+DESC_PIPELINE = 'm18_classi_15pct_univ__lp_01'
 
 
 # -*- coding: utf-8 -*-
@@ -61,8 +61,8 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
     #%%
     # #2 Loading Files
-    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210914_240.pkl'
-    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210914_240'
+    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210914_260.pkl'
+    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210914_260'
 
     df_ml_dataset = pd.read_pickle(ml_dataset)
     df_bros_dataset = pd.read_pickle(bros_dataset)
@@ -122,7 +122,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
 
     # Dates things ...
     l_dates = df_preP.date.unique().tolist()
-    idx_start = l_dates.index('20201109')
+    idx_start = l_dates.index('20201102')
 
     period = int(l_dates.__len__() - idx_start)
 
