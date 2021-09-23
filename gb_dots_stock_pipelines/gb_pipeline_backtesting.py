@@ -1,5 +1,5 @@
 # Preference
-run_no = '00'
+run_no = '01'
 
 start_date = '20210830'
 ml_dataset_name = 'ml_dataset_20210914_260.pkl'
@@ -22,8 +22,8 @@ from kfp.v2.google.client import AIPlatformClient
 from comps_model_backtesting.comp_load_dataset import get_dataset
 from comps_model_backtesting.comp_conditioning_dataset import conditioning_dataset
 
-from comps_model_backtesting.comp_ml_m00 import get_ml_op
-tested_model = 'm00' # Should Match Left and Above !!!!!
+from comps_model_backtesting.comp_ml_m18 import get_ml_op
+tested_model = 'm18' # Should Match Left and Above !!!!!
 
 from comps_model_backtesting.comp_add_prices_n_returns import add_prices_n_returns
 from comps_model_backtesting.comp_calc_final_return import calc_returns
