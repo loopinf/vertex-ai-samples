@@ -46,7 +46,7 @@ def conditioning_dataset(
 
     # drop ETN
     stock_names = pd.Series(df_preP.name.unique())
-    stock_names_ETN = stock_names[ stock_names.str.contains('KODEX')].tolist()
+    stock_names_ETN = stock_names[ stock_names.str.contains('ETN')].tolist()
 
     df_preP = df_preP.where( 
                 lambda df : ~df.name.isin(stock_names_ETN)

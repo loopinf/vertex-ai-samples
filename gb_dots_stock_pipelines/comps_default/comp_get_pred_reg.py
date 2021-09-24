@@ -7,7 +7,7 @@ from kfp.v2.dsl import (Artifact,
                         ClassificationMetrics)
 from typing import NamedTuple
 
-def predict(
+def predict_reg(
     ver : str,
     model01 : Input[Model],
     model02 : Input[Model],
@@ -20,7 +20,7 @@ def predict(
 ]):
 
     import pandas as pd
-    from catboost import CatBoostClassifier
+    from catboost import CatBoostRegressor
     import collections
 
 
@@ -32,15 +32,17 @@ def predict(
     X_indi = df_predict[cols_indicator].reset_index(drop=True)
 
     def get_pred_single(model):
-        model_ = CatBoostClassifier()
+        model_ = CatBoostRegressor()
         model_.load_model(model.path)
+
         pred = model_.predict(X_pred)
         pred = pd.DataFrame(pred, columns=['Prediction']).reset_index(drop=True)
       
-        pred_prob = model_.predict_proba(X_pred)
-        pred_prob = pd.DataFrame(pred_prob, columns=['Proba01','Proba02']).reset_index(drop=True)
+        # pred_prob = model_.predict_proba(X_pred)
+        # pred_prob = pd.DataFrame(pred_prob, columns=['Proba01','Proba02']).reset_index(drop=True)
         
-        pred_each = pd.concat([X_indi, pred, pred_prob], axis=1)
+        pred_each = pd.concat([X_indi, pred], axis=1)
+
         pred_each = pred_each[pred_each.Prediction > 0]
         print('a', pred_each)
         return pred_each
@@ -54,7 +56,7 @@ def predict(
     print('b', df_pred_all)
     df_pred_mean= df_pred_all.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
     df_pred_mean = df_pred_mean.reset_index()
-    df_pred_mean = df_pred_mean.sort_values(by='Proba02', ascending=False) # high probability first
+    df_pred_mean = df_pred_mean.sort_values(by='Prediction', ascending=False) # high probability first
 
     df_pred_mean.drop_duplicates(subset=['code', 'date'], inplace=True) 
     print('c', df_pred_mean)
@@ -79,7 +81,7 @@ def predict(
         df_pred_new = df_pred_stored
     
     try:
-        df_pred_new.sort_values(by=['date', 'Proba02'], ascending=[True, False], inplace=True)
+        df_pred_new.sort_values(by=['date', 'Prediction'], ascending=[True, False], inplace=True)
     except:
         print('error')
         

@@ -146,7 +146,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
         for date in l_dates :
             df_of_the_day = df[df.date == date]
             
-            df_15pct_of_the_day = df_of_the_day[(df_of_the_day.change >= -15) & (df_of_the_day.change <= 15)]
+            df_15pct_of_the_day = df_of_the_day[(df_of_the_day.change >= -0.15) & (df_of_the_day.change <= 0.15)]
             
             # l_15pcts_in_date = df_15pct_of_the_day.code.to_list()
             
@@ -529,7 +529,7 @@ def model_backtesting(surfix : str) -> NamedTuple(
 )    
 def we_would_be_gb_in_this_year():
 
-    op_model_backtesting = model_backtesting('m19_2_reg_15pct_no_bros_top30_05')
+    op_model_backtesting = model_backtesting('m19_2_reg_15pct_no_bros_top30_09')
 
 compiler.Compiler().compile(
   pipeline_func=we_would_be_gb_in_this_year,

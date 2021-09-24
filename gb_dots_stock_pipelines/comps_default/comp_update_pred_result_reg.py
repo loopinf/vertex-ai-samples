@@ -8,7 +8,7 @@ from kfp.v2.dsl import (Artifact,
                         ClassificationMetrics)
 
 
-def update_pred_result(
+def update_pred_result_reg(
   ver : str,
   market_info_dataset: Input[Dataset],
   predict_dataset : Input[Dataset],
@@ -26,7 +26,7 @@ def update_pred_result(
   df_preded['c_3'] = 0
 
   cols_to_kepp = ['name', 'code', 'date',
-                  'Prediction', 'Proba01', 'Proba02',
+                  'Prediction',
                   'c_1', 'c_2', 'c_3', 'close', 'change'] 
 
 

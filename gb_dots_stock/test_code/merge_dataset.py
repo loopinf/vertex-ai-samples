@@ -13,7 +13,7 @@ import holoviews as hv
 
 
 # %%
-results = 'gs://pipeline-dots-stock/gb_backtesting_results/df_return_updated_m14_regressor_01'
+results = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/model-backtesting-m19-5-01-20210924214724/add-prices-n-returns_5020783508797259776/price_n_return_updated_dataset'
 
 df = pd.read_pickle(results)
 
@@ -70,3 +70,4 @@ else :
 # df_pred_new.to_pickle(f'/gcs/pipeline-dots-stock/bong_predictions/bong_{ver}.pkl')
 
 # %%
+날짜
