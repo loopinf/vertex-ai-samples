@@ -29,27 +29,13 @@ def get_target(
     df_['close_p2'] = df_.close.shift(-2)
     df_['close_p3'] = df_.close.shift(-3)
 
-    df_['low_p1'] = df_.low.shift(-1)
-    df_['low_p2'] = df_.low.shift(-2)
-    df_['low_p3'] = df_.low.shift(-3)
-
     df_['change_p1'] = (df_.close_p1 - df_.close) / df_.close
     df_['change_p2'] = (df_.close_p2 - df_.close) / df_.close
     df_['change_p3'] = (df_.close_p3 - df_.close) / df_.close
 
-    df_['change_low_p1'] = (df_.low_p1 - df_.close) / df_.close
-    df_['change_low_p2'] = (df_.low_p2 - df_.close) / df_.close
-    df_['change_low_p3'] = (df_.low_p3 - df_.close) / df_.close
-
     df_['change_p1_over5'] = df_['change_p1'] > 0.05
     df_['change_p2_over5'] = df_['change_p2'] > 0.05
     df_['change_p3_over5'] = df_['change_p3'] > 0.05
-
-    df_['change_low_p1_over10'] = df_['change_low_p1'] > 0.1
-    df_['change_low_p2_over10'] = df_['change_low_p2'] > 0.1
-    df_['change_low_p3_over10'] = df_['change_low_p3'] > 0.1
-
-    df_['change_p1_over1'] = df_['change_p1'] > 0.01
 
     df_['change_p1_over10'] = df_['change_p1'] > 0.1
     df_['change_p2_over10'] = df_['change_p2'] > 0.1
@@ -85,13 +71,7 @@ def get_target(
     df_['target_close_over_5'] = np.logical_or.reduce([
                                   df_.change_p1_over5,
                                   df_.change_p2_over5,
-                                  df_.change_p3_over5]) 
-    
-    df_['target_low_over_10'] = np.logical_or.reduce([
-                                  df_.change_low_p1_over10,
-                                  df_.change_low_p2_over10,
-                                  df_.change_low_p3_over10])
-
+                                  df_.change_p3_over5])  
                                   
     df_['target_mclass_close_over10_under5'] = \
         np.where(df_['change_p1'] > 0.1, 

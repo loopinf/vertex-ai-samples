@@ -37,6 +37,7 @@ from comp_get_ml_dataset import get_ml_dataset
 from comp_model_backtesting import get_model_backtesting
 from comp_update_price import update_price
 
+
 from comp_test import test
 
 comp_set_default = comp.create_component_from_func(

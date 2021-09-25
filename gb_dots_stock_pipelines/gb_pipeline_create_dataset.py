@@ -24,16 +24,20 @@ from kfp.v2.dsl import (Artifact,
                         component)
 from kfp.v2.google.client import AIPlatformClient
 
-from comp_set_defaults_for_backtesting import set_defaults
-from comp_get_market_info import get_market_info
-from comp_get_bros_for_backtesting import get_bros
-from comp_get_adj_price_backtesting import get_adj_prices
-from comp_get_full_adj_prices import get_full_adj_prices
-from comp_get_features import get_features
-from comp_get_target_for_backtesting import get_target
-from comp_get_tech_indi import get_tech_indi
-from comp_get_full_tech_indi import get_full_tech_indi
-from comp_get_ml_dataset_for_backtesting import get_ml_dataset
+# Components from common files
+from comps_default.comp_get_market_info import get_market_info
+from comps_default.comp_get_full_adj_prices import get_full_adj_prices
+from comps_default.comp_get_adj_price import get_adj_prices
+from comps_default.comp_get_tech_indi import get_tech_indi
+from comps_default.comp_get_full_tech_indi import get_full_tech_indi
+
+# Components from specific files
+from comps_create_dataset.comp_set_defaults_for_create_dataset import set_defaults
+from comps_create_dataset.comp_get_bros_for_create_dataset import get_bros
+from comps_create_dataset.comp_get_features_for_create_dataset import get_features
+from comps_create_dataset.comp_get_target_for_create_dataset import get_target
+from comps_create_dataset.comp_get_ml_dataset_for_create_dataset import get_ml_dataset
+
 
 comp_set_default = comp.create_component_from_func_v2(
                                             set_defaults,

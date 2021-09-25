@@ -1,3 +1,9 @@
+##########
+
+
+DESC_PIPELINE = 'm18_cla_15pct_lp_no_bros_01'
+
+
 # -*- coding: utf-8 -*-
 import sys
 import os
@@ -28,9 +34,9 @@ from kfp.v2.google.client import AIPlatformClient
     base_image="gcr.io/dots-stock/python-img-v5.2",
     packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
 )
-def model_backtesting(surffix : str) -> NamedTuple(
+def model_backtesting(surfix : str) -> NamedTuple(
 'Outputs',
-[('surffix', str),
+[('surfix', str),
 ('Return_sum_period',float),
 ('Num_of_Predicted_day', int),
 ('Max_return', float),
@@ -55,8 +61,8 @@ def model_backtesting(surffix : str) -> NamedTuple(
 
     #%%
     # #2 Loading Files
-    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210914_240.pkl'
-    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210914_240'
+    ml_dataset = '/gcs/pipeline-dots-stock/ml_dataset/ml_dataset_20210914_260.pkl'
+    bros_dataset = '/gcs/pipeline-dots-stock/ml_dataset/bros_dataset_20210914_260'
 
     df_ml_dataset = pd.read_pickle(ml_dataset)
     df_bros_dataset = pd.read_pickle(bros_dataset)
@@ -69,9 +75,11 @@ def model_backtesting(surffix : str) -> NamedTuple(
     #%%
     # #4 Pre-processing
 
-    cols_ohlcv_x = ['open_x', 'high_x', 'low_x', 'close_x', 'volume_x', 'change_x']
+    cols_ohlcv_x = ['open_x', 'high_x', 'low_x', 'close_x', 'volume_x']
     cols_ohlcv_y = ['open_y', 'high_y', 'low_y', 'close_y', 'volume_y', 'change_y']
+
     df_preP = df_preP.drop(columns=cols_ohlcv_x+cols_ohlcv_y)
+    df_preP.rename(columns={'change_x' : 'change'}, inplace=True)
 
     # drop SPACs
     stock_names = pd.Series(df_preP.name.unique())
@@ -114,7 +122,9 @@ def model_backtesting(surffix : str) -> NamedTuple(
 
     # Dates things ...
     l_dates = df_preP.date.unique().tolist()
-    idx_start = l_dates.index('20210802')
+    print(f'data : from {l_dates[0]} to {l_dates[-1]}')
+    idx_start = l_dates.index('20201102')
+    print(f'index of start date : {idx_start}')
 
     period = int(l_dates.__len__() - idx_start)
 
@@ -126,40 +136,19 @@ def model_backtesting(surffix : str) -> NamedTuple(
         df_univ = pd.DataFrame()
         for date in l_dates :
             df_of_the_day = df[df.date == date]
-            df_of_the_day = df_of_the_day.sort_values(by='rank', ascending=True)
-            # print('df_of_the_date', df_of_the_day)
-            df_top30_in_date = df_of_the_day.head(30)
-            l_top30s_in_date = df_top30_in_date.code.to_list()
-            # print(f'size of top30 in the date : {df_top30_in_date.shape}')
-            
-            df_bros_in_date = df_bros[df_bros.date == date]
-            l_bros_of_top30s = df_bros_in_date[\
-                    df_bros_in_date.source.isin(l_top30s_in_date)].target.unique().tolist()
-            df_bros_of_top30 = df_of_the_day[df_of_the_day.code.isin(l_bros_of_top30s)]
-            # print(f'size of top30 + friends in the date : {df_bros_of_top30.shape}')
 
-            df_ = df_top30_in_date.append(df_bros_of_top30)
-            # print('size of the day : ', df_.shape)
+            df_ = df_of_the_day[(df_of_the_day.change >= -15) & (df_of_the_day.change <= 15)]
+           
             df_univ = df_univ.append(df_)
-        # print('size of returned :', df_univ.shape)
+
         return df_univ
-
-    def get_df_univ_for_pred_01(df, l_dates, date_ref): # input dataframe : top30s in the period
-
-            df_univ = get_top30_bros_dfs_in_period(df, l_dates)
-            s_univ = df_univ.code.unique().tolist()
-
-            df_preP_date_ref = df[df.date == date_ref]
-            df_univ_pred = df_preP_date_ref[df_preP_date_ref.code.isin(s_univ)]
-
-            return df_univ_pred
 
 
     #%%
     # #6 Set Target and Feats
 
     # target_col = ['target_close_over_10']
-    target_col = ['target_close_over_10']
+    target_col = ['change_p1_over1']
     cols_indicator = [ 'code', 'name', 'date', ]
 
     features = [
@@ -170,46 +159,46 @@ def model_backtesting(surffix : str) -> NamedTuple(
             'mkt_cap',
             # 'mkt_cap_cat',
             'in_top30',
-            'rank_mean_10',
-            'rank_mean_5',
+            # 'rank_mean_10',
+            # 'rank_mean_5',
             'in_top_30_5',
             'in_top_30_10',
             'in_top_30_20',
             # 'up_bro_ratio_20',
             # 'up_bro_ratio_40',
-            'up_bro_ratio_60',
-            'up_bro_ratio_90',
-            'up_bro_ratio_120',
+            # 'up_bro_ratio_60',
+            # 'up_bro_ratio_90',
+            # 'up_bro_ratio_120',
             # 'n_bro_20',
             # 'n_bro_40',
-            'n_bro_60',
-            'n_bro_90',
-            'n_bro_120',
+            # 'n_bro_60',
+            # 'n_bro_90',
+            # 'n_bro_120',
             # 'all_bro_rtrn_mean_20',
             # 'all_bro_rtrn_mean_40',
-            'all_bro_rtrn_mean_60',
-            'all_bro_rtrn_mean_90',
-            'all_bro_rtrn_mean_120',
+            # 'all_bro_rtrn_mean_60',
+            # 'all_bro_rtrn_mean_90',
+            # 'all_bro_rtrn_mean_120',
             # 'up_bro_rtrn_mean_20',
             # 'up_bro_rtrn_mean_40',
-            'up_bro_rtrn_mean_60',
-            'up_bro_rtrn_mean_90',
-            'up_bro_rtrn_mean_120',
+            # 'up_bro_rtrn_mean_60',
+            # 'up_bro_rtrn_mean_90',
+            # 'up_bro_rtrn_mean_120',
             # 'all_bro_rtrn_mean_ystd_20',
             # 'all_bro_rtrn_mean_ystd_40',
-            'all_bro_rtrn_mean_ystd_60',
-            'all_bro_rtrn_mean_ystd_90',
-            'all_bro_rtrn_mean_ystd_120',
+            # 'all_bro_rtrn_mean_ystd_60',
+            # 'all_bro_rtrn_mean_ystd_90',
+            # 'all_bro_rtrn_mean_ystd_120',
             # 'bro_up_ratio_ystd_20',
             # 'bro_up_ratio_ystd_40',
-            'bro_up_ratio_ystd_60',
-            'bro_up_ratio_ystd_90',
-            'bro_up_ratio_ystd_120',
+            # 'bro_up_ratio_ystd_60',
+            # 'bro_up_ratio_ystd_90',
+            # 'bro_up_ratio_ystd_120',
             # 'up_bro_rtrn_mean_ystd_20',
             # 'up_bro_rtrn_mean_ystd_40',
-            'up_bro_rtrn_mean_ystd_60',
-            'up_bro_rtrn_mean_ystd_90',
-            'up_bro_rtrn_mean_ystd_120',
+            # 'up_bro_rtrn_mean_ystd_60',
+            # 'up_bro_rtrn_mean_ystd_90',
+            # 'up_bro_rtrn_mean_ystd_120',
             #  'index',
             #  'open_x',
             #  'high_x',
@@ -250,10 +239,10 @@ def model_backtesting(surffix : str) -> NamedTuple(
             #  'macd',
             #  'boll_ub',
             #  'boll_lb',
-            'rsi_30',
-            'dx_30',
-             'close_30_sma',
-             'close_60_sma',
+            # 'rsi_30',
+            # 'dx_30',
+            #  'close_30_sma',
+            #  'close_60_sma',
              'daily_return',
             'return_lag_1',
             'return_lag_2',
@@ -272,12 +261,12 @@ def model_backtesting(surffix : str) -> NamedTuple(
             'oh_ratio',
             'oc_ratio',
             'ol_ratio',
-            # 'ch_ratio',
+            'ch_ratio',
             #  'Symbol',
             #  'DesignationDate',
             #  'admin_stock',
             # 'dayofweek'
-            ]   
+            ]    
 
 
 
@@ -289,38 +278,20 @@ def model_backtesting(surffix : str) -> NamedTuple(
     for i in range(idx_start, l_dates.__len__()):
 
         dates_for_train = l_dates[i-23: i-3] # 며칠전까지 볼것인가!! 20일만! 일단은
-        dates_for_pred = l_dates[i-9:i+1]  # prediction date
-        date_ref = dates_for_pred[-1]
+        date_ref = l_dates[i]
 
         print(f'train date :  from {dates_for_train[0]} to {dates_for_train[-1]}')
-        print(f'prediction date : from {dates_for_pred[0]} to {dates_for_pred[-1]}')
+        print(f'prediction date : {date_ref}')
 
         df_train = get_top30_bros_dfs_in_period(df_preP, dates_for_train)
         df_train = df_train.dropna(axis=0, subset=target_col) 
 
-        # # Use All items
-        # df_train = df_preP[df_preP.date.isin(dates_for_train)] #t_df_univ_for_train_01(df_preP, dates_train)
-        # df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
-
-        # Original Prediction Dataset Concept
-        df_pred = get_df_univ_for_pred_01(df_preP, dates_for_pred, date_ref)
+        # Prediction Dataset Concept used by mistake
+        df_pred = get_top30_bros_dfs_in_period(df_preP, [date_ref])
         df_pred['date'] = date_ref
-
-        # # Prediction Dataset Concept used by mistake
-        # df_pred = get_top30_bros_dfs_in_period(df_preP, dates_for_pred)
-        # df_pred['date'] = date_ref
-
-        # Use all items
-        df_pred = df_preP[df_preP.date == date_ref]
 
         dic_pred[f'{date_ref}'] = df_pred[features] # df_pred 모아두기
 
-        # df_train = df_preP[df_preP.date.isin(dates_for_train)]
-        df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
-
-        # df_pred = df_preP[df_preP.date == date_for_pred] 
-
-        # print(f'check01 : train size {df_train.shape} / pred size {df_pred.shape}')
         # ML Model
         from catboost import CatBoostClassifier
         from sklearn.model_selection import train_test_split
@@ -347,9 +318,6 @@ def model_backtesting(surffix : str) -> NamedTuple(
         for iter_n in range(3):
 
             X_train, X_test, y_train, y_test = train_test_split(X, y)
-
-            X_train_indictor = X_train[cols_indicator]
-            X_test_indictor = X_test[cols_indicator]
 
             X_train = X_train[features]
             X_test = X_test[features]
@@ -394,21 +362,23 @@ def model_backtesting(surffix : str) -> NamedTuple(
                             axis=1)
 
             df_pred_r_01 = df_pred_r_01[df_pred_r_01.Prediction > 0]
+            print(f'iter_number_{iter_n}')
             df_pred_final_01 = df_pred_final_01.append(df_pred_r_01)
+            # df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True)
 
         df_pred_final_01 = df_pred_final_01.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
         df_pred_final_01 = df_pred_final_01.reset_index()
         df_pred_final_01 = df_pred_final_01.sort_values(by='Proba02', ascending=False) # high probability first
-        
+       
         df_pred_final_01.drop_duplicates(subset=['code', 'date'], inplace=True) # remove duplicates
-        
+
         df_pred_all = df_pred_all.append(df_pred_final_01)
         print(f'size of df_pred_all : {df_pred_all.shape}' )
 
 
     # Save dic_model / dic_df_pred
-    path_dic_model = f'/gcs/pipeline-dots-stock/gb_backtesting_results/dic_model_{surffix}'
-    path_dic_df_pred = f'/gcs/pipeline-dots-stock/gb_backtesting_results/dic_df_pred_{surffix}'
+    path_dic_model = f'/gcs/pipeline-dots-stock/gb_backtesting_results/dic_model_{surfix}'
+    path_dic_df_pred = f'/gcs/pipeline-dots-stock/gb_backtesting_results/dic_df_pred_{surfix}'
 
     with open(path_dic_model, 'wb') as f:
         pickle.dump(dic_model, f)
@@ -419,7 +389,6 @@ def model_backtesting(surffix : str) -> NamedTuple(
     #%%
     # #8 Update Price for prediction result
 
-    
     date_start = sorted(df_pred_all.date.unique())[0]
     codes_to_update = df_pred_all.code.unique().tolist()
 
@@ -449,10 +418,6 @@ def model_backtesting(surffix : str) -> NamedTuple(
         df_['c_1'] = df_.close.shift(-1)
         df_['c_2'] = df_.close.shift(-2)
         df_['c_3'] = df_.close.shift(-3)
-
-        df_['l_1'] = df_.low.shift(-1)
-        df_['l_2'] = df_.low.shift(-2)
-        df_['l_3'] = df_.low.shift(-3)
 
         return df_
 
@@ -488,18 +453,15 @@ def model_backtesting(surffix : str) -> NamedTuple(
     df_return_updated = df_price_updated.apply(lambda row: calc_return(row), axis=1)
 
     # Save return calculated df
-    df_return_updated.to_pickle(f'/gcs/pipeline-dots-stock/gb_backtesting_results/df_return_updated_{surffix}')
+    df_return_updated.to_pickle(f'/gcs/pipeline-dots-stock/gb_backtesting_results/df_return_updated_{surfix}')
 
     # %%
     # #9 Apply sell condition and calc final return
 
     def return_final(df):
-        if df.r1 <= -3.0 or df.r2 <= -3.0 or df.r3 <= -3.0:
-            f_r = -3.0
-        else :
-            f_r = df.r3
         
-        df['f_r'] = f_r
+        df['f_r'] = df.r1
+
         return df
 
 
@@ -509,7 +471,7 @@ def model_backtesting(surffix : str) -> NamedTuple(
 
     daily_return = []
     def calc_daily_return(df):
-        df_ = df.sort_values(by='Proba02', ascending=False)
+
         df_ = df.head(10)
         # print(df_)
         rr = df_.f_r.mean()
@@ -525,18 +487,18 @@ def model_backtesting(surffix : str) -> NamedTuple(
     min_r = float(min(daily_return))
     max_r = float(max(daily_return))
 
-    return (surffix, sum_of_period, num_of_p_day, max_r, min_r, period)
+    return (surfix, sum_of_period, num_of_p_day, max_r, min_r, period)
 
 # create pipeline 
 #########################################
-job_file_name='gb-model-backtesting-0912.json'
+job_file_name='gb-model-backtesting-m18-1-15pct-no-bro.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT
 )    
 def we_would_be_gb_in_this_year():
 
-    op_model_backtesting = model_backtesting('m16_repeat_05') # 설명은 여기에 적기
+    op_model_backtesting = model_backtesting(DESC_PIPELINE)
 
 compiler.Compiler().compile(
   pipeline_func=we_would_be_gb_in_this_year,

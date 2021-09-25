@@ -455,6 +455,14 @@ def model_backtesting(surffix : str) -> NamedTuple(
         df_['c_2'] = df_.close.shift(-2)
         df_['c_3'] = df_.close.shift(-3)
 
+        df_['l_1'] = df_.low.shift(-1)
+        df_['l_2'] = df_.low.shift(-2)
+        df_['l_3'] = df_.low.shift(-3)
+
+        df_['o_1'] = df_.low.shift(-1)
+        df_['o_2'] = df_.low.shift(-2)
+        df_['o_3'] = df_.low.shift(-3)
+
         return df_
 
     df_price_updated  = df_price.groupby('code').apply(lambda df: get_price_tracked(df))
@@ -480,9 +488,22 @@ def model_backtesting(surffix : str) -> NamedTuple(
         r3 = (df.c_3 / df.close - 1) * 100
         r3 = format(r3, '.1f')
 
+        lr1 = (df.l_1 / df.close - 1) * 100
+        lr1 = format(lr1, '.1f')
+
+        lr2 = (df.l_2 / df.close - 1) * 100
+        lr2 = format(lr2, '.1f')
+
+        lr3 = (df.l_3 / df.close - 1) * 100
+        lr3 = format(lr3, '.1f')
+
         df['r1'] = float(r1)
         df['r2'] = float(r2)
         df['r3'] = float(r3)
+
+        df['lr1'] = float(lr1)
+        df['lr2'] = float(lr2)
+        df['lr3'] = float(lr3)
 
         return df
 
@@ -537,7 +558,7 @@ job_file_name='gb-model-backtesting-0912.json'
 )    
 def we_would_be_gb_in_this_year():
 
-    op_model_backtesting = model_backtesting('m15_long_period_rp3') # 설명은 여기에 적기
+    op_model_backtesting = model_backtesting('m15_long_period_rp3_05') # 설명은 여기에 적기
 
 compiler.Compiler().compile(
   pipeline_func=we_would_be_gb_in_this_year,
