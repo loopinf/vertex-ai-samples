@@ -3,7 +3,7 @@
 run_no = '01'
 
 start_date = '20201102'
-start_date = '20211102'
+start_date = '20210702'
 ml_dataset_name = 'ml_dataset_20210914_260.pkl'
 bros_dataset_name = 'bros_dataset_20210914_260'
 
