@@ -15,7 +15,7 @@ def get_ml_op(
     prediction_result_dataset : Output[Dataset]
 ) -> str :
     
-    DESC = "model m19-7 is regressor no bros top30 / include KODEX ETN / All items for Prediction / 25% for Training"
+    DESC = "model m19-10 is Classifier over5 no bros / include top30 / include KODEX ETN / All items for Prediction / 25% for Training"
 
     import pandas as pd
     import pickle
@@ -65,7 +65,7 @@ def get_ml_op(
     # Set Target and Feats
 
     # target_col = ['target_close_over_10']
-    target_col = ['change_p1']
+    target_col = ['change_p1_over1']
     cols_indicator = [ 'code', 'name', 'date', ]
 
     features = [
@@ -78,9 +78,9 @@ def get_ml_op(
             'in_top30',
             # 'rank_mean_10',
             # 'rank_mean_5',
-            # 'in_top_30_5',
-            # 'in_top_30_10',
-            # 'in_top_30_20',
+            'in_top_30_5',
+            'in_top_30_10',
+            'in_top_30_20',
             # 'up_bro_ratio_20',
             # 'up_bro_ratio_40',
             # 'up_bro_ratio_60',
@@ -210,7 +210,7 @@ def get_ml_op(
         dic_pred[f'{date_ref}'] = df_pred[features] # df_pred 모아두기
 
         # ML Model        
-        model = CatBoostRegressor(
+        model = CatBoostClassifier(
                 iterations=2000,
                 train_dir = '/tmp',
                 # verbose=500,
@@ -249,17 +249,17 @@ def get_ml_op(
 
             # Prediction
             pred_result = model.predict(df_pred[features])
-            # pred_proba = model.predict_proba(df_pred[features])
+            pred_proba = model.predict_proba(df_pred[features])
             
             df_pred_result = pd.DataFrame(pred_result, columns=['Prediction']).reset_index(drop=True)
-            # df_pred_proba = pd.DataFrame(pred_proba, columns=['Proba01', 'Proba02']).reset_index(drop=True)
+            df_pred_proba = pd.DataFrame(pred_proba, columns=['Proba01', 'Proba02']).reset_index(drop=True)
             df_pred_name_code = df_pred[cols_indicator].reset_index(drop=True)
 
             df_pred_ = pd.concat(
                             [
                             df_pred_name_code,
                             df_pred_result,
-                            # df_pred_proba,
+                            df_pred_proba,
                             ],
                             axis=1)
 
@@ -270,8 +270,9 @@ def get_ml_op(
 
         df_pred_the_day = df_pred_the_day.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
         df_pred_the_day = df_pred_the_day.reset_index()
-        df_pred_the_day = df_pred_the_day.sort_values(by='Prediction', ascending=False) # high probability first
-        
+        # df_pred_the_day = df_pred_the_day.sort_values(by='Prediction', ascending=False) # high probability first
+        df_pred_the_day = df_pred_the_day.sort_values(by='Proba02', ascending=False)
+
         df_pred_the_day.drop_duplicates(subset=['code', 'date'], inplace=True) 
 
         df_pred_all = df_pred_all.append(df_pred_the_day)

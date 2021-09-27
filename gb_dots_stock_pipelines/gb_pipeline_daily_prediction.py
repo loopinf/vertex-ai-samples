@@ -40,13 +40,11 @@ from comps_default.comp_update_pred_result_reg import update_pred_result_reg
 from comps_default.comp_get_pred import predict
 from comps_default.comp_get_pred_reg import predict_reg
 
-from comps_models.comp_model_train_11 import train_model_11
-from comps_models.comp_model_train_12 import train_model_12
-from comps_models.comp_model_train_13 import train_model_13
+
 from comps_models.comp_model_train_14 import train_model_14
 from comps_models.comp_model_train_15 import train_model_15
-from comps_models.comp_model_train_19_2 import train_model_19_2
-from comps_models.comp_model_train_19_3 import train_model_19_3
+from comps_models.comp_model_train_19_11_2 import train_model_19_11_2
+from comps_models.comp_model_train_19_11_2_1 import train_model_19_11_2_1
 
 comp_set_default = comp.create_component_from_func_v2(
                                             set_defaults,
@@ -97,25 +95,7 @@ comp_get_full_tech_indi = comp.create_component_from_func_v2(
 comp_get_ml_dataset = comp.create_component_from_func_v2(
                                             get_ml_dataset,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
-                                            )                                            
-
-comp_get_model_11 = comp.create_component_from_func_v2(
-                                           train_model_11,
-                                            base_image="gcr.io/dots-stock/python-img-v5.2",
-                                            packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
-                                            ) 
-
-comp_get_model_12 = comp.create_component_from_func_v2(
-                                           train_model_12,
-                                            base_image="gcr.io/dots-stock/python-img-v5.2",
-                                            packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
-                                            )    
-
-comp_get_model_13 = comp.create_component_from_func_v2(
-                                           train_model_13,
-                                            base_image="gcr.io/dots-stock/python-img-v5.2",
-                                            packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
-                                            )   
+                                            )                                             
 
 comp_get_model_14 = comp.create_component_from_func_v2(
                                            train_model_14,
@@ -129,17 +109,17 @@ comp_get_model_15 = comp.create_component_from_func_v2(
                                             packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
                                             )  
 
-comp_get_model_19_2 = comp.create_component_from_func_v2(
-                                           train_model_19_2,
+comp_get_model_19_11_2 = comp.create_component_from_func_v2(
+                                           train_model_19_11_2,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
                                             packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
                                             )  
-
-comp_get_model_19_3 = comp.create_component_from_func_v2(
-                                           train_model_19_3,
+                                                                                                                                 
+comp_get_model_19_11_2_1 = comp.create_component_from_func_v2(
+                                           train_model_19_11_2_1,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
                                             packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
-                                            )                                                                                                                                       
+                                            )  
 
 comp_get_pred = comp.create_component_from_func_v2(
                                             predict,
@@ -306,65 +286,6 @@ def create_awesome_pipeline():
         tech_indi_dataset = op_get_full_tech_indi.outputs['full_tech_indi_dataset'],
     )
 
-    # model 11
-    op_get_model_11 = comp_get_model_11(
-        ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
-        bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
-    )
-
-    op_comp_get_pred_11 = comp_get_pred(
-        ver = op_get_model_11.outputs['ver'],
-        model01 = op_get_model_11.outputs['model01'],
-        model02 = op_get_model_11.outputs['model02'],
-        model03 = op_get_model_11.outputs['model03'],
-        predict_dataset = op_get_model_11.outputs['predict_dataset'],
-    )
-
-    op_comp_update_pred_result_11 = comp_update_pred_result(
-        ver = op_comp_get_pred_11.outputs['ver'],
-        market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
-        predict_dataset = op_comp_get_pred_11.outputs['daily_recom_dataset']
-    )
-
-    # model 12
-    op_get_model_12 = comp_get_model_12(
-        ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
-        bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
-    )
-
-    op_comp_get_pred_12 = comp_get_pred(
-        ver = op_get_model_12.outputs['ver'],
-        model01 = op_get_model_12.outputs['model01'],
-        model02 = op_get_model_12.outputs['model02'],
-        model03 = op_get_model_12.outputs['model03'],
-        predict_dataset = op_get_model_12.outputs['predict_dataset'],
-    )
-
-    op_comp_update_pred_result_12 = comp_update_pred_result(
-        ver = op_comp_get_pred_12.outputs['ver'],
-        market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
-        predict_dataset = op_comp_get_pred_12.outputs['daily_recom_dataset']
-    )
-
-    # model 13
-    op_get_model_13 = comp_get_model_13(
-        ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
-        bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
-    )
-
-    op_comp_get_pred_13 = comp_get_pred(
-        ver = op_get_model_13.outputs['ver'],
-        model01 = op_get_model_13.outputs['model01'],
-        model02 = op_get_model_13.outputs['model02'],
-        model03 = op_get_model_13.outputs['model03'],
-        predict_dataset = op_get_model_13.outputs['predict_dataset'],
-    )
-
-    op_comp_update_pred_result_13 = comp_update_pred_result(
-        ver = op_comp_get_pred_13.outputs['ver'],
-        market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
-        predict_dataset = op_comp_get_pred_13.outputs['daily_recom_dataset']
-    )
 
     # model 14
     op_get_model_14 = comp_get_model_14(
@@ -406,45 +327,47 @@ def create_awesome_pipeline():
         predict_dataset = op_comp_get_pred_15.outputs['daily_recom_dataset']
     )
 
-    # model 19_2
-    op_get_model_19_2 = comp_get_model_19_2(
+    # model 19_11_2
+    op_get_model_19_11_2 = comp_get_model_19_11_2(
         ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
         bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
     )
 
-    op_comp_get_pred_19_2 = comp_get_pred_reg(
-        ver = op_get_model_19_2.outputs['ver'],
-        model01 = op_get_model_19_2.outputs['model01'],
-        model02 = op_get_model_19_2.outputs['model02'],
-        model03 = op_get_model_19_2.outputs['model03'],
-        predict_dataset = op_get_model_19_2.outputs['predict_dataset'],
+    op_comp_get_pred_19_11_2 = comp_get_pred(
+        ver = op_get_model_19_11_2.outputs['ver'],
+        model01 = op_get_model_19_11_2.outputs['model01'],
+        model02 = op_get_model_19_11_2.outputs['model02'],
+        model03 = op_get_model_19_11_2.outputs['model03'],
+        predict_dataset = op_get_model_19_11_2.outputs['predict_dataset'],
     )
 
-    op_comp_update_pred_result_19_2 = comp_update_pred_result_reg(
-        ver = op_comp_get_pred_19_2.outputs['ver'],
+    op_comp_update_pred_result_19_2 = comp_update_pred_result(
+        ver = op_comp_get_pred_19_11_2.outputs['ver'],
         market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
-        predict_dataset = op_comp_get_pred_19_2.outputs['daily_recom_dataset']
+        predict_dataset = op_comp_get_pred_19_11_2.outputs['daily_recom_dataset']
     )
 
-    # model 19_3
-    op_get_model_19_3 = comp_get_model_19_3(
+    # model 19_11_2_1
+    op_get_model_19_11_2_1 = comp_get_model_19_11_2_1(
         ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
         bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
     )
 
-    op_comp_get_pred_19_3 = comp_get_pred_reg(
-        ver = op_get_model_19_3.outputs['ver'],
-        model01 = op_get_model_19_3.outputs['model01'],
-        model02 = op_get_model_19_3.outputs['model02'],
-        model03 = op_get_model_19_3.outputs['model03'],
-        predict_dataset = op_get_model_19_3.outputs['predict_dataset'],
+    op_comp_get_pred_19_11_2_1 = comp_get_pred(
+        ver = op_get_model_19_11_2_1.outputs['ver'],
+        model01 = op_get_model_19_11_2_1.outputs['model01'],
+        model02 = op_get_model_19_11_2_1.outputs['model02'],
+        model03 = op_get_model_19_11_2_1.outputs['model03'],
+        predict_dataset = op_get_model_19_11_2_1.outputs['predict_dataset'],
     )
 
-    op_comp_update_pred_result_19_3 = comp_update_pred_result_reg(
-        ver = op_comp_get_pred_19_3.outputs['ver'],
+    op_comp_update_pred_result_19_2_1 = comp_update_pred_result(
+        ver = op_comp_get_pred_19_11_2_1.outputs['ver'],
         market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
-        predict_dataset = op_comp_get_pred_19_3.outputs['daily_recom_dataset']
+        predict_dataset = op_comp_get_pred_19_11_2_1.outputs['daily_recom_dataset']
     )
+
+   
 
 
 compiler.Compiler().compile(
@@ -459,7 +382,7 @@ api_client = AIPlatformClient(
 
 response = api_client.create_run_from_job_spec(
   job_spec_path=job_file_name,
-  enable_caching= True,
+  enable_caching= False,
   pipeline_root=PIPELINE_ROOT
 )
 

@@ -9,7 +9,7 @@ from typing import NamedTuple
 
 def calc_returns(
     price_n_return_updated_dataset : Input[Dataset],
-    return_updated_dataset : Output[Dataset]
+    # return_updated_dataset : Output[Dataset]
 ) -> NamedTuple(
     'Outputs', [
     ('Total_Returns', float),

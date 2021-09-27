@@ -22,8 +22,8 @@ from kfp.v2.google.client import AIPlatformClient
 from comps_model_backtesting.comp_load_dataset import get_dataset
 from comps_model_backtesting.comp_conditioning_dataset import conditioning_dataset
 
-from comps_model_backtesting.comp_ml_m19_8 import get_ml_op
-tested_model = 'm19-8' # Should Match Left and Above !!!!!
+from comps_model_backtesting.comp_ml_m19_11_2 import get_ml_op
+tested_model = 'm19-11-2-1' # Should Match Left and Above !!!!!
 
 from comps_model_backtesting.comp_add_prices_n_returns import add_prices_n_returns
 from comps_model_backtesting.comp_calc_final_return import calc_returns
