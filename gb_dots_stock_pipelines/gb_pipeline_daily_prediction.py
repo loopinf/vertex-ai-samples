@@ -380,15 +380,15 @@ api_client = AIPlatformClient(
     region=REGION,
 )
 
-response = api_client.create_run_from_job_spec(
-  job_spec_path=job_file_name,
-  enable_caching= False,
-  pipeline_root=PIPELINE_ROOT
-)
-
-# response = api_client.create_schedule_from_job_spec(
-#     job_spec_path=job_file_name,
-#     schedule="32 14 * * 1-5",
-#     time_zone="Asia/Seoul",
-#     enable_caching = False,
+# response = api_client.create_run_from_job_spec(
+#   job_spec_path=job_file_name,
+#   enable_caching= False,
+#   pipeline_root=PIPELINE_ROOT
 # )
+
+response = api_client.create_schedule_from_job_spec(
+    job_spec_path=job_file_name,
+    schedule="32 14 * * 1-5",
+    time_zone="Asia/Seoul",
+    enable_caching = False,
+)

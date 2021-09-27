@@ -25,7 +25,7 @@ from kfp.v2.dsl import (Artifact,
 from kfp.v2.google.client import AIPlatformClient
 
 from comps_default.comp_set_defaults_v2 import set_defaults
-from comps_update_price_daily.comp_update_price_daily import update_price_daily
+from comps_update_price_daily.comp_update_price_daily_v2 import update_price_daily
 
 comp_set_default = comp.create_component_from_func(
                           set_defaults,
