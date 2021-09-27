@@ -124,7 +124,7 @@ comp_get_model_19_11_2_1 = comp.create_component_from_func_v2(
 comp_get_pred = comp.create_component_from_func_v2(
                                             predict,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
-                                            packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
+                                            packages_to_install=['catboost', 'scikit-learn', 'ipywidgets', 'pandas_gbq']
                                             )   
 
 comp_get_pred_reg = comp.create_component_from_func_v2(

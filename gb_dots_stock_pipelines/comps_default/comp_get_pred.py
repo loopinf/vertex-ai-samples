@@ -22,6 +22,7 @@ def predict(
     import pandas as pd
     from catboost import CatBoostClassifier
     import collections
+    import pandas_gbq
 
 
     df_predict = pd.read_pickle(predict_dataset.path)
@@ -58,6 +59,13 @@ def predict(
 
     df_pred_mean.drop_duplicates(subset=['code', 'date'], inplace=True) 
     print('c', df_pred_mean)
+
+    date_ref = df_pred_mean.date.unique().tolist()[0]
+    pandas_gbq.to_gbq(df_pred_mean, f'pred_result_daily.{ver}_{date_ref}',
+                        project_id='dots-stock',
+                      if_exists='replace',
+    )    
+
 
     # Load stored prediction result
     try :        
