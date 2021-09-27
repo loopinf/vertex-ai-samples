@@ -13,6 +13,7 @@ def add_prices_n_returns(
 
     import pandas as pd
     import FinanceDataReader as fdr
+    from multiprocessing import Pool
 
     df_pred_all = pd.read_pickle(prediction_result.path)
 
@@ -22,17 +23,26 @@ def add_prices_n_returns(
     def get_price_adj(code, start):
         return fdr.DataReader(code, start=start)    
 
-    def get_price(codes, date_start):
+    # def get_price(codes, date_start):
 
-        df_price = pd.DataFrame()
-        for code in codes :      
-            df_ = get_price_adj(code, date_start)
-            df_['code'] = code
-            df_price = df_price.append(df_)
+    #     df_price = pd.DataFrame()
+    #     for code in codes :      
+    #         df_ = get_price_adj(code, date_start)
+    #         df_['code'] = code
+    #         df_price = df_price.append(df_)
    
-        return df_price
+    #     return df_price
 
-    df_price = get_price(codes_to_update, date_start)
+    def get_price(code):
+        return (
+            fdr.DataReader(code, start = date_start).assign(code=code)
+                )
+
+    with Pool(15) as pool:
+        result = pool.map(get_price, codes_to_update)
+    df_price = pd.concat(result)
+
+    # df_price = get_price(codes_to_update, date_start)
     df_price.reset_index(inplace=True)
     df_price.columns = df_price.columns.str.lower()
     df_price['date'] = df_price.date.dt.strftime('%Y%m%d')

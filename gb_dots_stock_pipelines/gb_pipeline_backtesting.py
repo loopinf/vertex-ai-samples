@@ -3,7 +3,7 @@
 run_no = '01'
 
 start_date = '20201102'
-start_date = '20210702'
+# start_date = '20210702'
 ml_dataset_name = 'ml_dataset_20210914_260.pkl'
 bros_dataset_name = 'bros_dataset_20210914_260'
 
@@ -25,8 +25,8 @@ from comps_model_backtesting.comp_load_dataset import get_dataset
 from comps_model_backtesting.comp_conditioning_dataset import conditioning_dataset
 
 # TODO : Change below each model change
-from comps_model_backtesting.comp_ml_m20_1 import get_ml_op
-tested_model = 'm20-1' # Should Match Left and Above with no underscore or capital letter !!!!!
+from comps_model_backtesting.comp_ml_m19_11_2_3 import get_ml_op
+tested_model = 'm19-11-2-3' # Should Match Left and Above with no underscore or capital letter !!!!!
 
 from comps_model_backtesting.comp_add_prices_n_returns import add_prices_n_returns
 from comps_model_backtesting.comp_calc_final_return import calc_returns
@@ -51,6 +51,7 @@ comp_ml_op = comp.create_component_from_func_v2(
 comp_add_price_n_return = comp.create_component_from_func_v2(
                                             add_prices_n_returns,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
+                                            
                                             )
 
 comp_calc_returns = comp.create_component_from_func_v2(

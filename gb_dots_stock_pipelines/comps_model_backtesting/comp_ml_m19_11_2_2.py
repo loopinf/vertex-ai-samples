@@ -1,5 +1,3 @@
-# Change DESC 
-# 
 from kfp.v2.dsl import (Artifact,
                         Dataset,
                         Input,
@@ -17,14 +15,7 @@ def get_ml_op(
     prediction_result_dataset : Output[Dataset]
 ) -> str :
     
-    DESC = (
-        "model m20-1 is regressor"
-        "/from m19_6"
-        "/ no bros / top30 / no KODEX / no ETN"
-        "/ All items for Prediction "
-        "/25% for Training "
-        "/ multi RMSE"
-        "/DSK")
+    DESC = "model m19-11-2-2 / Classifier / change_p1_over1 / no bros / Incl top30 / Incl. KODEX ETN / +-25% Training / +- 25% Prediction / drop. volume 20d feats"
 
     import pandas as pd
     import pickle
@@ -74,9 +65,7 @@ def get_ml_op(
     # Set Target and Feats
 
     # target_col = ['target_close_over_10']
-    target_col = ['change_p1', 
-             'change_p1_over5',
-            ]
+    target_col = ['change_p1_over1']
     cols_indicator = [ 'code', 'name', 'date', ]
 
     features = [
@@ -89,9 +78,9 @@ def get_ml_op(
             'in_top30',
             # 'rank_mean_10',
             # 'rank_mean_5',
-            # 'in_top_30_5',
-            # 'in_top_30_10',
-            # 'in_top_30_20',
+            'in_top_30_5',
+            'in_top_30_10',
+            'in_top_30_20',
             # 'up_bro_ratio_20',
             # 'up_bro_ratio_40',
             # 'up_bro_ratio_60',
@@ -180,10 +169,10 @@ def get_ml_op(
             # 'max_scale_MACD',
             'volume_change_wrt_10max',
             'volume_change_wrt_5max',
-            'volume_change_wrt_20max',
+            # 'volume_change_wrt_20max',
             'volume_change_wrt_10mean',
             'volume_change_wrt_5mean',
-            'volume_change_wrt_20mean',
+            # 'volume_change_wrt_20mean',
             'close_ratio_wrt_10max',
             'close_ratio_wrt_10min',
             'oh_ratio',
@@ -221,13 +210,12 @@ def get_ml_op(
         dic_pred[f'{date_ref}'] = df_pred[features] # df_pred 모아두기
 
         # ML Model        
-        model = CatBoostRegressor(
-                loss_function='MultiRMSE',
+        model = CatBoostClassifier(
                 iterations=1000,
                 train_dir = '/tmp',
                 # verbose=500,
                 silent=True
-        )
+            )
 
         X = df_train[features + cols_indicator ]
         y = df_train[target_col].astype('float')        
@@ -258,33 +246,34 @@ def get_ml_op(
                         )
 
             dic_model[f'{date_ref}_{iter_n}'] = model
+            print(model.get_best_iteration())
 
             # Prediction
             pred_result = model.predict(df_pred[features])
-            # pred_proba = model.predict_proba(df_pred[features])
+            pred_proba = model.predict_proba(df_pred[features])
             
-            # df_pred_proba = pd.DataFrame(pred_proba, columns=['Proba01', 'Proba02']).reset_index(drop=True)
-            # df_pred_result = pd.DataFrame(pred_result, columns=['Prediction']).reset_index(drop=True)
-            df_pred_result = pd.DataFrame(pred_result, columns=['change_p1','over_5']).reset_index(drop=True)
+            df_pred_result = pd.DataFrame(pred_result, columns=['Prediction']).reset_index(drop=True)
+            df_pred_proba = pd.DataFrame(pred_proba, columns=['Proba01', 'Proba02']).reset_index(drop=True)
             df_pred_name_code = df_pred[cols_indicator].reset_index(drop=True)
 
             df_pred_ = pd.concat(
                             [
                             df_pred_name_code,
                             df_pred_result,
-                            # df_pred_proba,
+                            df_pred_proba,
                             ],
                             axis=1)
 
-            df_pred_ = df_pred_[df_pred_.change_p1 > 0]
+            df_pred_ = df_pred_[df_pred_.Prediction > 0]
             df_pred_the_day = df_pred_the_day.append(df_pred_)
 
             print(f'iter_number_{iter_n}_size_of_df_pred_the_day_{df_pred_the_day.shape}')
 
         df_pred_the_day = df_pred_the_day.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
         df_pred_the_day = df_pred_the_day.reset_index()
-        df_pred_the_day = df_pred_the_day.sort_values(by='change_p1', ascending=False) # high probability first
-        
+        # df_pred_the_day = df_pred_the_day.sort_values(by='Prediction', ascending=False) # high probability first
+        df_pred_the_day = df_pred_the_day.sort_values(by='Proba02', ascending=False)
+
         df_pred_the_day.drop_duplicates(subset=['code', 'date'], inplace=True) 
 
         df_pred_all = df_pred_all.append(df_pred_the_day)
