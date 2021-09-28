@@ -68,6 +68,8 @@ def update_price_daily(
 
   start_date = '20190101'
  
+  global get_price
+
   def get_price(code):
     return (
         fdr.DataReader(code, start=start_date)
@@ -77,7 +79,7 @@ def update_price_daily(
   with Pool(15) as pool:
     result = pool.map(get_price, l_codes)
 
-    df_price = pd.concat(result)
+  df_price = pd.concat(result)
 
   df_price.reset_index(inplace=True)
   df_price.columns = df_price.columns.str.lower()
