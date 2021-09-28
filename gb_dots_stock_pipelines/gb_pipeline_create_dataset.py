@@ -168,7 +168,7 @@ def create_awesome_pipeline():
 
     op_get_adj_price_11 = comp_get_adj_price(
         start_index=3000,
-        end_index=4000,
+        end_index=5000,
         market_info_dataset = op_get_market_info.outputs['market_info_dataset'])
 
     op_get_full_adj_price = comp_get_full_adj_price(

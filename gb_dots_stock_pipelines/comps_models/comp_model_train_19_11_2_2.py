@@ -1,3 +1,4 @@
+from datetime import date
 from kfp.components import InputPath, OutputPath
 from typing import NamedTuple
 from kfp.v2.dsl import (Artifact,
@@ -8,7 +9,7 @@ from kfp.v2.dsl import (Artifact,
                         Metrics,
                         ClassificationMetrics)
 
-def train_model_14(
+def train_model_19_11_2_2(
   ml_dataset : Input[Dataset],
   bros_univ_dataset: Input[Dataset],
   predict_dataset: Output[Dataset],
@@ -21,7 +22,7 @@ def train_model_14(
     [ ('ver', str)  
 ]):
 
-    ver = '14'
+    ver = '19_11_2_2'
 
     import collections
     import pandas as pd
@@ -39,7 +40,10 @@ def train_model_14(
 
     # drop duplicated column
     cols_ohlcv_x = ['open_x', 'high_x', 'low_x', 'close_x', 'volume_x', 'change_x']
-    cols_ohlcv_y = ['open_y', 'high_y', 'low_y', 'close_y', 'volume_y', 'change_y']
+    cols_ohlcv_y = ['open_y', 'high_y', 'low_y', 'close_y', 'volume_y']
+
+    df_preP.rename(columns={"change_y" : "change"}, inplace=True)
+
     df_preP = df_preP.drop(columns=cols_ohlcv_x+cols_ohlcv_y)
 
     print(f'size02 {df_preP.shape}')
@@ -53,6 +57,22 @@ def train_model_14(
                 ).dropna(subset=['name'])
 
     print(f'size03 {df_preP.shape}')
+
+    # # drop KODEX
+    # stock_names = pd.Series(df_preP.name.unique())
+    # stock_names_KODEX = stock_names[ stock_names.str.contains('KODEX')].tolist()
+
+    # df_preP = df_preP.where( 
+    #             lambda df : ~df.name.isin(stock_names_KODEX)
+    #             ).dropna(subset=['name'])
+
+    # # drop ETN
+    # stock_names = pd.Series(df_preP.name.unique())
+    # stock_names_ETN = stock_names[ stock_names.str.contains('ETN')].tolist()
+
+    # df_preP = df_preP.where( 
+    #             lambda df : ~df.name.isin(stock_names_ETN)
+    #             ).dropna(subset=['name'])
 
     # Remove administrative items
     krx_adm = fdr.StockListing('KRX-ADMINISTRATIVE') # 관리종목
@@ -71,13 +91,6 @@ def train_model_14(
     print(f'size05 {df_preP.shape}')
     # Add day of week
     df_preP['dayofweek'] = pd.to_datetime(df_preP.date.astype('str')).dt.dayofweek.astype('category')
-
-    # Add market_cap categotu
-    # df_preP['mkt_cap_cat'] = pd.cut(
-    #                             df_preP['mkt_cap'],
-    #                             bins=[0, 1000, 5000, 10000, 50000, np.inf],
-    #                             include_lowest=True,
-    #                             labels=['A', 'B', 'C', 'D', 'E'])
     
     df_preP['mkt_cap_cat'] = pd.cut(
                                 df_preP['mkt_cap'],
@@ -85,8 +98,12 @@ def train_model_14(
                                 include_lowest=True,
                                 labels=['A', 'B', 'C', 'D', 'E'])
 
+    # Change datetime format to str
+    df_preP['date'] = df_preP.date.dt.strftime('%Y%m%d')
+    df_preP['in_top30'] = df_preP.in_top30.astype('int')
+
     # Set Target & Features
-    target_col = ['target_close_over_10']
+    target_col = ['change_p1_over1']
     cols_indicator = [ 'code', 'name', 'date', ]
 
     features = [
@@ -104,39 +121,39 @@ def train_model_14(
             'in_top_30_20',
             # 'up_bro_ratio_20',
             # 'up_bro_ratio_40',
-            'up_bro_ratio_60',
-            'up_bro_ratio_90',
-            'up_bro_ratio_120',
+            # 'up_bro_ratio_60',
+            # 'up_bro_ratio_90',
+            # 'up_bro_ratio_120',
             # 'n_bro_20',
             # 'n_bro_40',
-            'n_bro_60',
-            'n_bro_90',
-            'n_bro_120',
+            # 'n_bro_60',
+            # 'n_bro_90',
+            # 'n_bro_120',
             # 'all_bro_rtrn_mean_20',
             # 'all_bro_rtrn_mean_40',
-            'all_bro_rtrn_mean_60',
-            'all_bro_rtrn_mean_90',
-            'all_bro_rtrn_mean_120',
+            # 'all_bro_rtrn_mean_60',
+            # 'all_bro_rtrn_mean_90',
+            # 'all_bro_rtrn_mean_120',
             # 'up_bro_rtrn_mean_20',
             # 'up_bro_rtrn_mean_40',
-            'up_bro_rtrn_mean_60',
-            'up_bro_rtrn_mean_90',
-            'up_bro_rtrn_mean_120',
+            # 'up_bro_rtrn_mean_60',
+            # 'up_bro_rtrn_mean_90',
+            # 'up_bro_rtrn_mean_120',
             # 'all_bro_rtrn_mean_ystd_20',
             # 'all_bro_rtrn_mean_ystd_40',
-            'all_bro_rtrn_mean_ystd_60',
-            'all_bro_rtrn_mean_ystd_90',
-            'all_bro_rtrn_mean_ystd_120',
+            # 'all_bro_rtrn_mean_ystd_60',
+            # 'all_bro_rtrn_mean_ystd_90',
+            # 'all_bro_rtrn_mean_ystd_120',
             # 'bro_up_ratio_ystd_20',
             # 'bro_up_ratio_ystd_40',
-            'bro_up_ratio_ystd_60',
-            'bro_up_ratio_ystd_90',
-            'bro_up_ratio_ystd_120',
+            # 'bro_up_ratio_ystd_60',
+            # 'bro_up_ratio_ystd_90',
+            # 'bro_up_ratio_ystd_120',
             # 'up_bro_rtrn_mean_ystd_20',
             # 'up_bro_rtrn_mean_ystd_40',
-            'up_bro_rtrn_mean_ystd_60',
-            'up_bro_rtrn_mean_ystd_90',
-            'up_bro_rtrn_mean_ystd_120',
+            # 'up_bro_rtrn_mean_ystd_60',
+            # 'up_bro_rtrn_mean_ystd_90',
+            # 'up_bro_rtrn_mean_ystd_120',
             #  'index',
             #  'open_x',
             #  'high_x',
@@ -179,112 +196,89 @@ def train_model_14(
             #  'boll_lb',
             # 'rsi_30',
             # 'dx_30',
-             'close_30_sma',
-             'close_60_sma',
-            #  'daily_return',
-            # 'return_lag_1',
-            # 'return_lag_2',
-            # 'return_lag_3',
+            #  'close_30_sma',
+            #  'close_60_sma',
+             'daily_return',
+            'return_lag_1',
+            'return_lag_2',
+            'return_lag_3',
             'bb_u_ratio',
             'bb_l_ratio',
             # 'max_scale_MACD',
             'volume_change_wrt_10max',
-            # 'volume_change_wrt_5max',
+            'volume_change_wrt_5max',
             # 'volume_change_wrt_20max',
             'volume_change_wrt_10mean',
-            # 'volume_change_wrt_5mean',
+            'volume_change_wrt_5mean',
             # 'volume_change_wrt_20mean',
             'close_ratio_wrt_10max',
             'close_ratio_wrt_10min',
             'oh_ratio',
             'oc_ratio',
             'ol_ratio',
-            # 'ch_ratio',
+            'ch_ratio',
             #  'Symbol',
             #  'DesignationDate',
             #  'admin_stock',
             # 'dayofweek'
-            ]         
+            ]            
 
-    # Change datetime format to str
-    df_preP['date'] = df_preP.date.dt.strftime('%Y%m%d')
-
-    date_ref = df_preP.date.max()
 
     # Extract dataframe for train : 
-    dates_train = sorted(df_preP.date.unique())[-23:-3]
-    dates_pred = sorted(df_preP.date.unique())[-10:]
+    dates_for_train = sorted(df_preP.date.unique())[-23:-3]
+    date_ref = df_preP.date.max()
 
     # Get df_univ for training : top30 & friends for everyday, sum all of these
-    def get_df_univ_for_train_01(df, l_dates): # input dataframe : top30s in the period
+    def get_15pct_univ_in_period(df, l_dates): # input dataframe : top30s in the period
 
+        print(f'length of l_date : {l_dates.__len__()}')
         df_univ = pd.DataFrame()
+
         for date in l_dates :
             df_of_the_day = df[df.date == date]
-            df_of_the_day = df_of_the_day.sort_values(by='rank', ascending=True)
-           
-            df_top30_in_date = df_of_the_day.head(44) #top30 df of the day
-            l_top30s_in_date = df_top30_in_date.code.to_list() # top30 codes if the day
-           
-            df_bros_in_date = df_bros[df_bros.date == date] # bros of the day
-            l_bros_of_top30s = df_bros_in_date[\
-                    df_bros_in_date.source.isin(l_top30s_in_date)].target.unique().tolist() # get bros of top30s
-            df_bros_of_top30 = df_of_the_day[df_of_the_day.code.isin(l_bros_of_top30s)]
+            
+            df_15pct_of_the_day = df_of_the_day[(df_of_the_day.change >= -0.25) & (df_of_the_day.change <= 0.12)]
+            
+            df_ = df_15pct_of_the_day
 
-            df_ = df_top30_in_date.append(df_bros_of_top30) # df_top30 + df_bros of the day : these two come from same df
-            df_.drop_duplicates(subset=['date', 'code'], inplace=True)
             df_univ = df_univ.append(df_)
-  
+            print(f'check_size_{date}_:_{df_univ.shape}')
+            print(f'max_change : {df_univ.change.max()} / min_change : {df_univ.change.min()}')
+            print(f'{df_univ.date.unique().tolist()}')
         return df_univ
-
-    # Get df_univ_for_pred : get today's univ and make df for pred from today's df_preP
-    def get_df_univ_for_pred_01(df, l_dates): # input dataframe : top30s in the period
-
-        df_univ = get_df_univ_for_train_01(df, l_dates)
-        s_univ = df_univ.code.unique().tolist()
-
-        df_preP_date_ref = df[df.date == date_ref]
-        df_univ_pred = df_preP_date_ref[df_preP_date_ref.code.isin(s_univ)]
-
-        return df_univ_pred
         
-    # 변칙!
-    df_train = get_df_univ_for_train_01(df_preP, dates_train)
+    #
+    df_preP = df_preP.drop_duplicates(subset=['date', 'code'])
+
+    df_train = get_15pct_univ_in_period(df_preP, dates_for_train)
     df_train = df_train.dropna(axis=0, subset=target_col)   # target 없는 날짜 제외
-    
-    # Export prediction set
-    # df_pred = get_df_univ_for_pred_01(df_preP, dates_pred)
 
-    # 변칙!
-    df_pred = get_df_univ_for_train_01(df_preP, dates_pred)
-    df_pred['date'] = date_ref
-    
+    df_pred = df_preP[df_preP.date == date_ref]
+    df_pred = df_pred[(df_pred.change >= -0.25) & (df_pred.change <= 0.25)]
 
+    print(f'check_pred_size : {df_pred.shape}')
     df_pred = df_pred[cols_indicator + features]
-    df_pred['in_top30'] = df_pred.in_top30.astype('int')
-    df_pred[cols_indicator + features].to_pickle(predict_dataset.path)
+    print(f'check_pred_size : {df_pred.shape}')
+
+    print(f'check_pred_size : {df_pred.shape}')
+    df_pred.to_pickle(predict_dataset.path)
 
     # ML Model
-    from catboost import CatBoostClassifier
+    from catboost import CatBoostRegressor, CatBoostClassifier
     from sklearn.model_selection import train_test_split
     from catboost import Pool
     from catboost.utils import get_roc_curve, get_confusion_matrix
 
     # Set Model
     model = CatBoostClassifier(
-            # random_seed = 42,
-            # task_type = 'GPU',
-            # iterations=3000,
-            iterations=3000,
+            iterations=1000,
             train_dir = '/tmp',
             # verbose=500,
             silent=True
         )
 
     X = df_train[features] 
-    y = df_train[target_col].astype('float')
-    X['in_top30'] = X.in_top30.astype('int')
-   
+    y = df_train[target_col].astype('float')   
 
     # Run prediction 3 times
     for iter_n in range(3):
@@ -304,8 +298,8 @@ def train_model_14(
         print('No. of true : ', y_train.sum() )
 
         model.fit(X_train, y_train,
-                    # use_best_model=True,
-                    # eval_set = eval_dataset,
+                    use_best_model=True,
+                    eval_set = eval_dataset,
                     # , verbose=200
                     # , plot=True, 
                     # cat_features=['in_top30','dayofweek', 'mkt_cap_cat']

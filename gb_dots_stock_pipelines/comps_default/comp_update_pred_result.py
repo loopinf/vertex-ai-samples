@@ -84,7 +84,9 @@ def update_pred_result(
 
       df_pred_w_price_new =add_close(df_preded, s_dates_to_add)
 
-      
+    
+  df_pred_w_price_new.drop_duplicates(subset=['date', 'code'], inplace=True)
+  
   df_pred_w_price_new.to_pickle(f'/gcs/pipeline-dots-stock/bong_price_updated/bong_{ver}.pkl')
   df_pred_w_price_new.to_pickle(pred_w_price_dataset.path)
   

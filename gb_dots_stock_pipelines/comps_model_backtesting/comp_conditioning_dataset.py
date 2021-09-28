@@ -36,21 +36,21 @@ def conditioning_dataset(
                 lambda df : ~df.name.isin(stock_names_SPAC)
                 ).dropna(subset=['name'])
 
-    # drop KODEX
-    stock_names = pd.Series(df_preP.name.unique())
-    stock_names_KODEX = stock_names[ stock_names.str.contains('KODEX')].tolist()
+    # # drop KODEX
+    # stock_names = pd.Series(df_preP.name.unique())
+    # stock_names_KODEX = stock_names[ stock_names.str.contains('KODEX')].tolist()
 
-    df_preP = df_preP.where( 
-                lambda df : ~df.name.isin(stock_names_KODEX)
-                ).dropna(subset=['name'])
+    # df_preP = df_preP.where( 
+    #             lambda df : ~df.name.isin(stock_names_KODEX)
+    #             ).dropna(subset=['name'])
 
-    # drop ETN
-    stock_names = pd.Series(df_preP.name.unique())
-    stock_names_ETN = stock_names[ stock_names.str.contains('ETN')].tolist()
+    # # drop ETN
+    # stock_names = pd.Series(df_preP.name.unique())
+    # stock_names_ETN = stock_names[ stock_names.str.contains('ETN')].tolist()
 
-    df_preP = df_preP.where( 
-                lambda df : ~df.name.isin(stock_names_ETN)
-                ).dropna(subset=['name'])
+    # df_preP = df_preP.where( 
+    #             lambda df : ~df.name.isin(stock_names_ETN)
+    #             ).dropna(subset=['name'])
 
     # Remove administrative items
     krx_adm = fdr.StockListing('KRX-ADMINISTRATIVE') # 관리종목

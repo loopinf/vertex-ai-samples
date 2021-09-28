@@ -1,5 +1,3 @@
-# Change DESC 
-# 
 from kfp.v2.dsl import (Artifact,
                         Dataset,
                         Input,
@@ -17,14 +15,7 @@ def get_ml_op(
     prediction_result_dataset : Output[Dataset]
 ) -> str :
     
-    DESC = (
-        "model m20-1 is regressor"
-        "/from m19_6"
-        "/ no bros / top30 / no KODEX / no ETN"
-        "/ All items for Prediction "
-        "/25% for Training "
-        "/ multi RMSE"
-        "/DSK")
+    DESC = "model m19-7 is regressor no bros top30 / include KODEX ETN / All items for Prediction / 25% for Training"
 
     import pandas as pd
     import pickle
@@ -53,7 +44,7 @@ def get_ml_op(
 
         for date in l_dates :
             df_of_the_day = df[df.date == date]            
-            df_15pct_of_the_day = df_of_the_day[(df_of_the_day.change >= -0.25) & (df_of_the_day.change <= 0.25)]
+            # df_15pct_of_the_day = df_of_the_day[(df_of_the_day.change >= -0.25) & (df_of_the_day.change <= 0.25)]
             
             # l_codes = df_15pct_of_the_day.code.unique().tolist()
 
@@ -62,7 +53,7 @@ def get_ml_op(
             #         df_bros_in_date.source.isin(l_codes)].target.unique().tolist()
             # df_bros_of_top30 = df_of_the_day[df_of_the_day.code.isin(l_bros_of_top30s)]
 
-            df_ = df_15pct_of_the_day #.append(df_bros_of_top30)
+            df_ = df_of_the_day #.append(df_bros_of_top30)
 
             df_.drop_duplicates(subset=['code', 'date'], inplace=True)
 
@@ -74,9 +65,7 @@ def get_ml_op(
     # Set Target and Feats
 
     # target_col = ['target_close_over_10']
-    target_col = ['change_p1', 
-             'change_p1_over5',
-            ]
+    target_col = ['change_p1']
     cols_indicator = [ 'code', 'name', 'date', ]
 
     features = [
@@ -214,7 +203,7 @@ def get_ml_op(
 
         # Prediction Dataset Concept used by mistake
         df_pred = df_preP[df_preP.date == date_ref]
-        df_pred = df_pred[(df_pred.change >= -0.25) & (df_pred.change <= 0.25)] #get_15pct_univ_in_period(df_preP, [date_ref])
+        df_pred = df_pred[df_pred.change <= 0.25] #get_15pct_univ_in_period(df_preP, [date_ref])
         # df_pred['date'] = date_ref
         print(f'shape of df_pred : {df_pred.shape}')
 
@@ -222,12 +211,11 @@ def get_ml_op(
 
         # ML Model        
         model = CatBoostRegressor(
-                loss_function='MultiRMSE',
-                iterations=1000,
+                iterations=2000,
                 train_dir = '/tmp',
                 # verbose=500,
                 silent=True
-        )
+            )
 
         X = df_train[features + cols_indicator ]
         y = df_train[target_col].astype('float')        
@@ -263,9 +251,8 @@ def get_ml_op(
             pred_result = model.predict(df_pred[features])
             # pred_proba = model.predict_proba(df_pred[features])
             
+            df_pred_result = pd.DataFrame(pred_result, columns=['Prediction']).reset_index(drop=True)
             # df_pred_proba = pd.DataFrame(pred_proba, columns=['Proba01', 'Proba02']).reset_index(drop=True)
-            # df_pred_result = pd.DataFrame(pred_result, columns=['Prediction']).reset_index(drop=True)
-            df_pred_result = pd.DataFrame(pred_result, columns=['change_p1','over_5']).reset_index(drop=True)
             df_pred_name_code = df_pred[cols_indicator].reset_index(drop=True)
 
             df_pred_ = pd.concat(
@@ -276,14 +263,14 @@ def get_ml_op(
                             ],
                             axis=1)
 
-            df_pred_ = df_pred_[df_pred_.change_p1 > 0]
+            df_pred_ = df_pred_[df_pred_.Prediction > 0]
             df_pred_the_day = df_pred_the_day.append(df_pred_)
 
             print(f'iter_number_{iter_n}_size_of_df_pred_the_day_{df_pred_the_day.shape}')
 
         df_pred_the_day = df_pred_the_day.groupby(['name', 'code', 'date']).mean() # apply mean to duplicated recommends
         df_pred_the_day = df_pred_the_day.reset_index()
-        df_pred_the_day = df_pred_the_day.sort_values(by='change_p1', ascending=False) # high probability first
+        df_pred_the_day = df_pred_the_day.sort_values(by='Prediction', ascending=False) # high probability first
         
         df_pred_the_day.drop_duplicates(subset=['code', 'date'], inplace=True) 
 
