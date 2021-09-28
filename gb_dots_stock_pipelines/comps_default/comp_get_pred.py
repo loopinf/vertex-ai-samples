@@ -58,6 +58,7 @@ def predict(
     df_pred_mean = df_pred_mean.sort_values(by='Proba02', ascending=False) # high probability first
 
     df_pred_mean.drop_duplicates(subset=['code', 'date'], inplace=True) 
+    
     print('c', df_pred_mean)
 
     date_ref = df_pred_mean.date.unique().tolist()[0]

@@ -1,6 +1,6 @@
 # Preference
 # TODO : Change below each model change
-run_no = '01'
+run_no = '05'
 
 start_date = '20201102'
 # start_date = '20210702'
@@ -25,8 +25,8 @@ from comps_model_backtesting.comp_load_dataset import get_dataset
 from comps_model_backtesting.comp_conditioning_dataset import conditioning_dataset
 
 # TODO : Change below each model change
-from comps_model_backtesting.comp_ml_m19_11_2_3 import get_ml_op
-tested_model = 'm19-11-2-3' # Should Match Left and Above with no underscore or capital letter !!!!!
+from comps_model_backtesting.comp_ml_m19_11_2_6 import get_ml_op
+tested_model = 'm19-11-2-6' # Should Match Left and Above with no underscore or capital letter !!!!!
 
 from comps_model_backtesting.comp_add_prices_n_returns import add_prices_n_returns
 from comps_model_backtesting.comp_calc_final_return import calc_returns

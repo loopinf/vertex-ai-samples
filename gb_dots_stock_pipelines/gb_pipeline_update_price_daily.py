@@ -35,6 +35,7 @@ comp_set_default = comp.create_component_from_func(
 comp_get_update_price_daily = comp.create_component_from_func(
                           update_price_daily,
                           base_image="gcr.io/dots-stock/python-img-v5.2",
+                          
 )
 
 
@@ -60,36 +61,36 @@ api_client = AIPlatformClient(
     region=REGION,
 )
 
-# response = api_client.create_run_from_job_spec(
+response = api_client.create_run_from_job_spec(
+  job_spec_path=job_file_name,
+  enable_caching= False,
+  pipeline_root=PIPELINE_ROOT
+)
+
+# response = api_client.create_schedule_from_job_spec(
 #   job_spec_path=job_file_name,
-#   enable_caching= False,
-#   pipeline_root=PIPELINE_ROOT
+#   schedule="30 9-15 * * 1-5",
+#   time_zone="Asia/Seoul",
+#   enable_caching = False,
 # )
 
-response = api_client.create_schedule_from_job_spec(
-  job_spec_path=job_file_name,
-  schedule="30 9-15 * * 1-5",
-  time_zone="Asia/Seoul",
-  enable_caching = False,
-)
+# response = api_client.create_schedule_from_job_spec(
+#   job_spec_path=job_file_name,
+#   schedule="0 10-15 * * 1-5",
+#   time_zone="Asia/Seoul",
+#   enable_caching = False,
+# )
 
-response = api_client.create_schedule_from_job_spec(
-  job_spec_path=job_file_name,
-  schedule="0 10-15 * * 1-5",
-  time_zone="Asia/Seoul",
-  enable_caching = False,
-)
+# response = api_client.create_schedule_from_job_spec(
+#   job_spec_path=job_file_name,
+#   schedule="15 10-15 * * 1-5",
+#   time_zone="Asia/Seoul",
+#   enable_caching = False,
+# )
 
-response = api_client.create_schedule_from_job_spec(
-  job_spec_path=job_file_name,
-  schedule="15 10-15 * * 1-5",
-  time_zone="Asia/Seoul",
-  enable_caching = False,
-)
-
-response = api_client.create_schedule_from_job_spec(
-  job_spec_path=job_file_name,
-  schedule="45 10-14 * * 1-5",
-  time_zone="Asia/Seoul",
-  enable_caching = False,
-)
+# response = api_client.create_schedule_from_job_spec(
+#   job_spec_path=job_file_name,
+#   schedule="45 10-14 * * 1-5",
+#   time_zone="Asia/Seoul",
+#   enable_caching = False,
+# )

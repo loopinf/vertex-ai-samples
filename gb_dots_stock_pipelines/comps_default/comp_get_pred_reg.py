@@ -59,6 +59,7 @@ def predict_reg(
     df_pred_mean = df_pred_mean.sort_values(by='Prediction', ascending=False) # high probability first
 
     df_pred_mean.drop_duplicates(subset=['code', 'date'], inplace=True) 
+    
     print('c', df_pred_mean)
 
     # Load stored prediction result

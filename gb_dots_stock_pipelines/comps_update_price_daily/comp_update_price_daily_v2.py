@@ -45,24 +45,39 @@ def update_price_daily(
       return fdr.DataReader(code, start=start)    
 
   
-  def get_price(codes, date_start):
+  # def get_price(codes, date_start):
 
-    print(f'size of l_codes : {codes.__len__()}')
-    i = 1
+  #   print(f'size of l_codes : {codes.__len__()}')
+  #   i = 1
 
-    df_price = pd.DataFrame()
-    for code in codes :      
-      df_ = get_price_adj(code, date_start)
-      df_['code'] = code
-      df_price = df_price.append(df_)
+  #   df_price = pd.DataFrame()
+  #   for code in codes :      
+  #     df_ = get_price_adj(code, date_start)
+  #     df_['code'] = code
+  #     df_price = df_price.append(df_)
 
-      print(f'progress : {i} / {codes.__len__()}')
+  #     print(f'progress : {i} / {codes.__len__()}')
       
-      i = i + 1    
-    return df_price
+  #     i = i + 1    
+  #   return df_price
 
-  date_start = l_dates[0]
-  df_price = get_price(l_codes, date_start)
+  # date_start = l_dates[0]
+  # df_price = get_price(l_codes, date_start)
+
+  from multiprocessing import Pool
+
+  start_date = '20190101'
+ 
+  def get_price(code):
+    return (
+        fdr.DataReader(code, start=start_date)
+        .assign(code=code)
+    )
+
+  with Pool(15) as pool:
+    result = pool.map(get_price, l_codes)
+
+    df_price = pd.concat(result)
 
   df_price.reset_index(inplace=True)
   df_price.columns = df_price.columns.str.lower()
@@ -85,40 +100,49 @@ def update_price_daily(
   
 
   for f, df_ in dic_dfs.items():
+    print(f'{f}_{df_.shape}')
+    path = os.path.join(folder, f)
 
-    try : # for the datasets, not updated ever before
-      
-      df_ = df_[cols_to_keep]
+    # try : # for the datasets, not updated ever before
+    #   print('a')
+    #   df_ = df_[cols_to_keep]
 
-      l_dates = df_.date.unique().tolist()
-      l_dates_to_update = l_dates[-5:]
+    #   l_dates = df_.date.unique().tolist()
+    #   l_dates_to_update = l_dates #[-5:]
 
-      df_to_hold = df_[~df_.date.isin(l_dates_to_update)]
-      df_to_update = df_[df_.date.isin(l_dates_to_update)]
+    #   df_to_hold = df_[~df_.date.isin(l_dates_to_update)]
+    #   df_to_update = df_[df_.date.isin(l_dates_to_update)]
+    #   print('b')
+    # except :
+    #   print('newbie a')
+    #   l_dates = df_.date.unique().tolist()
+    #   l_dates_to_update = l_dates#[-5:]
+    #   # df_to_hold = df_[~df_.date.isin(l_dates_to_update)]
+    #   df_to_update = df_[df_.date.isin(l_dates_to_update)]
+    #   print('c')
 
-    except :
-      print('newbie')
-      l_dates = df_.date.unique().tolist()
-      l_dates_to_update = l_dates#[-5:]
-      # df_to_hold = df_[~df_.date.isin(l_dates_to_update)]
-      df_to_update = df_[df_.date.isin(l_dates_to_update)]
+    # df_to_update.drop(columns=['c_1', 'c_2', 'c_3', 'close'], inplace=True)
+    df_.drop(columns=['c_1', 'c_2', 'c_3', 'close'], inplace=True)
 
-    df_to_update.drop(columns=['c_1', 'c_2', 'c_3', 'close'], inplace=True)
-
-    df_to_update = df_to_update.merge(
+    df_to_update = df_.merge(
                           df_price_updated,
                           left_on=['date', 'code'],
                           right_on=['date', 'code'] )
 
     df_to_update.fillna(0, inplace=True)
 
-    try :
-      df_updated = df_to_hold.append(df_to_update)
-      df_updated = df_updated[cols_to_keep]
-    except :
-      print('newbie')
-      df_updated = df_to_update
-      df_updated = df_updated[cols_to_keep]
+    # try :
+    #   df_updated = df_to_hold.append(df_to_update)
+    #   df_updated = df_updated[cols_to_keep]
+
+    # except :
+    #   print('newbie')
+    #   df_updated = df_to_update
+    #   df_updated = df_updated[cols_to_keep]
+
+    df_updated = df_to_update[cols_to_keep]
+
+    df_updated.drop_duplicates(subset=['date', 'code'], inplace=True)
 
     df_updated.to_pickle(path)
 

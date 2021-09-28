@@ -29,7 +29,7 @@ def calc_returns(
         df_ = df.sort_values(by='Prediction', ascending=False)
         df_ = df.head(10) 
               
-        fr = df_.r1.mean()
+        fr = df_.r1.mean() - 0.26
         daily_return.append(fr)
         
     df_return_updated.groupby('date').apply(lambda df : calc_daily_return(df))
