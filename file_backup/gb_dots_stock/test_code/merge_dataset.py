@@ -13,7 +13,7 @@ import holoviews as hv
 
 
 # %%
-results = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/model-backtesting-m19-11-05-20210926065839/add-prices-n-returns_7322685868337004544/price_n_return_updated_dataset'
+results = 'gs://pipeline-dots-stock/pipeline_root/shkim01/516181956427/gb-create-in-top-dataset-20210929192235/get-market-info_824695293483155456/market_info_dataset'
 
 df = pd.read_pickle(results)
 

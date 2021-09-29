@@ -375,7 +375,7 @@ def create_awesome_pipeline():
     )
 
     # model 19_11_2_2
-    op_get_model_19_11_2_2 = comp_get_model_19_11_2_1(
+    op_get_model_19_11_2_2 = comp_get_model_19_11_2_2(
         ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
         bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
     )
