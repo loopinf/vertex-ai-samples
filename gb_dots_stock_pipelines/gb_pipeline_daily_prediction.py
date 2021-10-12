@@ -43,6 +43,7 @@ from comps_default.comp_get_pred_reg import predict_reg
 
 from comps_models.comp_model_train_14 import train_model_14
 from comps_models.comp_model_train_15 import train_model_15
+from comps_models.comp_model_train_19_2 import train_model_19_2
 from comps_models.comp_model_train_19_11_2 import train_model_19_11_2
 from comps_models.comp_model_train_19_11_2_1 import train_model_19_11_2_1
 from comps_models.comp_model_train_19_11_2_2 import train_model_19_11_2_2
@@ -106,6 +107,12 @@ comp_get_model_14 = comp.create_component_from_func_v2(
 
 comp_get_model_15 = comp.create_component_from_func_v2(
                                            train_model_15,
+                                            base_image="gcr.io/dots-stock/python-img-v5.2",
+                                            packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
+                                            )  
+
+comp_get_model_19_2 = comp.create_component_from_func_v2(
+                                           train_model_19_2,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
                                             packages_to_install=['catboost', 'scikit-learn', 'ipywidgets']
                                             )  
@@ -294,105 +301,125 @@ def create_awesome_pipeline():
     )
 
 
-    # model 14
-    op_get_model_14 = comp_get_model_14(
-        ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
-        bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
-    )
+    # # model 14
+    # op_get_model_14 = comp_get_model_14(
+    #     ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
+    #     bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
+    # )
 
-    op_comp_get_pred_14 = comp_get_pred(
-        ver = op_get_model_14.outputs['ver'],
-        model01 = op_get_model_14.outputs['model01'],
-        model02 = op_get_model_14.outputs['model02'],
-        model03 = op_get_model_14.outputs['model03'],
-        predict_dataset = op_get_model_14.outputs['predict_dataset'],
-    )
+    # op_comp_get_pred_14 = comp_get_pred(
+    #     ver = op_get_model_14.outputs['ver'],
+    #     model01 = op_get_model_14.outputs['model01'],
+    #     model02 = op_get_model_14.outputs['model02'],
+    #     model03 = op_get_model_14.outputs['model03'],
+    #     predict_dataset = op_get_model_14.outputs['predict_dataset'],
+    # )
 
-    op_comp_update_pred_result_14 = comp_update_pred_result(
-        ver = op_comp_get_pred_14.outputs['ver'],
-        market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
-        predict_dataset = op_comp_get_pred_14.outputs['daily_recom_dataset']
-    )
+    # op_comp_update_pred_result_14 = comp_update_pred_result(
+    #     ver = op_comp_get_pred_14.outputs['ver'],
+    #     market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
+    #     predict_dataset = op_comp_get_pred_14.outputs['daily_recom_dataset']
+    # )
 
-    # model 15
-    op_get_model_15 = comp_get_model_15(
-        ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
-        bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
-    )
+    # # model 15
+    # op_get_model_15 = comp_get_model_15(
+    #     ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
+    #     bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
+    # )
 
-    op_comp_get_pred_15 = comp_get_pred(
-        ver = op_get_model_15.outputs['ver'],
-        model01 = op_get_model_15.outputs['model01'],
-        model02 = op_get_model_15.outputs['model02'],
-        model03 = op_get_model_15.outputs['model03'],
-        predict_dataset = op_get_model_15.outputs['predict_dataset'],
-    )
+    # op_comp_get_pred_15 = comp_get_pred(
+    #     ver = op_get_model_15.outputs['ver'],
+    #     model01 = op_get_model_15.outputs['model01'],
+    #     model02 = op_get_model_15.outputs['model02'],
+    #     model03 = op_get_model_15.outputs['model03'],
+    #     predict_dataset = op_get_model_15.outputs['predict_dataset'],
+    # )
 
-    op_comp_update_pred_result_15 = comp_update_pred_result(
-        ver = op_comp_get_pred_15.outputs['ver'],
-        market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
-        predict_dataset = op_comp_get_pred_15.outputs['daily_recom_dataset']
-    )
+    # op_comp_update_pred_result_15 = comp_update_pred_result(
+    #     ver = op_comp_get_pred_15.outputs['ver'],
+    #     market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
+    #     predict_dataset = op_comp_get_pred_15.outputs['daily_recom_dataset']
+    # )
 
-    # model 19_11_2
-    op_get_model_19_11_2 = comp_get_model_19_11_2(
-        ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
-        bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
-    )
+    # # model 19_2
+    # op_get_model_19_2 = comp_get_model_19_2(
+    #     ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
+    #     bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
+    # )
 
-    op_comp_get_pred_19_11_2 = comp_get_pred(
-        ver = op_get_model_19_11_2.outputs['ver'],
-        model01 = op_get_model_19_11_2.outputs['model01'],
-        model02 = op_get_model_19_11_2.outputs['model02'],
-        model03 = op_get_model_19_11_2.outputs['model03'],
-        predict_dataset = op_get_model_19_11_2.outputs['predict_dataset'],
-    )
+    # op_comp_get_pred_19_2 = comp_get_pred_reg(
+    #     ver = op_get_model_19_2.outputs['ver'],
+    #     model01 = op_get_model_19_2.outputs['model01'],
+    #     model02 = op_get_model_19_2.outputs['model02'],
+    #     model03 = op_get_model_19_2.outputs['model03'],
+    #     predict_dataset = op_get_model_19_2.outputs['predict_dataset'],
+    # )
 
-    op_comp_update_pred_result_19_2 = comp_update_pred_result(
-        ver = op_comp_get_pred_19_11_2.outputs['ver'],
-        market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
-        predict_dataset = op_comp_get_pred_19_11_2.outputs['daily_recom_dataset']
-    )
+    # op_comp_update_pred_result_19_2 = comp_update_pred_result_reg(
+    #     ver = op_comp_get_pred_19_2.outputs['ver'],
+    #     market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
+    #     predict_dataset = op_comp_get_pred_19_2.outputs['daily_recom_dataset']
+    # )
 
-    # model 19_11_2_1
-    op_get_model_19_11_2_1 = comp_get_model_19_11_2_1(
-        ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
-        bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
-    )
+    # # model 19_11_2
+    # op_get_model_19_11_2 = comp_get_model_19_11_2(
+    #     ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
+    #     bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
+    # )
 
-    op_comp_get_pred_19_11_2_1 = comp_get_pred(
-        ver = op_get_model_19_11_2_1.outputs['ver'],
-        model01 = op_get_model_19_11_2_1.outputs['model01'],
-        model02 = op_get_model_19_11_2_1.outputs['model02'],
-        model03 = op_get_model_19_11_2_1.outputs['model03'],
-        predict_dataset = op_get_model_19_11_2_1.outputs['predict_dataset'],
-    )
+    # op_comp_get_pred_19_11_2 = comp_get_pred(
+    #     ver = op_get_model_19_11_2.outputs['ver'],
+    #     model01 = op_get_model_19_11_2.outputs['model01'],
+    #     model02 = op_get_model_19_11_2.outputs['model02'],
+    #     model03 = op_get_model_19_11_2.outputs['model03'],
+    #     predict_dataset = op_get_model_19_11_2.outputs['predict_dataset'],
+    # )
 
-    op_comp_update_pred_result_19_2_1 = comp_update_pred_result(
-        ver = op_comp_get_pred_19_11_2_1.outputs['ver'],
-        market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
-        predict_dataset = op_comp_get_pred_19_11_2_1.outputs['daily_recom_dataset']
-    )
+    # op_comp_update_pred_result_19_11_2 = comp_update_pred_result(
+    #     ver = op_comp_get_pred_19_11_2.outputs['ver'],
+    #     market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
+    #     predict_dataset = op_comp_get_pred_19_11_2.outputs['daily_recom_dataset']
+    # )
 
-    # model 19_11_2_2
-    op_get_model_19_11_2_2 = comp_get_model_19_11_2_2(
-        ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
-        bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
-    )
+    # # model 19_11_2_1
+    # op_get_model_19_11_2_1 = comp_get_model_19_11_2_1(
+    #     ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
+    #     bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
+    # )
 
-    op_comp_get_pred_19_11_2_2 = comp_get_pred(
-        ver = op_get_model_19_11_2_2.outputs['ver'],
-        model01 = op_get_model_19_11_2_2.outputs['model01'],
-        model02 = op_get_model_19_11_2_2.outputs['model02'],
-        model03 = op_get_model_19_11_2_2.outputs['model03'],
-        predict_dataset = op_get_model_19_11_2_2.outputs['predict_dataset'],
-    )
+    # op_comp_get_pred_19_11_2_1 = comp_get_pred(
+    #     ver = op_get_model_19_11_2_1.outputs['ver'],
+    #     model01 = op_get_model_19_11_2_1.outputs['model01'],
+    #     model02 = op_get_model_19_11_2_1.outputs['model02'],
+    #     model03 = op_get_model_19_11_2_1.outputs['model03'],
+    #     predict_dataset = op_get_model_19_11_2_1.outputs['predict_dataset'],
+    # )
 
-    op_comp_update_pred_result_19_2_2 = comp_update_pred_result(
-        ver = op_comp_get_pred_19_11_2_2.outputs['ver'],
-        market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
-        predict_dataset = op_comp_get_pred_19_11_2_2.outputs['daily_recom_dataset']
-    )
+    # op_comp_update_pred_result_19_11_2_1 = comp_update_pred_result(
+    #     ver = op_comp_get_pred_19_11_2_1.outputs['ver'],
+    #     market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
+    #     predict_dataset = op_comp_get_pred_19_11_2_1.outputs['daily_recom_dataset']
+    # )
+
+    # # model 19_11_2_2
+    # op_get_model_19_11_2_2 = comp_get_model_19_11_2_2(
+    #     ml_dataset = op_get_ml_dataset.outputs['ml_dataset'],
+    #     bros_univ_dataset = op_get_bros.outputs['bros_univ_dataset']
+    # )
+
+    # op_comp_get_pred_19_11_2_2 = comp_get_pred(
+    #     ver = op_get_model_19_11_2_2.outputs['ver'],
+    #     model01 = op_get_model_19_11_2_2.outputs['model01'],
+    #     model02 = op_get_model_19_11_2_2.outputs['model02'],
+    #     model03 = op_get_model_19_11_2_2.outputs['model03'],
+    #     predict_dataset = op_get_model_19_11_2_2.outputs['predict_dataset'],
+    # )
+
+    # op_comp_update_pred_result_19_11_2_2 = comp_update_pred_result(
+    #     ver = op_comp_get_pred_19_11_2_2.outputs['ver'],
+    #     market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
+    #     predict_dataset = op_comp_get_pred_19_11_2_2.outputs['daily_recom_dataset']
+    # )
    
 
 
@@ -412,9 +439,9 @@ response = api_client.create_run_from_job_spec(
   pipeline_root=PIPELINE_ROOT
 )
 
-# response = api_client.create_schedule_from_job_spec(
-#     job_spec_path=job_file_name,
-#     schedule="32 14 * * 1-5",
-#     time_zone="Asia/Seoul",
-#     enable_caching = False,
-# )
+response = api_client.create_schedule_from_job_spec(
+    job_spec_path=job_file_name,
+    schedule="32 14 * * 1-5",
+    time_zone="Asia/Seoul",
+    enable_caching = False,
+)

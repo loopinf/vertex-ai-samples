@@ -1,11 +1,14 @@
 # Preference
 # TODO : Change below each model change
-run_no = '03'
+run_no = '01'
 
 start_date = '20201102'
 # start_date = '20210702'
-ml_dataset_name = 'ml_dataset_20210914_260.pkl'
-bros_dataset_name = 'bros_dataset_20210914_260'
+# ml_dataset_name = 'ml_dataset_20210914_260.pkl'
+# bros_dataset_name = 'bros_dataset_20210914_260'
+
+ml_dataset_name = 'ml_dataset_20210924_260.pkl'
+bros_dataset_name = 'bros_dataset_20210924_260'
 
 # Preset for GCP
 PROJECT_ID = "dots-stock"  # @param {type:"string"}
@@ -25,8 +28,8 @@ from comps_model_backtesting.comp_load_dataset import get_dataset
 from comps_model_backtesting.comp_conditioning_dataset import conditioning_dataset
 
 # TODO : Change below each model change
-from comps_model_backtesting.comp_ml_m19_13 import get_ml_op
-tested_model = 'm19-13' # Should Match Left and Above with no underscore or capital letter !!!!!
+from comps_model_backtesting.comp_ml_m19_14 import get_ml_op
+tested_model = 'm19-14' # Should Match Left and Above with no underscore or capital letter !!!!!
 
 from comps_model_backtesting.comp_add_prices_n_returns import add_prices_n_returns
 from comps_model_backtesting.comp_calc_final_return import calc_returns

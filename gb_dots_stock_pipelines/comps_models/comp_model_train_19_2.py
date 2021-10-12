@@ -58,21 +58,21 @@ def train_model_19_2(
 
     print(f'size03 {df_preP.shape}')
 
-    # drop KODEX
-    stock_names = pd.Series(df_preP.name.unique())
-    stock_names_KODEX = stock_names[ stock_names.str.contains('KODEX')].tolist()
+    # # drop KODEX
+    # stock_names = pd.Series(df_preP.name.unique())
+    # stock_names_KODEX = stock_names[ stock_names.str.contains('KODEX')].tolist()
 
-    df_preP = df_preP.where( 
-                lambda df : ~df.name.isin(stock_names_KODEX)
-                ).dropna(subset=['name'])
+    # df_preP = df_preP.where( 
+    #             lambda df : ~df.name.isin(stock_names_KODEX)
+    #             ).dropna(subset=['name'])
 
-    # drop ETN
-    stock_names = pd.Series(df_preP.name.unique())
-    stock_names_ETN = stock_names[ stock_names.str.contains('ETN')].tolist()
+    # # drop ETN
+    # stock_names = pd.Series(df_preP.name.unique())
+    # stock_names_ETN = stock_names[ stock_names.str.contains('ETN')].tolist()
 
-    df_preP = df_preP.where( 
-                lambda df : ~df.name.isin(stock_names_ETN)
-                ).dropna(subset=['name'])
+    # df_preP = df_preP.where( 
+    #             lambda df : ~df.name.isin(stock_names_ETN)
+    #             ).dropna(subset=['name'])
 
     # Remove administrative items
     krx_adm = fdr.StockListing('KRX-ADMINISTRATIVE') # 관리종목
@@ -237,7 +237,7 @@ def train_model_19_2(
         for date in l_dates :
             df_of_the_day = df[df.date == date]
             
-            df_15pct_of_the_day = df_of_the_day[(df_of_the_day.change >= -0.15) & (df_of_the_day.change <= 0.15)]
+            df_15pct_of_the_day = df_of_the_day[(df_of_the_day.change >= -15) & (df_of_the_day.change <= 15)]
             
             df_ = df_15pct_of_the_day
 
@@ -272,7 +272,7 @@ def train_model_19_2(
             # random_seed = 42,
             # task_type = 'GPU',
             # iterations=3000,
-            iterations=3000,
+            iterations=1500,
             train_dir = '/tmp',
             # verbose=500,
             silent=True
