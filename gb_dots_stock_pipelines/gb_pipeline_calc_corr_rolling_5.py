@@ -72,6 +72,7 @@ def create_awesome_pipeline():
         date_ref = op_set_default.outputs['date_ref'])
 
     op_calc_corr_rolling5 = comp_calc_corr_rolling_5(
+        date_ref = op_set_default.outputs['date_ref'],
         adj_price_dataset = op_get_adj_price_daily.outputs['adj_price_dataset'],)
 
    

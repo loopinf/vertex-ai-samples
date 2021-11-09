@@ -18,8 +18,8 @@ def get_adj_prices_daily(
   # from ae_module.ae_logger import ae_log
   import pandas as pd
   from multiprocessing import Pool
-  from trading_calendars import get_calendar
-  cal_KRX = get_calendar('XKRX')
+  # from trading_calendars import get_calendar
+  # cal_KRX = get_calendar('XKRX')
 
   df_market = pd.read_pickle(market_info_dataset.path)
 
@@ -27,7 +27,7 @@ def get_adj_prices_daily(
 
   print(f'dates : {df_market.날짜.unique().tolist()}')
 
-  l_code = df_market.종목코드.unique().tolist()
+  l_code = df_market.종목코드.unique().tolist() 
 
   global get_price
 
