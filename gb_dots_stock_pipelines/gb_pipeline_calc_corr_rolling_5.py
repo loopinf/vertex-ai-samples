@@ -23,6 +23,7 @@ from kfp.v2.dsl import (Artifact,
                         ClassificationMetrics,
                         component)
 from kfp.v2.google.client import AIPlatformClient
+from kfp.v2.google import experimental
 
 from comps_default.comp_set_defaults_v2 import set_defaults
 from comps_default.comp_get_market_info import get_market_info
@@ -47,7 +48,9 @@ comp_get_adj_price_daily = comp.create_component_from_func_v2(
 comp_calc_corr_rolling_5 = comp.create_component_from_func_v2(
                                             calc_corr_rolling5,
                                             base_image="gcr.io/dots-stock/python-img-v5.2"
-                                            )                             
+                                            )           
+
+
 
 
 # create pipeline 
@@ -55,7 +58,7 @@ comp_calc_corr_rolling_5 = comp.create_component_from_func_v2(
 job_file_name='gb-pipeline-calc-corr-rolling-5-120days.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
-  pipeline_root=PIPELINE_ROOT
+  pipeline_root=PIPELINE_ROOT,
 )    
 def create_awesome_pipeline():
 
@@ -75,10 +78,14 @@ def create_awesome_pipeline():
         date_ref = op_set_default.outputs['date_ref'],
         adj_price_dataset = op_get_adj_price_daily.outputs['adj_price_dataset'],)
 
+    experimental.run_as_aiplatform_custom_job(
+      op_calc_corr_rolling5, machine_type='n1-standard-32')
+
+
    
 compiler.Compiler().compile(
   pipeline_func=create_awesome_pipeline,
-  package_path=job_file_name
+  package_path=job_file_name,
 )
 
 api_client = AIPlatformClient(
@@ -89,7 +96,7 @@ api_client = AIPlatformClient(
 response = api_client.create_run_from_job_spec(
   job_spec_path=job_file_name,
   enable_caching= True,
-  pipeline_root=PIPELINE_ROOT
+  pipeline_root=PIPELINE_ROOT,
 )
 
 # response = api_client.create_schedule_from_job_spec(

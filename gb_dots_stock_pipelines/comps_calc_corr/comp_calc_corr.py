@@ -24,6 +24,7 @@ def calc_corr_rolling5(
   import numpy as np
   import pandas_gbq
   import requests
+  import itertools
 
   df_adj_price = pd.read_pickle(adj_price_dataset.path)
   
@@ -87,26 +88,24 @@ def calc_corr_rolling5(
 
   df_market = get_snapshot_markets([date_ref])
 
-  print(f'df_market : {df_market.shape}')
-
   l_code = (df_market
   [lambda df: df.Market.isin(['KOSPI','KOSDAQ'])]
   [lambda df: ~df.Dept.str.contains('투자주의|SPAC|관리종목')]
   .Code.unique().tolist()
-  )
+  )  
 
-  print(f'list of codes : {l_code}')
-
-  # print('size', df_adj_price[df_adj_price.code.isin(l_code)].shape)
-
+  # global get_df_corr
   def get_df_corr(codes):
 
-    df_corr = (df_adj_price[lambda df: df.code.isin(codes)]
+    df_corr = (df_adj_price #[lambda df: df.code.isin(codes)]
+                .reset_index()
+                .rename(columns=lambda x: x.lower())
                 .pivot_table(values='close', index='date', columns='code')
-                .iloc[-calc_period:, :]
+                .iloc[-55:, :]
                 .rolling(5)
                 .mean()
-                .dropna()
+                .iloc[4:,]
+                .dropna(axis=1, how='any')
                 .corr()
               )
 
@@ -120,9 +119,24 @@ def calc_corr_rolling5(
                 .reset_index()
                 .rename(columns={0:'corr'})
               )
+
     return sr_corr_
 
-  df_corr_over_07 = get_df_corr(l_code)
+  # c_of_codes = list(itertools.combinations(l_code, 2))
+
+  # with Pool(100) as pool:
+  #   df_r = pool.map(get_df_corr, c_of_codes)
+
+  # sr_corr = pd.concat(df_r)
+
+  # sr_corr = pd.DataFrame()
+  # for codes in samples:
+  #   sr_corr_ = get_df_corr(codes)
+  #   sr_corr = sr_corr.append(sr_corr_)
+
+  # sub_codes = l_code[0:10]
+
+  sr_corr = get_df_corr(l_code)
 
   def send_to_gbq(df_corr):
     table_schema = [{'name':'date','type':'DATE'}]
@@ -131,6 +145,6 @@ def calc_corr_rolling5(
                     project_id='dots-stock', 
                     if_exists='append',
                     table_schema=table_schema)
-
-  df_corr_over_07.to_pickle(corr_rolling5_dataset.path)
+  print(f'size : {sr_corr.shape}')
+  sr_corr.to_pickle(corr_rolling5_dataset.path)
 
