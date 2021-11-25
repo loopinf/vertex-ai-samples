@@ -28,7 +28,7 @@ from kfp.v2.google import experimental
 from comps_default.comp_set_defaults_v2 import set_defaults
 from comps_default.comp_get_market_info import get_market_info
 from comps_default.comp_get_adj_price_daily import get_adj_prices_daily
-from comps_calc_corr.comp_calc_corr import calc_corr_rolling5
+from comps_calc_cos_similarity.comp_calc_cos_similarity import calc_cos_similar
 
 comp_set_default = comp.create_component_from_func_v2(
                                             set_defaults,
@@ -45,9 +45,10 @@ comp_get_adj_price_daily = comp.create_component_from_func_v2(
                                             base_image="gcr.io/dots-stock/python-img-v5.2"
                                             )  
 
-comp_calc_corr_rolling_5 = comp.create_component_from_func_v2(
-                                            calc_corr_rolling5,
-                                            base_image="gcr.io/dots-stock/python-img-v5.2"
+comp_calc_cos_similars = comp.create_component_from_func_v2(
+                                            calc_cos_similar,
+                                            base_image="gcr.io/dots-stock/python-img-v5.2",
+                                            packages_to_install=['torch']
                                             )           
 
 
@@ -55,7 +56,7 @@ comp_calc_corr_rolling_5 = comp.create_component_from_func_v2(
 
 # create pipeline 
 #########################################
-job_file_name='gb-pipeline-calc-corr-rolling-5-120days.json'
+job_file_name='gb-pipeline-calc-cos-similars.json'
 @dsl.pipeline(
   name=job_file_name.split('.json')[0],
   pipeline_root=PIPELINE_ROOT,
@@ -74,12 +75,12 @@ def create_awesome_pipeline():
         market_info_dataset = op_get_market_info.outputs['market_info_dataset'],
         date_ref = op_set_default.outputs['date_ref'])
 
-    op_calc_corr_rolling5 = comp_calc_corr_rolling_5(
+    op_calc_cos_similars = comp_calc_cos_similars(
         date_ref = op_set_default.outputs['date_ref'],
         adj_price_dataset = op_get_adj_price_daily.outputs['adj_price_dataset'],)
 
     experimental.run_as_aiplatform_custom_job(
-      op_calc_corr_rolling5, machine_type='e2-standard-4')
+      op_calc_cos_similars, machine_type='e2-standard-4')
 
 
    
