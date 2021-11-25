@@ -1,27 +1,12 @@
-# -*- coding: utf-8 -*-
-import sys
-import os
-# import pandas as pd
-
 PROJECT_ID = "dots-stock"  # @param {type:"string"}
 REGION = "us-central1"  # @param {type:"string"}
 USER = "shkim01"  # <---CHANGE THIS
 BUCKET_NAME = "gs://pipeline-dots-stock"  # @param {type:"string"}
 PIPELINE_ROOT = f"{BUCKET_NAME}/pipeline_root/{USER}"
 
-from typing import NamedTuple
-
 from kfp import dsl
 from kfp.v2 import compiler
 import kfp.components as comp
-from kfp.v2.dsl import (Artifact,
-                        Dataset,
-                        Input,
-                        Model,
-                        Output,
-                        Metrics,
-                        ClassificationMetrics,
-                        component)
 from kfp.v2.google.client import AIPlatformClient
 
 from comps_default.comp_set_defaults_v2 import set_defaults

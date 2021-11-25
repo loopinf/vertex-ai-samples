@@ -12,6 +12,7 @@ def set_defaults()-> NamedTuple(
   from trading_calendars import get_calendar
 
   today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')
+  
   # today = '20211027'
   period_to_train = 20
   period_extra = 40
