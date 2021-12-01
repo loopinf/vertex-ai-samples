@@ -23,7 +23,6 @@ def calc_cos_similar(
   import pandas_gbq
 
   import torch
-  from torch import nn
   from torch.nn import functional as F
 
   df_markets = pd.read_pickle(df_markets.path)
@@ -38,7 +37,7 @@ def calc_cos_similar(
 
   l_code = \
   (df_markets_filtered
-    .Code.unique()
+    .Code.unique().tolist()
   )
   ####
   kernel_size = 6  # 10days to check
@@ -149,35 +148,90 @@ def calc_cos_similar(
   # takes 3:53s
   ## 11-23껄로 해보자
   l_df = []
-  for code in l_code[10]:
+  for code in l_code:
+    print(f'code : {code}')
     try:
       _df = get_simil(unfolded, code, today, kernel_size)
+      l_df.append(_df.head(100))
     except Exception as e:
       print(code)
       print(e)
-    l_df.append(_df.head(100))
 
   df_simil_gbq = pd.concat(l_df)
 
-  df_simil_gbq['date'] = pd.to_datetime(df_simil_gbq.date).dt.strftime('%Y-%m-%d')
-  df_simil_gbq['source_date'] = pd.to_datetime(df_simil_gbq.source_date).dt.strftime('%Y-%m-%d')
+  df_simil_gbq['date'] = pd.to_datetime(df_simil_gbq.date)#.dt.strftime('%Y-%m-%d')
+  df_simil_gbq['source_date'] = pd.to_datetime(df_simil_gbq.source_date)#.dt.strftime('%Y-%m-%d')
 
-  def send_to_gbq(df_simil_gbq):
-    table_schema = [{'name':'date','type':'DATE'},
-                {'name':'source_date','type':'DATE'},
-                {'name':'similarity','type':'FLOAT64'},
-                {'name':'Code','type':'STRING'},
-                {'name':'source_code','type':'STRING'},
-                ]
+  ###### table create
+
+  from google.cloud import bigquery
+  project_id='dots-stock' 
+  client = bigquery.Client(project_id)
+  # TODO(developer): Set table_id to the ID of the table to create.
+  table_id = f"{project_id}.red_lion.pattern_{kernel_size}_{today}"
+  # date	Code	similarity	source_code	source_date	
+  schema = [
+      bigquery.SchemaField("date", "DATE"),
+      bigquery.SchemaField("source_date", "DATE"),
+      bigquery.SchemaField("similarity", "FLOAT64"),
+      bigquery.SchemaField("Code", "STRING"),
+      bigquery.SchemaField("source_code", "STRING"),
+  ]
+
+  table = bigquery.Table(table_id, schema=schema)
+  table.clustering_fields = ["source_code"] 
+  try:
+    table = client.create_table(table)  # Make an API request.
+    print(
+      "Created clustered table {}.{}.{}".format(
+          table.project, table.dataset_id, table.table_id)
+    )
+  except Exception as e:
+    print(e)
+    print("table already exists")
+
+
+  # upload table
+  def upload_to_gbq(df_simil_gbq):
+    table_schema =[
+      {'name':'date','type':'DATE'},
+      {'name':'source_date','type':'DATE'},
+      {'name':'similarity','type':'FLOAT'},
+      {'name':'Code','type':'STRING'},
+      {'name':'source_code','type':'STRING'}, ]
     pandas_gbq.to_gbq(df_simil_gbq, 
-                  f'red_lion.pattern_{kernel_size}_{today}',
+                  f'{table.dataset_id}.{table.table_id}',
                     project_id='dots-stock', 
+                    # if_exists='replace', # 있는 경우 삭제하는 것에는 permission이 필요함
                     if_exists='append',
                     table_schema=table_schema
                   )
 
-  send_to_gbq(df_simil_gbq)
-  print(f'size : {df_simil_gbq.shape}')
-  # df_simil_gbq.to_pickle(cos_similars.path)
+  upload_to_gbq(df_simil_gbq)
+
+
+# #######
+#   table_id = f'red_lion.pattern_{kernel_size}_{today}',
+#   errors = client.insert_rows_from_dataframe(table_id, df_simil_gbq)
+#   for chunk in errors:
+#     print(f"encountered {len(chunk)} errors: {chunk}")
+
+#   # def send_to_gbq(df_simil_gbq):
+#   #   table_schema = [{'name':'date','type':'DATE'},
+#   #               {'name':'source_date','type':'DATE'},
+#   #               {'name':'similarity','type':'FLOAT'},
+#   #               {'name':'Code','type':'STRING'},
+#   #               {'name':'source_code','type':'STRING'},
+#   #               ]
+#   #   pandas_gbq.to_gbq(df_simil_gbq, 
+#   #                 f'red_lion.pattern_{kernel_size}_{today}',
+#   #                   project_id='dots-stock', 
+#   #                   if_exists='append',
+#   #                   table_schema=table_schema
+#   #                 )
+
+#   # send_to_gbq(df_simil_gbq)
+#   print(f'size : {df_simil_gbq.shape}')
+#   # df_simil_gbq.to_pickle(cos_similars.path)
 
 
