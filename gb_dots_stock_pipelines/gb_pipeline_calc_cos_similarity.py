@@ -82,6 +82,7 @@ def create_awesome_pipeline():
           date_ref = op_set_default.outputs['date_ref'],
           # date_ref = date_ref,
           kernel_size = '3',
+          comp_result = op_get_df_markets.outputs['op_get_df_markets'],
       )
       op_calc_cos_similars_kernel6 = comp_calc_cos_similars(
           df_markets = op_get_df_markets.outputs['df_markets_update'],#)
@@ -89,6 +90,7 @@ def create_awesome_pipeline():
           date_ref = op_set_default.outputs['date_ref'],
           # date_ref = date_ref,
           kernel_size = '6',
+          comp_result = op_get_df_markets.outputs['op_get_df_markets'],
       )
       op_calc_cos_similars_occc_10 = comp_calc_cos_similars_occc(
           df_markets = op_get_df_markets.outputs['df_markets_update'],#)
@@ -96,6 +98,7 @@ def create_awesome_pipeline():
           date_ref = op_set_default.outputs['date_ref'],
           # date_ref = date_ref,
           kernel_size = '10',
+          comp_result = op_get_df_markets.outputs['op_get_df_markets'],
       )
       op_calc_cos_similars_occc_20 = comp_calc_cos_similars_occc(
           df_markets = op_get_df_markets.outputs['df_markets_update'],#)
@@ -103,6 +106,7 @@ def create_awesome_pipeline():
           date_ref = op_set_default.outputs['date_ref'],
           # date_ref = date_ref,
           kernel_size = '20',
+          comp_result = op_get_df_markets.outputs['op_get_df_markets'],
       )
 
       experimental.run_as_aiplatform_custom_job(

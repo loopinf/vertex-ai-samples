@@ -12,6 +12,7 @@ def calc_cos_similar_occc(
   df_markets: Input[Dataset],
   date_ref : str,
 	kernel_size : int,
+  comp_result : str,
   cos_similars : Output[Dataset] 
   ):
 
@@ -182,8 +183,22 @@ def calc_cos_similar_occc(
   df_simil_gbq['date'] = pd.to_datetime(df_simil_gbq.date)#.dt.strftime('%Y-%m-%d')
   df_simil_gbq['source_date'] = pd.to_datetime(df_simil_gbq.source_date)#.dt.strftime('%Y-%m-%d')
 
-  to_pickle_path = f'/gcs/red-lion/similarity_result/similarity_kernel_size_{kernel_size}_{date_ref}.pkl'
-  df_simil_gbq.to_pickle(to_pickle_path)
+  # save similarity result to gcs
+  df_count = (
+              df_simil_gbq
+              .where(df_simil_gbq.similarity >= 0.9) # first threshold
+              .dropna()
+              .groupby('source_code')['source_code'].count().reset_index(name='count')
+              .where(lambda df : df['count'] > 10) # second threshold
+              .dropna()
+              )   
+
+  code_list = df_count['source_code'].tolist()
+  save_path = f'/gcs/red-lion/similarity_result/similarity_kernel_size_{kernel_size}_{date_ref}.json'
+
+  import json
+  with open(save_path, 'w') as f:
+    json.dump(code_list, f)
 
   ###### table create
 
