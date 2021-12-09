@@ -63,13 +63,13 @@ api_client = AIPlatformClient(
 
 response = api_client.create_run_from_job_spec(
   job_spec_path=job_file_name,
-  enable_caching= True,
+  enable_caching= False,
   pipeline_root=PIPELINE_ROOT
 )
 
 # response = api_client.create_schedule_from_job_spec(
 #     job_spec_path=job_file_name,
-#     schedule="30 16 * * 1-5",
+#     schedule="50 15 * * 1-5",
 #     time_zone="Asia/Seoul",
 #     enable_caching = False,
 # )

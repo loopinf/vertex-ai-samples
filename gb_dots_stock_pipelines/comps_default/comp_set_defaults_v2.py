@@ -13,7 +13,7 @@ def set_defaults()-> NamedTuple(
 
   today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')
   
-  # today = '20211027'
+  # today = '20211126'
   period_to_train = 20
   period_extra = 40
   n_days = period_to_train + period_extra
