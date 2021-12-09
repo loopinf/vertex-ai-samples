@@ -36,15 +36,15 @@ from comps_calc_cos_similarity.comp_calc_cos_similarity_occc import calc_cos_sim
 # cosine similarity 계산
 
 
-comp_set_default = comp.create_component_from_func_v2(
-                                            set_defaults,
-                                            base_image="gcr.io/dots-stock/python-img-v5.2",
-                                            )
+# comp_set_default = comp.create_component_from_func_v2(
+#                                             set_defaults,
+#                                             base_image="gcr.io/dots-stock/python-img-v5.2",
+#                                             )
 
-comp_update_df_markets = comp.create_component_from_func_v2(
-                                            update_df_markets, 
-                                            base_image="gcr.io/dots-stock/python-img-v5.2"
-                                            )  
+# comp_update_df_markets = comp.create_component_from_func_v2(
+#                                             update_df_markets, 
+#                                             base_image="gcr.io/dots-stock/python-img-v5.2"
+#                                             )  
 
 comp_calc_cos_similars = comp.create_component_from_func_v2(
                                             calc_cos_similar,
@@ -68,7 +68,7 @@ def create_awesome_pipeline():
   # op_set_default = comp_set_default()
 
   # with dsl.Condition(op_set_default.outputs['isBusinessDay'] == 'yes'):
-  date_ref = '20211203'
+  date_ref = '20211207'
   if True:
 
     # op_get_df_markets = comp_update_df_markets(
