@@ -28,6 +28,7 @@ from kfp.v2.google import experimental
 from comps_default.comp_set_defaults_v2 import set_defaults
 from comps_calc_cos_similarity.comp_update_df_markets import update_df_markets
 from comps_calc_cos_similarity.comp_calc_cos_similarity import calc_cos_similar
+from comps_calc_cos_similarity.comp_calc_cos_similarity_occc import calc_cos_similar_occc
 
 # TODO
 # date 설정
@@ -35,18 +36,23 @@ from comps_calc_cos_similarity.comp_calc_cos_similarity import calc_cos_similar
 # cosine similarity 계산
 
 
-comp_set_default = comp.create_component_from_func_v2(
-                                            set_defaults,
-                                            base_image="gcr.io/dots-stock/python-img-v5.2",
-                                            )
+# comp_set_default = comp.create_component_from_func_v2(
+#                                             set_defaults,
+#                                             base_image="gcr.io/dots-stock/python-img-v5.2",
+#                                             )
 
-comp_update_df_markets = comp.create_component_from_func_v2(
-                                            update_df_markets, 
-                                            base_image="gcr.io/dots-stock/python-img-v5.2"
-                                            )  
+# comp_update_df_markets = comp.create_component_from_func_v2(
+#                                             update_df_markets, 
+#                                             base_image="gcr.io/dots-stock/python-img-v5.2"
+#                                             )  
 
 comp_calc_cos_similars = comp.create_component_from_func_v2(
                                             calc_cos_similar,
+                                            base_image="asia-docker.pkg.dev/vertex-ai/training/pytorch-gpu.1-9:latest",
+                                            packages_to_install=['pandas_gbq']
+                                            )           
+comp_calc_cos_similars_occc = comp.create_component_from_func_v2(
+                                            calc_cos_similar_occc,
                                             base_image="asia-docker.pkg.dev/vertex-ai/training/pytorch-gpu.1-9:latest",
                                             packages_to_install=['pandas_gbq']
                                             )           
@@ -59,23 +65,60 @@ job_file_name='gb-pipeline-calc-cos-similars.json'
   pipeline_root=PIPELINE_ROOT,
 )    
 def create_awesome_pipeline():
+  # op_set_default = comp_set_default()
 
-  op_set_default = comp_set_default()
+  # with dsl.Condition(op_set_default.outputs['isBusinessDay'] == 'yes'):
+  date_ref = '20211207'
+  if True:
 
-  with dsl.Condition(op_set_default.outputs['isBusinessDay'] == 'yes'):
+    # op_get_df_markets = comp_update_df_markets(
+    #     date_ref = op_set_default.outputs['date_ref']
+    #     # date_ref = '20211126',
+    # )
 
-    op_get_df_markets = comp_update_df_markets(
-        date_ref = op_set_default.outputs['date_ref']
-        # date_ref = '20211126',
+    op_calc_cos_similars_kernel3 = comp_calc_cos_similars(
+        # df_markets = op_get_df_markets.outputs['df_markets_update'],)
+        # df_markets = 'TESTING',
+        # date_ref = op_set_default.outputs['date_ref'],
+        date_ref = date_ref,
+        kernel_size = '3',
+    )
+    op_calc_cos_similars_kernel6 = comp_calc_cos_similars(
+        # df_markets = op_get_df_markets.outputs['df_markets_update'],)
+        # df_markets = 'TESTING',
+        # date_ref = op_set_default.outputs['date_ref'],
+        date_ref = date_ref,
+        kernel_size = '6',
+    )
+    op_calc_cos_similars_occc_10 = comp_calc_cos_similars_occc(
+        # df_markets = op_get_df_markets.outputs['df_markets_update'],)
+        # df_markets = 'TESTING',
+        # date_ref = op_set_default.outputs['date_ref'],
+        date_ref = date_ref,
+        kernel_size = '10',
+    )
+    op_calc_cos_similars_occc_20 = comp_calc_cos_similars_occc(
+        # df_markets = op_get_df_markets.outputs['df_markets_update'],)
+        # df_markets = 'TESTING',
+        # date_ref = op_set_default.outputs['date_ref'],
+        date_ref = date_ref,
+        kernel_size = '20',
     )
 
-    op_calc_cos_similars = comp_calc_cos_similars(
-        date_ref = op_set_default.outputs['date_ref'],
-        # date_ref = '20211126',
-        df_markets = op_get_df_markets.outputs['df_markets_update'],)
-
     experimental.run_as_aiplatform_custom_job(
-      op_calc_cos_similars, machine_type='n1-standard-4', accelerator_type="NVIDIA_TESLA_T4",
+      op_calc_cos_similars_kernel3, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
+            accelerator_count="1"
+     )
+    experimental.run_as_aiplatform_custom_job(
+      op_calc_cos_similars_kernel6, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
+            accelerator_count="1"
+     )
+    experimental.run_as_aiplatform_custom_job(
+      op_calc_cos_similars_occc_10, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
+            accelerator_count="1"
+     )
+    experimental.run_as_aiplatform_custom_job(
+      op_calc_cos_similars_occc_20, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
             accelerator_count="1"
      )
 
@@ -102,4 +145,4 @@ response = api_client.create_run_from_job_spec(
 #     schedule="30 16 * * 1-5",
 #     time_zone="Asia/Seoul",
 #     enable_caching = False,
-)
+# )

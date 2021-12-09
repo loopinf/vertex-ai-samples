@@ -8,7 +8,7 @@ from kfp.v2.dsl import (Artifact,
                         ClassificationMetrics)
 from kfp.components import InputPath, OutputPath
 
-def calc_cos_similar(
+def calc_cos_similar_occc(
   # df_markets: str, #Input[Dataset],
   date_ref : str,
 	kernel_size : int,
@@ -21,7 +21,6 @@ def calc_cos_similar(
   import pandas as pd
   import numpy as np
   import pandas_gbq
-  import logging
   import logging
   logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
@@ -60,6 +59,7 @@ def calc_cos_similar(
     return df
 
   df_markets = get_df_markets(date_ref)
+  assert df_markets.duplicated(subset=['date','Code']).sum() == 0
   #### filter df_markets --> df_markets_filtered
   l_code  = \
   (df_markets
@@ -79,24 +79,19 @@ def calc_cos_similar(
   df_oholoccc = (df_markets
     .assign(Close = 
             lambda df: df.Close.astype(int))
-    .assign(oh=
-            lambda df: (df.High - df.Open)/df.Open,
-            ol=
-            lambda df: (df.Low - df.Open)/df.Open,
+    .assign(
+            # oh=
+            # lambda df: (df.High - df.Open)/df.Open,
+            # ol=
+            # lambda df: (df.Low - df.Open)/df.Open,
             oc=
             lambda df: (df.Close - df.Open)/df.Open,
             cc=
             lambda df: df.ChagesRatio/100
             )
-    .loc[:, ['Code', 'Name','date','oh','ol','oc','cc']]        
+    .loc[:, ['Code', 'Name','date','oc','cc']]        
   )
 
-  df_oh = (
-    df_oholoccc
-    .pivot_table(values='oh', index='date', columns='Code', dropna=False))
-  df_ol = (
-    df_oholoccc
-    .pivot_table(values='ol', index='date', columns='Code', dropna=False))
   df_oc = (
     df_oholoccc
     .pivot_table(values='oc', index='date', columns='Code', dropna=False))
@@ -104,12 +99,6 @@ def calc_cos_similar(
     df_oholoccc
     .pivot_table(values='cc', index='date', columns='Code', dropna=False))
 
-  oh_tensor = (torch.from_numpy(df_oh.transpose().values)
-    [:, None, :]
-  .unfold(dimension=2, size=kernel_size, step=1))
-  ol_tensor = (torch.from_numpy(df_ol.transpose().values)
-    [:, None, :]
-  .unfold(dimension=2, size=kernel_size, step=1))
   oc_tensor = (torch.from_numpy(df_oc.transpose().values)
     [:, None, :]
   .unfold(dimension=2, size=kernel_size, step=1))
@@ -119,9 +108,7 @@ def calc_cos_similar(
   # (oc_tensor *2).shape
   # (ol_tensor *2).shape
   input_tensor = torch.cat([
-                            weights_ratio['oh'] *oh_tensor, 
                             weights_ratio['oc'] *oc_tensor, 
-                            weights_ratio['ol'] *ol_tensor, 
                             weights_ratio['cc'] *cc_tensor, 
                             ], dim=1)
 
@@ -190,42 +177,6 @@ def calc_cos_similar(
       logging.error(f'error on code : {code}')
   logging.debug(f'loop done , l_df : {len(l_df)}')
 
-  # for code in l_code_1:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop1 done , l_df : {len(l_df)}')
-
-  # for code in l_code_2:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop2 done , l_df : {len(l_df)}')
-
-  # for code in l_code_3:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop3 done , l_df : {len(l_df)}')
-
-  # for code in l_code_4:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop4 done , l_df : {len(l_df)}')
-
   df_simil_gbq = pd.concat(l_df)
 
   df_simil_gbq['date'] = pd.to_datetime(df_simil_gbq.date)#.dt.strftime('%Y-%m-%d')
@@ -237,7 +188,7 @@ def calc_cos_similar(
   project_id='dots-stock' 
   client = bigquery.Client(project_id)
   # TODO(developer): Set table_id to the ID of the table to create.
-  table_id = f"{project_id}.red_lion.pattern_v2_{kernel_size}_{date_ref}"
+  table_id = f"{project_id}.red_lion.pattern_oc_cc_{kernel_size}_{date_ref}"
   # date	Code	similarity	source_code	source_date	
   schema = [
       bigquery.SchemaField("date", "DATE"),
