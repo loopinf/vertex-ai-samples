@@ -4,19 +4,11 @@ def update_df_markets(
   date_ref: str,
   df_markets_update: Output[Dataset],
 ):
-  #@markdown Define some functions - validate data
-  #@markdown Define funcs
   import json
   import numpy as np
   from multiprocessing import Pool
   import pandas as pd
   import requests
-
-  # create calendar: cal_krx 
-  from trading_calendars import get_calendar
-  cal_krx = get_calendar('XKRX')
-
-  today = date_ref
 
   #get_snapshot_markets(dates): with Pool
   def get_snapshot_markets(dates):
@@ -69,64 +61,57 @@ def update_df_markets(
 
     return df_market_
 
-  df_markets_today = get_snapshot_markets([today])
+  df_markets_date_ref = get_snapshot_markets([date_ref])
   # code and name to gbq
-  df_markets_today[['Code','Name','Market','Dept']].to_gbq(
-    f'red_lion.market_snapshot_{today}', 'dots-stock', if_exists='replace')
-
-  #### Check dates missing
-  def check_dates_missing_dupl(df_markets):
-    # get dates from df_markets -- ex 20160104
-    dates_market = df_markets.date.unique()
-    
-    # check min max dates
-    print('Min date', 'Latest date',
-    df_markets.date.min(),
-    df_markets.date.max()
-        
-    )
-    # get dates from calendar
-    start_date = dates_market.min()
-    start_date = '-'.join([start_date[:4], start_date[4:6], start_date[6:]])
-    end_date = dates_market.max()
-    end_date  = '-'.join([end_date[:4], end_date[4:6], end_date[6:]])
-    
-    dates_krx_open = cal_krx.all_sessions
-    dates_open = dates_krx_open[
-                        (start_date <= dates_krx_open) & (dates_krx_open <= end_date)]
-    dates_open = [date.strftime('%Y%m%d') for date in dates_open]
-    
-    # compare 2 sets  / difference 
-    krx_dates = set(dates_open)
-    markets_dates = set(dates_market)
-    
-    print(f'krx_dates ^ markets_dates : {krx_dates ^ markets_dates}')
-    assert len(krx_dates ^ markets_dates) == 0
-
-    # Check duplicates
-    assert df_markets.duplicated(subset=['date','Code']).sum() == 0
-    print('check duplicates : Done')
-
-  ############# Load latestest
-  # url_markets = '/content/drive/Shareddrives/HBong-Stock/03_datasets/df_markets_snap_latest.pkl'
-  url_markets = '/gcs/red-lion/df_market/df_markets_snap_latest.pkl'
-  df_markets = pd.read_pickle(url_markets)
-
-  ########## Check dates , missing dates, 
-  check_dates_missing_dupl(df_markets)
-
-  ########## Merge with df_markets_today
-  df_markets = pd.concat([df_markets, df_markets_today])
-  df_markets = (df_markets
-  .sort_values(['date', 'Code'])
-  )
-  df_markets.drop_duplicates(subset=['date','Code'], inplace=True)
-
-  ########## Check dates , missing dates, 
-  check_dates_missing_dupl(df_markets)
+  df_markets_date_ref[['Code','Name','Market','Dept']].to_gbq(
+    f'red_lion.market_snapshot_{date_ref}', 'dots-stock', if_exists='replace')
 
   ########## save to recent and backup
-  df_markets.to_pickle(url_markets) #TODO: uncomment this line
+  project_id = 'dots-stock'
+  # create clustered table
+  from google.cloud import bigquery
 
-  ########## 
-  df_markets.to_pickle(df_markets_update.path)
+  client = bigquery.Client(project_id)
+
+  def push_data_to_gbq(df_markets):
+      table_id = 'dots-stock.red_lion.df_markets_clust_parti'
+      
+      schema = [
+          bigquery.SchemaField("Code", "STRING"),
+          bigquery.SchemaField("Name", "STRING"),
+          bigquery.SchemaField("Market", "STRING"),
+          bigquery.SchemaField("Dept", "STRING"),
+          # bigquery.SchemaField("MarketId", "STRING"),
+          bigquery.SchemaField("Close", "INTEGER"),
+          bigquery.SchemaField("Open", "INTEGER"),
+          bigquery.SchemaField("High", "INTEGER"),
+          bigquery.SchemaField("Low", "INTEGER"),
+          bigquery.SchemaField("Volume", "INTEGER"),
+          bigquery.SchemaField("Amount", "INTEGER"),
+          # bigquery.SchemaField("ChangeCode", "INTEGER"),
+          bigquery.SchemaField("Changes", "INTEGER"),
+          bigquery.SchemaField("ChagesRatio", "FLOAT"),
+          bigquery.SchemaField("Marcap", "INTEGER"),
+          bigquery.SchemaField("Stocks", "INTEGER"),
+          bigquery.SchemaField("date", "DATE"),
+          bigquery.SchemaField("rank_pct", "INTEGER"),
+          bigquery.SchemaField("in_top30", "BOOL"),
+      ]
+      
+      columns_to_gbq = df_markets.columns.to_list()
+      columns_to_gbq.remove('ChangeCode')
+      columns_to_gbq.remove('MarketId')
+      
+      df_markets_gbq = \
+        (df_markets
+        .assign(date=lambda df: pd.to_datetime(df.date))
+        [columns_to_gbq]
+        .assign(Close=lambda df: df.Close.astype(int))
+        )
+      
+      job_config = bigquery.LoadJobConfig(schema=schema)
+      print(f'table_id : {table_id}')
+      job = client.load_table_from_dataframe(
+          df_markets_gbq, table_id, job_config=job_config
+      )
+  push_data_to_gbq(df_markets_date_ref)
