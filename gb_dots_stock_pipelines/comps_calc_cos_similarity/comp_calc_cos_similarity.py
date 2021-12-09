@@ -9,38 +9,70 @@ from kfp.v2.dsl import (Artifact,
 from kfp.components import InputPath, OutputPath
 
 def calc_cos_similar(
-  df_markets: Input[Dataset],
+  # df_markets: str, #Input[Dataset],
   date_ref : str,
+	kernel_size : int,
   cos_similars : Output[Dataset] 
   ):
 
   # from trading_calendars import get_calendar
   # cal_KRX = get_calendar('XKRX')
-  today = date_ref
 
   import pandas as pd
   import numpy as np
   import pandas_gbq
+  import logging
+  import logging
+  logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
   import torch
   from torch.nn import functional as F
 
-  df_markets = pd.read_pickle(df_markets.path)
 
+  ######## load data ########
+  # testing_url_markets = '/gcs/red-lion/df_market/df_markets_snap_latest.pkl'
+  # df_markets = pd.read_pickle(df_markets.path)
+  # df_markets = pd.read_pickle(testing_url_markets)
+  def get_df_markets(date_ref):
+    date_ref_ = pd.Timestamp(date_ref).strftime('%Y-%m-%d')
+    ### Volume is not used in this model
+    sql = f'''
+      SELECT
+        Code,
+        Open,
+        High,
+        Low,
+        Close,
+        ChagesRatio,
+        Dept,
+        Market,
+        date,
+        Name
+      FROM
+        `dots-stock.red_lion.df_markets_clust_parti`
+      WHERE
+        date <= "{date_ref_}"
+      ORDER BY
+        date
+      ''' 
+    PROJECT_ID = 'dots-stock'
+    df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
+    return df
+
+  df_markets = get_df_markets(date_ref)
   #### filter df_markets --> df_markets_filtered
-  df_markets_filtered = \
+  l_code  = \
   (df_markets
     .loc[lambda df: ~df.Dept.str.contains('관리종목|투자주의')]
     .loc[lambda df: df.Market.isin(['KOSPI','KOSDAQ'])]
     .sort_values('date')
-  )
-
-  l_code = \
-  (df_markets_filtered
     .Code.unique().tolist()
   )
+
+  # l_code_1, l_code_2, l_code_3, l_code_4 = np.array_split(l_code, 4)
+
   ####
-  kernel_size = 6  # 10days to check
+  # kernel_size = 6  # 10days to check
   weights_ratio = {'oc':2.5,'cc':2.5,'oh':1,'ol':1}
 
   # def get_cosi_(df_markets_filtered, code, kernel_size):
@@ -56,7 +88,7 @@ def calc_cos_similar(
             cc=
             lambda df: df.ChagesRatio/100
             )
-    .loc[:, ['Code', 'Name','date','Volume','oh','ol','oc','cc']]        
+    .loc[:, ['Code', 'Name','date','oh','ol','oc','cc']]        
   )
 
   df_oh = (
@@ -99,6 +131,7 @@ def calc_cos_similar(
   .flatten(start_dim=2, end_dim=3)
   )
   # .shape # torch.Size([2663, 1437, 40])   종목갯수(2663), 날짜묶음 갯수(1437), 필터길이 x (oh ol oh cc)(40), 
+  logging.debug(f'input_tensor1.shape: {input_tensor1.shape}')
 
   cols_code = df_oc.columns
   cols_date = df_oc.index
@@ -148,14 +181,50 @@ def calc_cos_similar(
   # takes 3:53s
   ## 11-23껄로 해보자
   l_df = []
+
   for code in l_code:
-    print(f'code : {code}')
     try:
-      _df = get_simil(unfolded, code, today, kernel_size)
+      _df = get_simil(unfolded, code, date_ref, kernel_size)
       l_df.append(_df.head(100))
     except Exception as e:
-      print(code)
-      print(e)
+      logging.error(f'error on code : {code}')
+  logging.debug(f'loop done , l_df : {len(l_df)}')
+
+  # for code in l_code_1:
+  #   # print(f'code : {code}')
+  #   try:
+  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
+  #     l_df.append(_df.head(100))
+  #   except Exception as e:
+  #     logging.error(f'error on code : {code}')
+  # logging.debug(f'loop1 done , l_df : {len(l_df)}')
+
+  # for code in l_code_2:
+  #   # print(f'code : {code}')
+  #   try:
+  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
+  #     l_df.append(_df.head(100))
+  #   except Exception as e:
+  #     logging.error(f'error on code : {code}')
+  # logging.debug(f'loop2 done , l_df : {len(l_df)}')
+
+  # for code in l_code_3:
+  #   # print(f'code : {code}')
+  #   try:
+  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
+  #     l_df.append(_df.head(100))
+  #   except Exception as e:
+  #     logging.error(f'error on code : {code}')
+  # logging.debug(f'loop3 done , l_df : {len(l_df)}')
+
+  # for code in l_code_4:
+  #   # print(f'code : {code}')
+  #   try:
+  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
+  #     l_df.append(_df.head(100))
+  #   except Exception as e:
+  #     logging.error(f'error on code : {code}')
+  # logging.debug(f'loop4 done , l_df : {len(l_df)}')
 
   df_simil_gbq = pd.concat(l_df)
 
@@ -168,7 +237,7 @@ def calc_cos_similar(
   project_id='dots-stock' 
   client = bigquery.Client(project_id)
   # TODO(developer): Set table_id to the ID of the table to create.
-  table_id = f"{project_id}.red_lion.pattern_{kernel_size}_{today}"
+  table_id = f"{project_id}.red_lion.pattern_v2_{kernel_size}_{date_ref}"
   # date	Code	similarity	source_code	source_date	
   schema = [
       bigquery.SchemaField("date", "DATE"),
