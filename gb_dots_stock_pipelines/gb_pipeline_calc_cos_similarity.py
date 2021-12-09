@@ -51,9 +51,6 @@ comp_calc_cos_similars = comp.create_component_from_func_v2(
                                             packages_to_install=['pandas_gbq']
                                             )           
 
-
-
-
 # create pipeline 
 #########################################
 job_file_name='gb-pipeline-calc-cos-similars.json'
@@ -68,16 +65,19 @@ def create_awesome_pipeline():
   with dsl.Condition(op_set_default.outputs['isBusinessDay'] == 'yes'):
 
     op_get_df_markets = comp_update_df_markets(
-        date_ref = op_set_default.outputs['date_ref'])
+        date_ref = op_set_default.outputs['date_ref']
+        # date_ref = '20211126',
+    )
 
     op_calc_cos_similars = comp_calc_cos_similars(
         date_ref = op_set_default.outputs['date_ref'],
+        # date_ref = '20211126',
         df_markets = op_get_df_markets.outputs['df_markets_update'],)
 
     experimental.run_as_aiplatform_custom_job(
       op_calc_cos_similars, machine_type='n1-standard-4', accelerator_type="NVIDIA_TESLA_T4",
             accelerator_count="1"
- )
+     )
 
 compiler.Compiler().compile(
   pipeline_func=create_awesome_pipeline,
@@ -89,15 +89,17 @@ api_client = AIPlatformClient(
     region=REGION,
 )
 
+# when you want to run this script imediately, use it will create a pipeline
 response = api_client.create_run_from_job_spec(
   job_spec_path=job_file_name,
-  enable_caching= False,
+  enable_caching= True,
   pipeline_root=PIPELINE_ROOT,
 )
 
+# when you want to run this script on schedule, use it will create a pipeline
 # response = api_client.create_schedule_from_job_spec(
 #     job_spec_path=job_file_name,
 #     schedule="30 16 * * 1-5",
 #     time_zone="Asia/Seoul",
 #     enable_caching = False,
-# )
+)

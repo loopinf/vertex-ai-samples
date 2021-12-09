@@ -70,6 +70,9 @@ def update_df_markets(
     return df_market_
 
   df_markets_today = get_snapshot_markets([today])
+  # code and name to gbq
+  df_markets_today[['Code','Name','Market','Dept']].to_gbq(
+    f'red_lion.market_snapshot_{today}', 'dots-stock', if_exists='replace')
 
   #### Check dates missing
   def check_dates_missing_dupl(df_markets):
@@ -123,7 +126,7 @@ def update_df_markets(
   check_dates_missing_dupl(df_markets)
 
   ########## save to recent and backup
-  # df_markets.to_pickle(url_markets) #TODO: uncomment this line
+  df_markets.to_pickle(url_markets) #TODO: uncomment this line
 
   ########## 
   df_markets.to_pickle(df_markets_update.path)
