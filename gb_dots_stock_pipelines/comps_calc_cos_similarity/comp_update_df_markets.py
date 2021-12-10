@@ -3,11 +3,8 @@ from typing import NamedTuple
 
 def update_df_markets(
   date_ref: str,
-  df_markets_update: Output[Dataset],
-) -> NamedTuple(
-  'Outputs',
-  [ ('comp_result', str)
-  ]):
+  # df_markets_update: Output[Dataset],
+) -> str :
 
   import json
   import numpy as np
@@ -121,7 +118,7 @@ def update_df_markets(
       )
 
   try :
-    push_data_to_gbq(df_markets_date_ref)
+    # push_data_to_gbq(df_markets_date_ref)
     return 'finish'
   except :
-    return 'fail'
+    print('Something Wrong')

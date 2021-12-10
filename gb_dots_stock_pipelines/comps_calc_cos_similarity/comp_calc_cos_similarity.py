@@ -9,7 +9,7 @@ from kfp.v2.dsl import (Artifact,
 from kfp.components import InputPath, OutputPath
 
 def calc_cos_similar(
-  df_markets: Input[Dataset],
+  # df_markets: Input[Dataset],
   date_ref : str,
 	kernel_size : int,
   comp_result : str,
