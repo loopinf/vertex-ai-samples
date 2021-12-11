@@ -58,6 +58,25 @@ def calc_cos_similar_occc(
     df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
     return df
 
+  def check_count_of_df_market(date_ref):
+    date_ref_ = pd.Timestamp(date_ref).strftime('%Y-%m-%d')
+    sql = f'''
+      SELECT
+        count(*)
+      FROM
+        `dots-stock.red_lion.df_markets_clust_parti`
+      WHERE
+        date = "{date_ref_}"
+      LIMIT
+        1000
+      ''' 
+    PROJECT_ID = 'dots-stock'
+    df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
+    result = df.iloc[0,0]
+    return result
+  
+  assert check_count_of_df_market(date_ref) > 2000 , f'df_markets on {date_ref} is not available'
+
   df_markets = get_df_markets(date_ref)
   assert df_markets.duplicated(subset=['date','Code']).sum() == 0
   #### filter df_markets --> df_markets_filtered
@@ -154,7 +173,7 @@ def calc_cos_similar_occc(
     df = (
       _get_co_si(unfolded, code, kernel_size
                 ) 
-      .where(lambda x: (.85< x))
+      .where(lambda x: (.65< x))
       .stack()
       .sort_values(ascending=False)
       .to_frame()
