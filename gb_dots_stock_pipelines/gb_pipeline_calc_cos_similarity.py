@@ -70,8 +70,9 @@ def create_awesome_pipeline():
   with dsl.Condition(op_set_default.outputs['isBusinessDay'] == 'yes'):
 
     op_get_df_markets = comp_update_df_markets(
-        date_ref = op_set_default.outputs['date_ref']
-    )
+        date_ref = op_set_default.outputs['date_ref'],
+        # date_ref = '20211210'
+    )    
 
     op_calc_cos_similars_kernel3 = comp_calc_cos_similars(
         date_ref = op_set_default.outputs['date_ref'],
@@ -124,14 +125,14 @@ api_client = AIPlatformClient(
 # # when you want to run this script imediately, use it will create a pipeline
 # response = api_client.create_run_from_job_spec(
 #   job_spec_path=job_file_name,
-#   enable_caching= True,
+#   enable_caching= False,
 #   pipeline_root=PIPELINE_ROOT,
 # )
 
 # when you want to run this script on schedule, use it will create a pipeline
 response = api_client.create_schedule_from_job_spec(
     job_spec_path=job_file_name,
-    schedule="41 15 * * 1-5",
+    schedule="43 15 * * 1-5",
     time_zone="Asia/Seoul",
     enable_caching = False,
 )

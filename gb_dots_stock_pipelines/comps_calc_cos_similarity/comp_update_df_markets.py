@@ -65,7 +65,7 @@ def update_df_markets(
 
   df_markets_date_ref = get_snapshot_markets([date_ref])
   # code and name to gbq
-  df_markets_date_ref[['Code','Name','Market','Dept']].to_gbq(
+  df_markets_date_ref[['Code','Name','Market','Dept','Marcap']].to_gbq(
     f'red_lion.market_snapshot_{date_ref}', 'dots-stock', if_exists='replace')
 
   ########## save to recent and backup
@@ -118,7 +118,7 @@ def update_df_markets(
       )
 
   try :
-    # push_data_to_gbq(df_markets_date_ref)
+    push_data_to_gbq(df_markets_date_ref)
     return 'finish'
   except :
     print('Something Wrong')
