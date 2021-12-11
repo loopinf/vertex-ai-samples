@@ -154,7 +154,7 @@ def calc_cos_similar_occc(
     df = (
       _get_co_si(unfolded, code, kernel_size
                 ) 
-      .where(lambda x: (.85< x))
+      .where(lambda x: (.65< x))
       .stack()
       .sort_values(ascending=False)
       .to_frame()
