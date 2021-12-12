@@ -1,9 +1,11 @@
 from kfp.v2.dsl import (Dataset, Input, Output)
+from typing import NamedTuple
 
 def update_df_markets(
   date_ref: str,
-  df_markets_update: Output[Dataset],
-):
+  # df_markets_update: Output[Dataset],
+) -> str :
+
   import json
   import numpy as np
   from multiprocessing import Pool
@@ -114,4 +116,9 @@ def update_df_markets(
       job = client.load_table_from_dataframe(
           df_markets_gbq, table_id, job_config=job_config
       )
-  push_data_to_gbq(df_markets_date_ref)
+
+  try :
+    push_data_to_gbq(df_markets_date_ref)
+    return 'finish'
+  except :
+    print('Something Wrong')
