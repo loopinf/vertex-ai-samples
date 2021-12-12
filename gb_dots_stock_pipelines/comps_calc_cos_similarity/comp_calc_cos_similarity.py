@@ -22,7 +22,6 @@ def calc_cos_similar(
   import numpy as np
   import pandas_gbq
   import logging
-  import logging
   logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
   import torch
