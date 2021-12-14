@@ -14,7 +14,7 @@ def calc_cos_similar(
 	kernel_size : int,
   comp_result : str,
   cos_similars : Output[Dataset] 
-  ):
+  )-> str:
 
   # from trading_calendars import get_calendar
   # cal_KRX = get_calendar('XKRX')
@@ -314,28 +314,4 @@ def calc_cos_similar(
 
   upload_to_gbq(df_simil_gbq)
 
-# #######
-#   table_id = f'red_lion.pattern_{kernel_size}_{today}',
-#   errors = client.insert_rows_from_dataframe(table_id, df_simil_gbq)
-#   for chunk in errors:
-#     print(f"encountered {len(chunk)} errors: {chunk}")
-
-#   # def send_to_gbq(df_simil_gbq):
-#   #   table_schema = [{'name':'date','type':'DATE'},
-#   #               {'name':'source_date','type':'DATE'},
-#   #               {'name':'similarity','type':'FLOAT'},
-#   #               {'name':'Code','type':'STRING'},
-#   #               {'name':'source_code','type':'STRING'},
-#   #               ]
-#   #   pandas_gbq.to_gbq(df_simil_gbq, 
-#   #                 f'red_lion.pattern_{kernel_size}_{today}',
-#   #                   project_id='dots-stock', 
-#   #                   if_exists='append',
-#   #                   table_schema=table_schema
-#   #                 )
-
-#   # send_to_gbq(df_simil_gbq)
-#   print(f'size : {df_simil_gbq.shape}')
-#   # df_simil_gbq.to_pickle(cos_similars.path)
-
-
+  return 'finish'
