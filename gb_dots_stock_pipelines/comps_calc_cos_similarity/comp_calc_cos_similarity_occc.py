@@ -14,19 +14,19 @@ def calc_cos_similar_occc(
 	kernel_size : int,
   comp_result : str,
   cos_similars : Output[Dataset] 
-  ):
+  ) -> str:
 
   # from trading_calendars import get_calendar
   # cal_KRX = get_calendar('XKRX')
 
   import pandas as pd
   import numpy as np
-  import pandas_gbq
+  import pandas_gbq # type: ignore
   import logging
   logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-  import torch
-  from torch.nn import functional as F
+  import torch # type: ignore
+  from torch.nn import functional as F # type: ignore
 
 
   ######## load data ########
@@ -58,6 +58,25 @@ def calc_cos_similar_occc(
     PROJECT_ID = 'dots-stock'
     df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
     return df
+
+  def check_count_of_df_market(date_ref):
+    date_ref_ = pd.Timestamp(date_ref).strftime('%Y-%m-%d')
+    sql = f'''
+      SELECT
+        count(*)
+      FROM
+        `dots-stock.red_lion.df_markets_clust_parti`
+      WHERE
+        date = "{date_ref_}"
+      LIMIT
+        1000
+      ''' 
+    PROJECT_ID = 'dots-stock'
+    df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
+    result = df.iloc[0,0]
+    return result
+  
+  assert check_count_of_df_market(date_ref) > 2000 , f'df_markets on {date_ref} is not available'
 
   df_markets = get_df_markets(date_ref)
   assert df_markets.duplicated(subset=['date','Code']).sum() == 0
@@ -155,7 +174,7 @@ def calc_cos_similar_occc(
     df = (
       _get_co_si(unfolded, code, kernel_size
                 ) 
-      .where(lambda x: (.85< x))
+      .where(lambda x: (.65< x))
       .stack()
       .sort_values(ascending=False)
       .to_frame()
@@ -247,29 +266,4 @@ def calc_cos_similar_occc(
 
   upload_to_gbq(df_simil_gbq)
 
-
-# #######
-#   table_id = f'red_lion.pattern_{kernel_size}_{today}',
-#   errors = client.insert_rows_from_dataframe(table_id, df_simil_gbq)
-#   for chunk in errors:
-#     print(f"encountered {len(chunk)} errors: {chunk}")
-
-#   # def send_to_gbq(df_simil_gbq):
-#   #   table_schema = [{'name':'date','type':'DATE'},
-#   #               {'name':'source_date','type':'DATE'},
-#   #               {'name':'similarity','type':'FLOAT'},
-#   #               {'name':'Code','type':'STRING'},
-#   #               {'name':'source_code','type':'STRING'},
-#   #               ]
-#   #   pandas_gbq.to_gbq(df_simil_gbq, 
-#   #                 f'red_lion.pattern_{kernel_size}_{today}',
-#   #                   project_id='dots-stock', 
-#   #                   if_exists='append',
-#   #                   table_schema=table_schema
-#   #                 )
-
-#   # send_to_gbq(df_simil_gbq)
-#   print(f'size : {df_simil_gbq.shape}')
-#   # df_simil_gbq.to_pickle(cos_similars.path)
-
-
+  return 'finish'
