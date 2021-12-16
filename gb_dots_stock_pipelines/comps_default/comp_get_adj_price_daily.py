@@ -91,8 +91,3 @@ def get_adj_prices_daily(
       print('Table already exists')
       tableExist = client.get_table(table_id)
         
-      
-
-
-  
-

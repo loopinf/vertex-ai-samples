@@ -27,7 +27,6 @@ from kfp.v2.google import experimental
 
 from comps_default.comp_set_defaults_v2 import set_defaults
 from comps_calc_cos_similarity.comp_update_df_markets import update_df_markets
-from comps_calc_cos_similarity.comp_calc_df_snapshot import calc_df_snapshot
 from comps_calc_cos_similarity.comp_calc_cos_similarity import calc_cos_similar
 from comps_calc_cos_similarity.comp_calc_cos_similarity_occc import calc_cos_similar_occc
 from comps_calc_cos_similarity.comp_eval_cos_simil import eval_cos_simil
@@ -42,11 +41,7 @@ comp_update_df_markets = comp.create_component_from_func_v2(
                                             update_df_markets, 
                                             base_image="gcr.io/dots-stock/python-img-v5.2"
                                             )  
-comp_calc_df_snapshot = comp.create_component_from_func_v2(
-                                            calc_df_snapshot, 
-                                            base_image="gcr.io/dots-stock/python-img-v5.2",
-                                            packages_to_install=['google-cloud-bigquery==1.21.0'],
-                                            )  
+
 comp_calc_cos_similars = comp.create_component_from_func_v2(
                                             calc_cos_similar,
                                             base_image="asia-docker.pkg.dev/vertex-ai/training/pytorch-gpu.1-9:latest",
@@ -75,33 +70,36 @@ def create_awesome_pipeline():
 
   # date_ref = '20211215'
   with dsl.Condition(op_set_default.outputs['isBusinessDay'] == 'yes'):
+  # if True:
 
     op_get_df_markets = comp_update_df_markets(
         date_ref = op_set_default.outputs['date_ref']
     )
-    op_calc_df_snapshot = comp_calc_df_snapshot(
-        date_ref = op_set_default.outputs['date_ref']
-    ).after(op_get_df_markets)
 
     op_calc_cos_similars_kernel3 = comp_calc_cos_similars(
+        # df_markets = op_get_df_markets.outputs['df_markets_update'],)
         date_ref = op_set_default.outputs['date_ref'],
         # date_ref = date_ref,
         kernel_size = '3',
         comp_result = op_get_df_markets.output
     )
+
     op_calc_cos_similars_kernel6 = comp_calc_cos_similars(
+        # df_markets = op_get_df_markets.outputs['df_markets_update'],)
         date_ref = op_set_default.outputs['date_ref'],
         # date_ref = date_ref,
         kernel_size = '6',
         comp_result = op_get_df_markets.output
     )
     op_calc_cos_similars_occc_10 = comp_calc_cos_similars_occc(
+        # df_markets = op_get_df_markets.outputs['df_markets_update'],)
         date_ref = op_set_default.outputs['date_ref'],
         # date_ref = date_ref,
         kernel_size = '10',
         comp_result = op_get_df_markets.output
     )
     op_calc_cos_similars_occc_20 = comp_calc_cos_similars_occc(
+        # df_markets = op_get_df_markets.outputs['df_markets_update'],)
         date_ref = op_set_default.outputs['date_ref'],
         # date_ref = date_ref,
         kernel_size = '20',
@@ -111,27 +109,24 @@ def create_awesome_pipeline():
     op_eval_cos_simil = comp_eval_cos_simil(
         date_ref = op_set_default.outputs['date_ref'],
         # date_ref = date_ref,
-    ).after(op_calc_cos_similars_kernel3, 
-            op_calc_cos_similars_kernel6, 
-            op_calc_cos_similars_occc_10, 
-            op_calc_cos_similars_occc_20)
+    ).after(op_calc_cos_similars_kernel3, op_calc_cos_similars_kernel6, op_calc_cos_similars_occc_10, op_calc_cos_similars_occc_20)
 
     experimental.run_as_aiplatform_custom_job(
       op_calc_cos_similars_kernel3, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
             accelerator_count="1"
     )
-    experimental.run_as_aiplatform_custom_job(
-      op_calc_cos_similars_kernel6, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
-            accelerator_count="1"
-    )
-    experimental.run_as_aiplatform_custom_job(
-      op_calc_cos_similars_occc_10, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
-            accelerator_count="1"
-    )
-    experimental.run_as_aiplatform_custom_job(
-      op_calc_cos_similars_occc_20, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
-            accelerator_count="1"
-    )
+    # experimental.run_as_aiplatform_custom_job(
+    #   op_calc_cos_similars_kernel6, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
+    #         accelerator_count="1"
+    # )
+    # experimental.run_as_aiplatform_custom_job(
+    #   op_calc_cos_similars_occc_10, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
+    #         accelerator_count="1"
+    # )
+    # experimental.run_as_aiplatform_custom_job(
+    #   op_calc_cos_similars_occc_20, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
+    #         accelerator_count="1"
+    # )
 
 compiler.Compiler().compile(
   pipeline_func=create_awesome_pipeline,
@@ -146,7 +141,7 @@ api_client = AIPlatformClient(
 # when you want to run this script imediately, use it will create a pipeline
 response = api_client.create_run_from_job_spec(
   job_spec_path=job_file_name,
-  enable_caching= True,
+  enable_caching= False,
   pipeline_root=PIPELINE_ROOT,
 )
 
