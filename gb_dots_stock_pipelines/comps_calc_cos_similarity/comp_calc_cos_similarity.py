@@ -207,42 +207,6 @@ def calc_cos_similar(
       logging.error(f'error on code : {code}')
   logging.debug(f'loop done , l_df : {len(l_df)}')
 
-  # for code in l_code_1:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop1 done , l_df : {len(l_df)}')
-
-  # for code in l_code_2:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop2 done , l_df : {len(l_df)}')
-
-  # for code in l_code_3:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop3 done , l_df : {len(l_df)}')
-
-  # for code in l_code_4:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop4 done , l_df : {len(l_df)}')
-
   df_simil_gbq = pd.concat(l_df)
 
   df_simil_gbq['date'] = pd.to_datetime(df_simil_gbq.date)#.dt.strftime('%Y-%m-%d')
