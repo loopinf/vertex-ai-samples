@@ -31,7 +31,7 @@ from comps_calc_cos_similarity.comp_calc_df_snapshot import calc_df_snapshot
 from comps_calc_cos_similarity.comp_calc_cos_similarity import calc_cos_similar
 from comps_calc_cos_similarity.comp_calc_cos_similarity_occc import calc_cos_similar_occc
 from comps_calc_cos_similarity.comp_eval_cos_simil import eval_cos_simil
-
+from comps_update_hotstock.comp_market_watch import calc_market_watch
 
 comp_set_default = comp.create_component_from_func_v2(
                                             set_defaults,
@@ -44,6 +44,11 @@ comp_update_df_markets = comp.create_component_from_func_v2(
                                             )  
 comp_calc_df_snapshot = comp.create_component_from_func_v2(
                                             calc_df_snapshot, 
+                                            base_image="gcr.io/dots-stock/python-img-v5.2",
+                                            packages_to_install=['google-cloud-bigquery==1.21.0'],
+                                            )  
+comp_calc_market_watch = comp.create_component_from_func_v2(
+                                            calc_market_watch,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
                                             packages_to_install=['google-cloud-bigquery==1.21.0'],
                                             )  
@@ -80,6 +85,9 @@ def create_awesome_pipeline():
         date_ref = op_set_default.outputs['date_ref']
     )
     op_calc_df_snapshot = comp_calc_df_snapshot(
+        date_ref = op_set_default.outputs['date_ref']
+    ).after(op_get_df_markets)
+    op_calc_market_watch = comp_calc_market_watch(
         date_ref = op_set_default.outputs['date_ref']
     ).after(op_get_df_markets)
 

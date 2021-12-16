@@ -28,6 +28,7 @@ def calc_market_watch(
       ''' 
     PROJECT_ID = 'dots-stock'
     df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
+    df = pd.drop_duplicates(df)
     return df
 
   df_markets_1 =get_df_market(date_ref, 20)
@@ -202,8 +203,9 @@ def calc_market_watch(
     except Exception as e:
       print(e)
       if ('Already Exists' in e.args[0]): # and if_exists=='replace' : 
-        pass
+        table = client.get_table(table_id)
       else: raise
+
     time.sleep (0.5)
     errors = client.insert_rows_from_dataframe(table, df)
     for chunk in errors:
