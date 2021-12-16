@@ -1,18 +1,28 @@
-from kfp.v2.dsl import (Dataset, Input, Output)
-from typing import NamedTuple
 
 def update_df_markets(
   date_ref: str,
-  # df_markets_update: Output[Dataset],
 ) -> str :
-
+  """ Update df_markets with the latest market data.
+  create market watch data 
+  market_snapshot include 신호등 top30 
+  """
   import json
+  import logging
   import numpy as np
   from multiprocessing import Pool
   import pandas as pd
   import requests
+  import pandas_gbq # type: ignore
 
-  #get_snapshot_markets(dates): with Pool
+  from trading_calendars import get_calendar
+  cal_krx = get_calendar('XKRX')
+  from pandas.tseries.offsets import CustomBusinessDay
+  cbday = CustomBusinessDay(holidays = cal_krx.adhoc_holidays)
+
+  project_id = 'dots-stock'
+  from google.cloud import bigquery
+  client = bigquery.Client(project_id)
+
   def get_snapshot_markets(dates):
 
     global get_krx_marketcap
@@ -64,16 +74,13 @@ def update_df_markets(
     return df_market_
 
   df_markets_date_ref = get_snapshot_markets([date_ref])
+
+  ########## custom business day 
+
   # code and name to gbq
-  df_markets_date_ref[['Code','Name','Market','Dept','Marcap']].to_gbq(
-    f'red_lion.market_snapshot_{date_ref}', 'dots-stock', if_exists='replace')
+  # df_markets_date_ref[['Code','Name','Market','Dept','Marcap']].to_gbq(
+  #   f'red_lion.market_snapshot_{date_ref}', 'dots-stock', if_exists='replace')
 
-  ########## save to recent and backup
-  project_id = 'dots-stock'
-  # create clustered table
-  from google.cloud import bigquery
-
-  client = bigquery.Client(project_id)
 
   def push_data_to_gbq(df_markets):
       table_id = 'dots-stock.red_lion.df_markets_clust_parti'
@@ -122,3 +129,66 @@ def update_df_markets(
     return 'finish'
   except :
     print('Something Wrong')
+    # raise
+
+
+  ############## top30 신호등
+  N_days = 20
+  def get_df_market(date_ref, n_before):
+    date_ref_ = pd.Timestamp(date_ref).strftime('%Y-%m-%d')
+    date_ref_b = (pd.Timestamp(date_ref) - cbday * (n_before -1)).strftime('%Y-%m-%d')
+    sql = f'''
+      SELECT
+        Code,Name,Market,Dept,Marcap,in_top30, date
+      FROM
+        `dots-stock.red_lion.df_markets_clust_parti`
+      WHERE
+        date between "{date_ref_b}" and "{date_ref_}"
+      LIMIT
+        1000000
+      ''' 
+    df = pandas_gbq.read_gbq(sql, project_id=project_id, use_bqstorage_api=True)
+    return df
+
+  df_markets_1 =get_df_market(date_ref, N_days)
+
+  logging.debug(f'{df_markets_1.shape}')
+  assert df_markets_1.date.unique().shape[0] == N_days
+  ###
+  df_to_gbq = (df_markets_1
+    [lambda df: df.date == df.date.max()]
+    )
+  # make dataframe of top30 true and false
+  _tmp = (df_markets_1
+    .sort_values('date')
+    .pivot_table(index='date', columns='Code', values='in_top30')
+    .replace(False, 'NoTop30')
+    .replace(True,'Top30')
+    .fillna('Missing')
+    )
+  # make dictionary : code -> list of top30 
+  dic_top30_list = {item[0]:list(item[1]) for item in _tmp.items()} 
+
+  df_to_gbq = df_to_gbq.assign(
+      in_top30_list = lambda df: df.Code.map(dic_top30_list)
+  )
+
+  def to_gbq_snapshot(df_to_gbq, date_ref):
+    schema = [
+      bigquery.SchemaField("Code", "STRING"),
+      bigquery.SchemaField("Name", "STRING"),
+      bigquery.SchemaField("Market", "STRING"),
+      bigquery.SchemaField("Dept", "STRING"),
+      bigquery.SchemaField("Marcap", "INTEGER"),
+      bigquery.SchemaField("in_top30", "BOOL"),
+      bigquery.SchemaField(name="in_top30_list", field_type="STRING", mode="REPEATED"),
+    ]
+    table_id = f'{project_id}.red_lion.market_snapshot_top30_{date_ref}'
+    table = bigquery.Table(table_id, schema=schema)
+    table = client.create_table(table) 
+
+    errors = client.insert_rows_from_dataframe(table, df_to_gbq)
+    for chunk in errors:
+      print(chunk)
+
+  to_gbq_snapshot(df_to_gbq, date_ref)
