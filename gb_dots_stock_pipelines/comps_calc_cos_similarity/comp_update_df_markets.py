@@ -148,6 +148,7 @@ def update_df_markets(
         1000000
       ''' 
     df = pandas_gbq.read_gbq(sql, project_id=project_id, use_bqstorage_api=True)
+    df = df.drop_duplicates()
     return df
 
   df_markets_1 =get_df_market(date_ref, N_days)
