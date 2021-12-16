@@ -144,16 +144,16 @@ api_client = AIPlatformClient(
 )
 
 # when you want to run this script imediately, use it will create a pipeline
-response = api_client.create_run_from_job_spec(
-  job_spec_path=job_file_name,
-  enable_caching= True,
-  pipeline_root=PIPELINE_ROOT,
-)
+# response = api_client.create_run_from_job_spec(
+#   job_spec_path=job_file_name,
+#   enable_caching= True,
+#   pipeline_root=PIPELINE_ROOT,
+# )
 
 # # when you want to run this script on schedule, use it will create a pipeline
-# response = api_client.create_schedule_from_job_spec(
-#     job_spec_path=job_file_name,
-#     schedule="59 15 * * 1-5",
-#     time_zone="Asia/Seoul",
-#     enable_caching = False,
-# )
+response = api_client.create_schedule_from_job_spec(
+    job_spec_path=job_file_name,
+    schedule="59 15 * * 1-5",
+    time_zone="Asia/Seoul",
+    enable_caching = False,
+)
