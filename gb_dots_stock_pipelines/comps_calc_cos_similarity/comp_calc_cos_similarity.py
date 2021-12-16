@@ -13,7 +13,7 @@ def calc_cos_similar(
   kernel_size : int,
   comp_result : str,
   cos_similars : Output[Dataset] 
-) -> str :
+):
 
   import logging
   print('calc_cos_similar_occc')
