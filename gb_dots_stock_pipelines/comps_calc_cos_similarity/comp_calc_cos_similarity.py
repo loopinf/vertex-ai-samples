@@ -9,11 +9,9 @@ from kfp.v2.dsl import (Artifact,
 from kfp.components import InputPath, OutputPath
 
 def calc_cos_similar(
-  # df_markets: Input[Dataset],
   date_ref : str,
 	kernel_size : int,
   comp_result : str,
-  cos_similars : Output[Dataset] 
   )-> str:
 
   # from trading_calendars import get_calendar
@@ -21,12 +19,12 @@ def calc_cos_similar(
 
   import pandas as pd
   import numpy as np
-  import pandas_gbq
+  import pandas_gbq # type: ignore
   import logging
   logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-  import torch
-  from torch.nn import functional as F
+  import torch # type: ignore
+  from torch.nn import functional as F # type: ignore
 
 
   ######## load data ########
