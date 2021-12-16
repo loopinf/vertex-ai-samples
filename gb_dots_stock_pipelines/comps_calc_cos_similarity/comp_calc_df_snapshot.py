@@ -72,7 +72,7 @@ def calc_df_snapshot(
       bigquery.SchemaField("in_top30", "BOOL"),
       bigquery.SchemaField(name="in_top30_list", field_type="STRING", mode="REPEATED"),
     ]
-    table_id = f'{PROJECT_ID}.red_lion.market_snapshot_top30_test_{date_ref}'
+    table_id = f'{PROJECT_ID}.red_lion.market_snapshot_top30_{date_ref}'
     table = bigquery.Table(table_id, schema=schema)
     try:
       table = client.create_table(table) 
