@@ -64,7 +64,6 @@ def update_df_markets(
                       in_top30 = 
                         lambda df: df.rank_pct <= 30
                           )
-      return df
     # if len(dates) == 1:
     #   return get_krx_marketcap(dates[0])
     with Pool(2) as pool:
@@ -126,10 +125,11 @@ def update_df_markets(
 
   try :
     push_data_to_gbq(df_markets_date_ref)
-    return 'finish'
+    logging.debug(f'daily market data {date_ref} pushed to gbq ')
   except :
     print('Something Wrong')
-    # raise
+    logging.error('Something Wrong on push market daily data to gbq')
+    raise
 
 
   ############## top30 신호등
@@ -192,3 +192,5 @@ def update_df_markets(
       print(chunk)
 
   to_gbq_snapshot(df_to_gbq, date_ref)
+
+  return 'finish'
