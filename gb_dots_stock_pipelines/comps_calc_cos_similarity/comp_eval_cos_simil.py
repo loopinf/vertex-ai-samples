@@ -5,11 +5,6 @@ from numpy import left_shift
 
 def eval_cos_simil(
   date_ref: str,
-  calc_cos_simil_1: str,
-  calc_cos_simil_2: str,
-  calc_cos_simil_3: str,
-  calc_cos_simil_4: str,
-  # df_markets_update: Output[Dataset],
 ) -> str :
   # print(calc_cos_simil_1, calc_cos_simil_2,calc_cos_simil_3, calc_cos_simil_4)
   import itertools
@@ -363,5 +358,7 @@ def eval_cos_simil(
       print(e)
       raise
   push_data_to_gbq(df_to_gbq=df_to_gbq)
+
+  return 'finished'
 
         

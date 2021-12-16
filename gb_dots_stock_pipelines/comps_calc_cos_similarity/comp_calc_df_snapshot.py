@@ -1,4 +1,7 @@
 
+from logging import log
+
+
 def calc_df_snapshot(
   date_ref: str,
 )-> str:
@@ -59,11 +62,13 @@ def calc_df_snapshot(
   dic_top30_list = {item[0]:list(item[1]) for item in _tmp.items()} 
 
   df_to_gbq = df_to_gbq.assign(
-      in_top30_list = lambda df: df.Code.map(dic_top30_list)
+      in_top30_list = lambda df: df.Code.map(dic_top30_list),
+      date_ref = date_ref
   )
 
   def to_gbq_snapshot(df_to_gbq, date_ref):
     schema = [
+      bigquery.SchemaField('date_ref', 'STRING')
       bigquery.SchemaField("Code", "STRING"),
       bigquery.SchemaField("Name", "STRING"),
       bigquery.SchemaField("Market", "STRING"),
@@ -77,8 +82,10 @@ def calc_df_snapshot(
     try:
       table = client.create_table(table) 
     except:
+      logging.debug(f'{table_id} already exists')
       table = client.get_table(table_id)
 
+    logging.debug(f'df_to_gbq : {df_to_gbq.shape} ')
     errors = client.insert_rows_from_dataframe(table, df_to_gbq)
     for chunk in errors:
       print(chunk)
