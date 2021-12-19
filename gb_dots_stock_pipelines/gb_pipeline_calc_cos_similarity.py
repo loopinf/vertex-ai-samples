@@ -32,6 +32,7 @@ from comps_calc_cos_similarity.comp_calc_cos_similarity import calc_cos_similar
 from comps_calc_cos_similarity.comp_calc_cos_similarity_occc import calc_cos_similar_occc
 from comps_calc_cos_similarity.comp_eval_cos_simil import eval_cos_simil
 from comps_update_hotstock.comp_market_watch import calc_market_watch
+from comps_calc_cos_similarity.comp_add_price_on_pattern import add_price_on_pattern
 
 comp_set_default = comp.create_component_from_func_v2(
                                             set_defaults,
@@ -62,7 +63,11 @@ comp_calc_cos_similars_occc = comp.create_component_from_func_v2(
                                             base_image="asia-docker.pkg.dev/vertex-ai/training/pytorch-gpu.1-9:latest",
                                             packages_to_install=['pandas_gbq']
                                             )           
-
+comp_add_price_on_pattern = comp.create_component_from_func_v2(
+                                            add_price_on_pattern,
+                                            base_image="gcr.io/dots-stock/python-img-v5.2",
+                                            packages_to_install=['google-cloud-bigquery==1.21.0'],
+                                            )
 comp_eval_cos_simil = comp.create_component_from_func_v2(
                                             eval_cos_simil,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
@@ -115,6 +120,23 @@ def create_awesome_pipeline():
         kernel_size = '20',
         comp_result = op_get_df_markets.output
     )
+
+    op_add_price_on_pattern3 = comp_add_price_on_pattern(
+        date_ref = op_set_default.outputs['date_ref'],
+        kernel_size = '3'
+        ).after(op_calc_cos_similars_kernel3)
+    op_add_price_on_pattern6 = comp_add_price_on_pattern(
+        date_ref = op_set_default.outputs['date_ref'],
+        kernel_size = '6'
+        ).after(op_calc_cos_similars_kernel6)
+    op_add_price_on_pattern10 = comp_add_price_on_pattern(
+        date_ref = op_set_default.outputs['date_ref'],
+        kernel_size = '10'
+        ).after(op_calc_cos_similars_occc_10)
+    op_add_price_on_pattern20 = comp_add_price_on_pattern(
+        date_ref = op_set_default.outputs['date_ref'],
+        kernel_size = '20'
+        ).after(op_calc_cos_similars_occc_20)
 
     op_eval_cos_simil = comp_eval_cos_simil(
         date_ref = op_set_default.outputs['date_ref'],
