@@ -55,12 +55,12 @@ comp_calc_market_watch = comp.create_component_from_func_v2(
                                             )  
 comp_calc_cos_similars = comp.create_component_from_func_v2(
                                             calc_cos_similar,
-                                            base_image="asia-docker.pkg.dev/vertex-ai/training/pytorch-gpu.1-9:latest",
+                                            base_image="us-docker.pkg.dev/vertex-ai/training/pytorch-gpu.1-9:latest",
                                             packages_to_install=['pandas_gbq']
                                             )           
 comp_calc_cos_similars_occc = comp.create_component_from_func_v2(
                                             calc_cos_similar_occc,
-                                            base_image="asia-docker.pkg.dev/vertex-ai/training/pytorch-gpu.1-9:latest",
+                                            base_image="us-docker.pkg.dev/vertex-ai/training/pytorch-gpu.1-9:latest",
                                             packages_to_install=['pandas_gbq']
                                             )           
 comp_add_price_on_pattern = comp.create_component_from_func_v2(
