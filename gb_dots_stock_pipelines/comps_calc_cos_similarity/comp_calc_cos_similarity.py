@@ -65,7 +65,7 @@ def calc_cos_similar(
       ''' 
     PROJECT_ID = 'dots-stock'
     df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
-    df = df.drop_duplicates()
+    df = df.drop_duplicates(subset=['Code','date'])
     return df
   
   def check_count_of_df_market(date_ref):
