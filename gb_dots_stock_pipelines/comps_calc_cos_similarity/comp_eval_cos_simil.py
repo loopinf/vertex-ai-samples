@@ -1,8 +1,3 @@
-from kfp.v2.dsl import (Dataset, Input, Output)
-from typing import NamedTuple
-
-from numpy import left_shift
-
 def eval_cos_simil(
   date_ref: str,
 ) -> str :

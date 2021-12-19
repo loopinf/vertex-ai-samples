@@ -68,7 +68,7 @@ def calc_df_snapshot(
 
   def to_gbq_snapshot(df_to_gbq, date_ref):
     schema = [
-      bigquery.SchemaField('date_ref', 'STRING')
+      bigquery.SchemaField('date_ref', 'STRING'),
       bigquery.SchemaField("Code", "STRING"),
       bigquery.SchemaField("Name", "STRING"),
       bigquery.SchemaField("Market", "STRING"),
