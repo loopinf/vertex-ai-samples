@@ -1,7 +1,9 @@
 from kfp.v2.dsl import (Dataset, Input, Output)
 
 
-def add_price_on_pattern(date_ref, kernel_size):
+def add_price_on_pattern(
+  date_ref: str, 
+  kernel_size: int):
 
   import logging
   FORMAT = "[%(filename)s->%(funcName)s():%(lineno)s]%(levelname)s: %(message)s"
@@ -19,6 +21,7 @@ def add_price_on_pattern(date_ref, kernel_size):
   N_cpu = multiprocessing.cpu_count()
   logging.debug(f'cpu_count : {N_cpu}')
 
+  import time
   import functools
 
   PROJECT_ID = 'dots-stock'
@@ -95,6 +98,9 @@ def add_price_on_pattern(date_ref, kernel_size):
     )
   )[['Code','date','date_ohlcv']]
 
+  #### check how much time it takes to run this
+  t1 = time.time()
+
   l_df_spl = np.array_split(_df1, N_cpu)
 
   global mp_split
@@ -112,6 +118,8 @@ def add_price_on_pattern(date_ref, kernel_size):
     result = pool.map(mp_split, l_df_spl)  # 1m 17s
     # result = pool.imap(mp_split, l_df_spl)  # 훨 씬 오래 걸림
 
+  dt = time.time() - t1
+  logging.debug(f'multiprocessing takes {dt} seconds, previous it takes 1m 17s')
   _df1_split = \
   (pd.concat(result)
   .rename(columns=lambda x: f'd{x:02d}')
