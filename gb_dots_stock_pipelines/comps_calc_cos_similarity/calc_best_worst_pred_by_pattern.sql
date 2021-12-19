@@ -9,13 +9,8 @@ CREATE TEMP TABLE tmp_pattern_eval_by_date AS ( (
       ud_r_d0_2,
       kernel_size,
       ROW_NUMBER() OVER (PARTITION BY source_code ORDER BY ud_r_d0_2 DESC, variable ASC) AS rank
-    FROM (
-      SELECT
-        *
-      FROM
-        `dots-stock.red_lion.pattern_eval_20211217`
-      WHERE
-        ud_r_d0_2 > 0.65))
+    FROM
+      `dots-stock.red_lion.pattern_eval_20211217` )
   SELECT
     *,
     "up" AS type
@@ -38,13 +33,8 @@ UNION ALL (
       ud_r_d0_2,
       kernel_size,
       ROW_NUMBER() OVER (PARTITION BY source_code ORDER BY ud_r_d0_2 ASC, variable ASC) AS rank
-    FROM (
-      SELECT
-        *
-      FROM
-        `dots-stock.red_lion.pattern_eval_20211217`
-      WHERE
-        ud_r_d0_2 < 0.35))
+    FROM
+      `dots-stock.red_lion.pattern_eval_20211217` )
   SELECT
     *,
     "down" AS type
