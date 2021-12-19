@@ -70,6 +70,7 @@ def calc_cos_similar_occc(
       ''' 
     PROJECT_ID = 'dots-stock'
     df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
+    df = df.drop_duplicates(subset=['Code','date'])
     return df
 
   def check_count_of_df_market(date_ref):
@@ -92,7 +93,10 @@ def calc_cos_similar_occc(
   assert check_count_of_df_market(date_ref) > 2000 , f'df_markets on {date_ref} is not available'
 
   df_markets = get_df_markets(date_ref)
-  assert df_markets.duplicated(subset=['date','Code']).sum() == 0
+  # if not df_markets.duplicated(subset=['date','Code']).sum() == 0:
+    # logging.error( df_markets[df_markets.duplicated(subset=['date','Code'])])
+    # logging.error(f'{df_markets.duplicated(subset=['date','Code'])}
+    # df_markets = df_markets.drop_duplicates(subset=['date','Code'])
   #### filter df_markets --> df_markets_filtered
   l_code  = \
   (df_markets
