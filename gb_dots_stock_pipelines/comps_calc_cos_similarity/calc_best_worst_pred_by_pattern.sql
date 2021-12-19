@@ -1,4 +1,4 @@
-  create table red_lion.pattern_eval_by_ as (
+CREATE TEMP TABLE tmp_pattern_eval_by_date AS ( (
   WITH
     ordered_ud_r_d0_2_per_code AS (
     SELECT
@@ -54,24 +54,33 @@ UNION ALL (
     rank IN (1,
       2)
   ORDER BY
-    ud_r_d0_2 DESC);
-
+    ud_r_d0_2 DESC)); CREATE temp TABLE top2_each_code AS
 SELECT
-  source_code,
-  type,
-  ret_p_d0_2_count,
-  ARRAY_AGG(date_passed) AS date_passed,
-  ARRAY_AGG(ud_r_d0_2) AS ud_r_d0_2,
-  ARRAY_AGG(rank) AS rank
+source_code,
+type,
+ret_p_d0_2_count,
+ARRAY_AGG(date_passed) AS date_passed,
+ARRAY_AGG(ud_r_d0_2) AS ud_r_d0_2,
+ARRAY_AGG(rank) AS rank,
+ARRAY_AGG(kernel_size) AS kernel_size
 FROM (
-  SELECT
-    *
-  FROM
-    `dots-stock.red_lion.temp1` 
-    ORDER BY date_passed)
+SELECT
+  *
+FROM
+  tmp_pattern_eval_by_date
+ORDER BY
+  date_passed)
 GROUP BY
-  source_code,
-  type,
-  ret_p_d0_2_count
-LIMIT
-  100
+source_code,
+type,
+ret_p_d0_2_count;
+CREATE OR REPLACE TABLE
+red_lion.market_snapshot_top30_eval_20211217 AS (
+SELECT
+  *
+FROM
+  `dots-stock.red_lion.market_snapshot_top30_20211217` AS lt
+LEFT JOIN
+  top2_each_code AS rt
+ON
+  lt.Code = rt.source_code )
