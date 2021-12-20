@@ -21,7 +21,7 @@
     source_code ); CREATE TEMP TABLE top2_each_code AS
 SELECT
   source_code,
-  ret_p_d0_2_count,
+  ARRAY_AGG(ret_p_d0_2_count) AS ret_p_d0_2_count,
   ARRAY_AGG(date_passed) AS date_passed,
   ARRAY_AGG(ud_r_d0_2) AS ud_r_d0_2,
   ARRAY_AGG(rank) AS rank,
@@ -34,8 +34,7 @@ FROM (
   ORDER BY
     date_passed)
 GROUP BY
-  source_code,
-  ret_p_d0_2_count;
+  source_code ;
 CREATE OR REPLACE TABLE
   `red_lion.market_snapshot_top30_eval_delete_20211220` AS (
   SELECT
