@@ -170,7 +170,7 @@ def eval_cos_simil(
       .assign(kernel_size=kernel_size,
               date_ref=date_ref)
       [lambda df: ~df.variable.isin(['d0_1','d0_2'])]
-      [lambda df: df.ret_p_d1_1_count > 20]
+      [lambda df: df.ret_p_d1_1_count > 4]
       .sort_values('ud_r_d1_1', ascending=False)
       )
     
