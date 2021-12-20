@@ -8,9 +8,7 @@ from kfp.v2.dsl import (Artifact,
 from kfp.components import InputPath, OutputPath
 
 def get_adj_prices_daily(
-  market_info_dataset: Input[Dataset],
   date_ref : str,
-  adj_price_dataset: Output[Dataset],  
   ):
 
   import FinanceDataReader as fdr
