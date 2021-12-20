@@ -24,7 +24,7 @@ def create_market_snap_top30_eval(date_ref: str):
             ordered_ud_r_d0_2_per_code
           WHERE
             rank IN (1,
-              2)
+              2, 3, 4, 5)
           ORDER BY
             ud_r_d0_2 DESC)
         UNION ALL (
@@ -47,7 +47,7 @@ def create_market_snap_top30_eval(date_ref: str):
             ordered_ud_r_d0_2_per_code
           WHERE
             rank IN (1,
-              2)
+              2, 3, 4, 5)
           ORDER BY
             ud_r_d0_2 DESC)); CREATE temp TABLE top2_each_code AS
         SELECT
