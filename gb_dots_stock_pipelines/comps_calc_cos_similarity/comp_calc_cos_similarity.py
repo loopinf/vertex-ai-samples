@@ -26,6 +26,12 @@ def calc_cos_similar(
 	kernel_size : int,
   comp_result : str,
   ):
+  '''
+  Args: date_ref: str "20211220",
+        kernel_size: int  3 or 6 or 10 or 20
+  Returns:
+        None
+  '''
 
   import pandas as pd
   import numpy as np
@@ -192,6 +198,16 @@ def calc_cos_similar(
     return df_simil
     
   def get_simil(unfolded, code, date_ref, kernel_size):
+    '''
+    Args: code : "194480" 알고 싶은 종목
+          date_ref : "2021-01-01"
+    
+    Returns:
+      df_simil : pd.DataFrame
+        index : date  ex) "2020-01-01"
+        columns : code  ex) "000020"
+                : source_code  알고 싶은 종목 ex) "000020"  
+        '''  
     df = (
       _get_co_si(unfolded, code, kernel_size
                 ) 

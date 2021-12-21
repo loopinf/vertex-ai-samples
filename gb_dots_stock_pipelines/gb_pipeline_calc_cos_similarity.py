@@ -33,16 +33,22 @@ from comps_calc_cos_similarity.comp_calc_cos_similarity_occc import calc_cos_sim
 from comps_calc_cos_similarity.comp_eval_cos_simil import eval_cos_simil
 from comps_update_hotstock.comp_market_watch import calc_market_watch
 from comps_calc_cos_similarity.comp_add_price_on_pattern import add_price_on_pattern
+from comps_calc_cos_similarity.comp_bigquery_sql import create_market_snap_top30_eval
+from comps_default.comp_get_adj_price_daily import get_adj_prices_daily
 
 comp_set_default = comp.create_component_from_func_v2(
                                             set_defaults,
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
                                             )
-
 comp_update_df_markets = comp.create_component_from_func_v2(
                                             update_df_markets, 
                                             base_image="gcr.io/dots-stock/python-img-v5.2"
                                             )  
+comp_get_adj_price_daily = comp.create_component_from_func_v2(
+                                            get_adj_prices_daily,
+                                            base_image="gcr.io/dots-stock/python-img-v5.2",
+                                            packages_to_install=['pandas_gbq']
+                                            )                             
 comp_calc_df_snapshot = comp.create_component_from_func_v2(
                                             calc_df_snapshot, 
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
@@ -73,6 +79,11 @@ comp_eval_cos_simil = comp.create_component_from_func_v2(
                                             base_image="gcr.io/dots-stock/python-img-v5.2",
                                             packages_to_install=['pandas_gbq']
                                             )           
+comp_create_market_snap_top30_eval = comp.create_component_from_func_v2(
+                                            create_market_snap_top30_eval,
+                                            base_image="gcr.io/dots-stock/python-img-v5.2",
+                                            packages_to_install=['google-cloud-bigquery==1.21.0'],
+)
 # create pipeline 
 #########################################
 job_file_name='gb-pipeline-calc-cos-similars-and-evaluate-it.json'
@@ -89,6 +100,9 @@ def create_awesome_pipeline():
     op_get_df_markets = comp_update_df_markets(
         date_ref = op_set_default.outputs['date_ref']
     )
+    op_get_adj_price_daily = comp_get_adj_price_daily(
+        date_ref = op_set_default.outputs['date_ref']
+    ).after(op_get_df_markets)
     op_calc_df_snapshot = comp_calc_df_snapshot(
         date_ref = op_set_default.outputs['date_ref']
     ).after(op_get_df_markets)
@@ -146,6 +160,10 @@ def create_awesome_pipeline():
             op_calc_cos_similars_occc_10, 
             op_calc_cos_similars_occc_20)
 
+    op_create_market_snap_top30_eval = comp_create_market_snap_top30_eval(
+        date_ref = op_set_default.outputs['date_ref'],
+    ).after(op_eval_cos_simil)
+
     experimental.run_as_aiplatform_custom_job(
       op_calc_cos_similars_kernel3, machine_type='n1-standard-8', accelerator_type="NVIDIA_TESLA_T4",
             accelerator_count="1"
@@ -173,15 +191,18 @@ api_client = AIPlatformClient(
     region=REGION,
 )
 
-# when you want to run this script imediately, use it will create a pipeline
-# response = api_client.create_run_from_job_spec(
-#   job_spec_path=job_file_name,
-#   enable_caching= True,
-#   pipeline_root=PIPELINE_ROOT,
-# )
+run_now = True
+if run_now:
+  # when you want to run this script imediately, use it will create a pipeline
+  response = api_client.create_run_from_job_spec(
+    job_spec_path=job_file_name,
+    enable_caching= True,
+    pipeline_root=PIPELINE_ROOT,
+  )
 
 # # when you want to run this script on schedule, use it will create a pipeline
-response = api_client.create_schedule_from_job_spec(
+else:
+  response = api_client.create_schedule_from_job_spec(
     job_spec_path=job_file_name,
     schedule="59 15 * * 1-5",
     time_zone="Asia/Seoul",

@@ -8,22 +8,20 @@ from kfp.v2.dsl import (Artifact,
 from kfp.components import InputPath, OutputPath
 
 def get_adj_prices_daily(
-  market_info_dataset: Input[Dataset],
   date_ref : str,
-  adj_price_dataset: Output[Dataset],  
   ):
 
   import FinanceDataReader as fdr
   import pandas as pd
   from multiprocessing import Pool
-
-  df_market = pd.read_pickle(market_info_dataset.path)
-
+  import pandas_gbq # type: ignore
+  PROJECT_ID = 'dots-stock'
+  sql = 'SELECT distinct Code FROM `dots-stock.red_lion.df_markets_clust_parti`'
+  l_code  = pandas_gbq.read_gbq(
+     sql, 
+     project_id=PROJECT_ID, 
+     use_bqstorage_api=True).Code.to_list()
   start_date = '20110101'
-
-  print(f'dates : {df_market.날짜.unique().tolist()}')
-
-  l_code = df_market.종목코드.unique().tolist() 
 
   global get_price
 

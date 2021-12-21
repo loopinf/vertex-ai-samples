@@ -2,7 +2,7 @@ from kfp.v2.dsl import (Dataset, Input, Output)
 
 def calc_market_watch(
   date_ref: str,
-  comp_result : str,
+  # comp_result : str,
   ):
   import pandas as pd
   import numpy as np
@@ -28,7 +28,7 @@ def calc_market_watch(
       ''' 
     PROJECT_ID = 'dots-stock'
     df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
-    df = pd.drop_duplicates(df)
+    df = df.drop_duplicates()
     return df
 
   df_markets_1 =get_df_market(date_ref, 20)
