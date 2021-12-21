@@ -59,6 +59,7 @@ def eval_cos_simil(
 
   ############## get pattern #############
 
+  ## kernel size 3,6
   def make_report_table_ohlc(date_ref_pattern, kernel_size):
 
     def get_pattern(date_ref, kernel_size):
@@ -97,7 +98,7 @@ def eval_cos_simil(
     cols_all = cols_1 + cols_d_op
     df_ = (df
       .rename(columns=lambda col: col.lower())
-      .drop_duplicates(['code','date'])    # must to do  한 종목이 여러 소스종목과 동일한 경우가 있음 
+      # .drop_duplicates(['code','date'])    # must to do  한 종목이 여러 소스종목과 동일한 경우가 있음 
       .melt(id_vars=cols_1, value_vars=cols_d_op)
       .sort_values(['code','variable'])
       .merge(price1, 
@@ -176,7 +177,7 @@ def eval_cos_simil(
     
     return df_to_gbq
 
-
+  ## kernel_size 10, 20
   def make_report_table_occc(date_ref_pattern, kernel_size):
 
     def get_pattern(date_ref, kernel_size):
@@ -215,7 +216,7 @@ def eval_cos_simil(
     cols_all = cols_1 + cols_d_op
     df_ = (df
       .rename(columns=lambda col: col.lower())
-      .drop_duplicates(['code','date'])    # must to do  한 종목이 여러 소스종목과 동일한 경우가 있음 
+      # .drop_duplicates(['code','date'])    # must to do  한 종목이 여러 소스종목과 동일한 경우가 있음 
       .melt(id_vars=cols_1, value_vars=cols_d_op)
       .sort_values(['code','variable'])
       .merge(price1, 
@@ -288,7 +289,7 @@ def eval_cos_simil(
       .assign(kernel_size=kernel_size,
               date_ref=date_ref)
       [lambda df: ~df.variable.isin(['d0_1','d0_2'])]
-      [lambda df: df.ret_p_d1_1_count > 20]
+      [lambda df: df.ret_p_d1_1_count > 4]
       .sort_values('ud_r_d1_1', ascending=False)
       )
     
