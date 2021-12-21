@@ -1,16 +1,29 @@
-from kfp.v2.dsl import (Dataset, Input, Output)
 
 def update_df_markets(
   date_ref: str,
-  df_markets_update: Output[Dataset],
-):
+) -> str :
+  """ Update df_markets with the latest market data.
+  create market watch data 
+  market_snapshot include 신호등 top30 
+  """
   import json
+  import logging
+  logging.basicConfig(level=logging.DEBUG)
   import numpy as np
   from multiprocessing import Pool
   import pandas as pd
   import requests
+  import pandas_gbq # type: ignore
 
-  #get_snapshot_markets(dates): with Pool
+  from trading_calendars import get_calendar
+  cal_krx = get_calendar('XKRX')
+  from pandas.tseries.offsets import CustomBusinessDay
+  cbday = CustomBusinessDay(holidays = cal_krx.adhoc_holidays)
+
+  project_id = 'dots-stock'
+  from google.cloud import bigquery
+  client = bigquery.Client(project_id)
+
   def get_snapshot_markets(dates):
 
     global get_krx_marketcap
@@ -52,7 +65,6 @@ def update_df_markets(
                       in_top30 = 
                         lambda df: df.rank_pct <= 30
                           )
-      return df
     # if len(dates) == 1:
     #   return get_krx_marketcap(dates[0])
     with Pool(2) as pool:
@@ -62,16 +74,13 @@ def update_df_markets(
     return df_market_
 
   df_markets_date_ref = get_snapshot_markets([date_ref])
+
+  ########## custom business day 
+
   # code and name to gbq
-  df_markets_date_ref[['Code','Name','Market','Dept','Marcap']].to_gbq(
-    f'red_lion.market_snapshot_{date_ref}', 'dots-stock', if_exists='replace')
+  # df_markets_date_ref[['Code','Name','Market','Dept','Marcap']].to_gbq(
+  #   f'red_lion.market_snapshot_{date_ref}', 'dots-stock', if_exists='replace')
 
-  ########## save to recent and backup
-  project_id = 'dots-stock'
-  # create clustered table
-  from google.cloud import bigquery
-
-  client = bigquery.Client(project_id)
 
   def push_data_to_gbq(df_markets):
       table_id = 'dots-stock.red_lion.df_markets_clust_parti'
@@ -114,4 +123,13 @@ def update_df_markets(
       job = client.load_table_from_dataframe(
           df_markets_gbq, table_id, job_config=job_config
       )
-  push_data_to_gbq(df_markets_date_ref)
+
+  try :
+    push_data_to_gbq(df_markets_date_ref)
+    logging.debug(f'daily market data {date_ref} pushed to gbq ')
+  except :
+    print('Something Wrong')
+    logging.error('Something Wrong on push market daily data to gbq')
+    raise
+
+  return 'finished' 

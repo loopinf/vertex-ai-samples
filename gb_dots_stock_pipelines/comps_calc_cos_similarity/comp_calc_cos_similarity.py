@@ -8,25 +8,39 @@ from kfp.v2.dsl import (Artifact,
                         ClassificationMetrics)
 from kfp.components import InputPath, OutputPath
 
+# def calc_cos_similar(
+#   date_ref : str,
+#   kernel_size : int,
+#   comp_result : str,
+#   cos_similars : Output[Dataset] 
+# ):
+
+#   import logging
+#   print('calc_cos_similar_occc')
+#   logging.basicConfig(level=logging.DEBUG)
+#   logging.debug('calc_cos_similar_occc')
+#   print(cos_similars.path)
+
 def calc_cos_similar(
-  # df_markets: str, #Input[Dataset],
   date_ref : str,
 	kernel_size : int,
-  cos_similars : Output[Dataset] 
+  comp_result : str,
   ):
-
-  # from trading_calendars import get_calendar
-  # cal_KRX = get_calendar('XKRX')
+  '''
+  Args: date_ref: str "20211220",
+        kernel_size: int  3 or 6 or 10 or 20
+  Returns:
+        None
+  '''
 
   import pandas as pd
   import numpy as np
-  import pandas_gbq
-  import logging
+  import pandas_gbq # type: ignore
   import logging
   logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-  import torch
-  from torch.nn import functional as F
+  import torch # type: ignore
+  from torch.nn import functional as F # type: ignore
 
 
   ######## load data ########
@@ -35,7 +49,7 @@ def calc_cos_similar(
   # df_markets = pd.read_pickle(testing_url_markets)
   def get_df_markets(date_ref):
     date_ref_ = pd.Timestamp(date_ref).strftime('%Y-%m-%d')
-    ### Volume is not used in this model
+    # Volume is not used in this model
     sql = f'''
       SELECT
         Code,
@@ -57,6 +71,7 @@ def calc_cos_similar(
       ''' 
     PROJECT_ID = 'dots-stock'
     df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
+    df = df.drop_duplicates(subset=['Code','date'])
     return df
   
   def check_count_of_df_market(date_ref):
@@ -183,6 +198,16 @@ def calc_cos_similar(
     return df_simil
     
   def get_simil(unfolded, code, date_ref, kernel_size):
+    '''
+    Args: code : "194480" 알고 싶은 종목
+          date_ref : "2021-01-01"
+    
+    Returns:
+      df_simil : pd.DataFrame
+        index : date  ex) "2020-01-01"
+        columns : code  ex) "000020"
+                : source_code  알고 싶은 종목 ex) "000020"  
+        '''  
     df = (
       _get_co_si(unfolded, code, kernel_size
                 ) 
@@ -209,46 +234,27 @@ def calc_cos_similar(
       logging.error(f'error on code : {code}')
   logging.debug(f'loop done , l_df : {len(l_df)}')
 
-  # for code in l_code_1:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop1 done , l_df : {len(l_df)}')
-
-  # for code in l_code_2:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop2 done , l_df : {len(l_df)}')
-
-  # for code in l_code_3:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop3 done , l_df : {len(l_df)}')
-
-  # for code in l_code_4:
-  #   # print(f'code : {code}')
-  #   try:
-  #     _df = get_simil(unfolded, code, date_ref, kernel_size)
-  #     l_df.append(_df.head(100))
-  #   except Exception as e:
-  #     logging.error(f'error on code : {code}')
-  # logging.debug(f'loop4 done , l_df : {len(l_df)}')
-
   df_simil_gbq = pd.concat(l_df)
 
   df_simil_gbq['date'] = pd.to_datetime(df_simil_gbq.date)#.dt.strftime('%Y-%m-%d')
   df_simil_gbq['source_date'] = pd.to_datetime(df_simil_gbq.source_date)#.dt.strftime('%Y-%m-%d')
+
+  # save similarity result to gcs
+  df_count = (
+              df_simil_gbq
+              .where(df_simil_gbq.similarity >= 0.9) # first threshold
+              .dropna()
+              .groupby('source_code')['source_code'].count().reset_index(name='count')
+              .where(lambda df : df['count'] > 10) # second threshold
+              .dropna()
+              )   
+
+  code_list = df_count['source_code'].tolist()
+  save_path = f'/gcs/red-lion/similarity_result/similarity_kernel_size_{kernel_size}_{date_ref}.json'
+
+  import json
+  with open(save_path, 'w') as f:
+    json.dump(code_list, f)
 
   ###### table create
 
@@ -297,29 +303,5 @@ def calc_cos_similar(
 
   upload_to_gbq(df_simil_gbq)
 
-
-# #######
-#   table_id = f'red_lion.pattern_{kernel_size}_{today}',
-#   errors = client.insert_rows_from_dataframe(table_id, df_simil_gbq)
-#   for chunk in errors:
-#     print(f"encountered {len(chunk)} errors: {chunk}")
-
-#   # def send_to_gbq(df_simil_gbq):
-#   #   table_schema = [{'name':'date','type':'DATE'},
-#   #               {'name':'source_date','type':'DATE'},
-#   #               {'name':'similarity','type':'FLOAT'},
-#   #               {'name':'Code','type':'STRING'},
-#   #               {'name':'source_code','type':'STRING'},
-#   #               ]
-#   #   pandas_gbq.to_gbq(df_simil_gbq, 
-#   #                 f'red_lion.pattern_{kernel_size}_{today}',
-#   #                   project_id='dots-stock', 
-#   #                   if_exists='append',
-#   #                   table_schema=table_schema
-#   #                 )
-
-#   # send_to_gbq(df_simil_gbq)
-#   print(f'size : {df_simil_gbq.shape}')
-#   # df_simil_gbq.to_pickle(cos_similars.path)
-
+  # return 'finish'
 

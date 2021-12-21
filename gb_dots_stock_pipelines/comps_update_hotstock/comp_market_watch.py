@@ -1,7 +1,8 @@
 from kfp.v2.dsl import (Dataset, Input, Output)
 
-def get_df_market_watch(
+def calc_market_watch(
   date_ref: str,
+  # comp_result : str,
   ):
   import pandas as pd
   import numpy as np
@@ -27,6 +28,7 @@ def get_df_market_watch(
       ''' 
     PROJECT_ID = 'dots-stock'
     df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
+    df = df.drop_duplicates()
     return df
 
   df_markets_1 =get_df_market(date_ref, 20)
@@ -115,7 +117,7 @@ def get_df_market_watch(
       [lambda df: df.Open != 0]  # Open 가격이 0 인 경우 그날 거래 없었던 것
       .assign(
           oc=lambda df: (df.Close - df.Open)/df.Open,
-          last_day=lambda df: df['date'] == pd.Timestamp(date_ref_),
+          last_day=lambda df: df['date'] == pd.Timestamp(date_ref),
           last_day_down = 
             lambda df: (df.last_day ==  True) & (df.oc > 0),
           rest_day_up = 
@@ -201,11 +203,14 @@ def get_df_market_watch(
     except Exception as e:
       print(e)
       if ('Already Exists' in e.args[0]): # and if_exists=='replace' : 
-        pass
+        table = client.get_table(table_id)
       else: raise
+
     time.sleep (0.5)
     errors = client.insert_rows_from_dataframe(table, df)
     for chunk in errors:
       print(f"encountered {len(chunk)} errors: {chunk}")
       if len(errors) > 1: raise
     print(len(errors))
+
+  to_gbq_table(df_market_watch, date_ref, 'market_watch')

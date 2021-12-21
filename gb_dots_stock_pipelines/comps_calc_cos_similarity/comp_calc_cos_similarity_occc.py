@@ -1,4 +1,5 @@
 from datetime import date
+import logging
 from kfp.v2.dsl import (Artifact,
                         Dataset,
                         Input,
@@ -8,11 +9,24 @@ from kfp.v2.dsl import (Artifact,
                         ClassificationMetrics)
 from kfp.components import InputPath, OutputPath
 
+# def calc_cos_similar_occc(
+#   date_ref : str,
+# 	kernel_size : int,
+#   comp_result : str,
+#   cos_similars : Output[Dataset] 
+#   ):
+#   # return 'finished'
+#   import logging
+#   print('calc_cos_similar')
+#   logging.basicConfig(level=logging.DEBUG)
+#   logging.debug('calc_cos_similar')
+#   print(cos_similars.path)
+
 def calc_cos_similar_occc(
-  # df_markets: str, #Input[Dataset],
+  # df_markets: Input[Dataset],
   date_ref : str,
 	kernel_size : int,
-  cos_similars : Output[Dataset] 
+  comp_result : str,
   ):
 
   # from trading_calendars import get_calendar
@@ -20,12 +34,12 @@ def calc_cos_similar_occc(
 
   import pandas as pd
   import numpy as np
-  import pandas_gbq
+  import pandas_gbq # type: ignore
   import logging
   logging.basicConfig(level=logging.DEBUG, format='%(asctime)s %(levelname)s %(message)s')
 
-  import torch
-  from torch.nn import functional as F
+  import torch # type: ignore
+  from torch.nn import functional as F # type: ignore
 
 
   ######## load data ########
@@ -56,6 +70,7 @@ def calc_cos_similar_occc(
       ''' 
     PROJECT_ID = 'dots-stock'
     df = pandas_gbq.read_gbq(sql, project_id=PROJECT_ID, use_bqstorage_api=True)
+    df = df.drop_duplicates(subset=['Code','date'])
     return df
 
   def check_count_of_df_market(date_ref):
@@ -78,7 +93,10 @@ def calc_cos_similar_occc(
   assert check_count_of_df_market(date_ref) > 2000 , f'df_markets on {date_ref} is not available'
 
   df_markets = get_df_markets(date_ref)
-  assert df_markets.duplicated(subset=['date','Code']).sum() == 0
+  # if not df_markets.duplicated(subset=['date','Code']).sum() == 0:
+    # logging.error( df_markets[df_markets.duplicated(subset=['date','Code'])])
+    # logging.error(f'{df_markets.duplicated(subset=['date','Code'])}
+    # df_markets = df_markets.drop_duplicates(subset=['date','Code'])
   #### filter df_markets --> df_markets_filtered
   l_code  = \
   (df_markets
@@ -201,6 +219,23 @@ def calc_cos_similar_occc(
   df_simil_gbq['date'] = pd.to_datetime(df_simil_gbq.date)#.dt.strftime('%Y-%m-%d')
   df_simil_gbq['source_date'] = pd.to_datetime(df_simil_gbq.source_date)#.dt.strftime('%Y-%m-%d')
 
+  # save similarity result to gcs
+  df_count = (
+              df_simil_gbq
+              .where(df_simil_gbq.similarity >= 0.9) # first threshold
+              .dropna()
+              .groupby('source_code')['source_code'].count().reset_index(name='count')
+              .where(lambda df : df['count'] > 10) # second threshold
+              .dropna()
+              )   
+
+  code_list = df_count['source_code'].tolist()
+  save_path = f'/gcs/red-lion/similarity_result/similarity_kernel_size_{kernel_size}_{date_ref}.json'
+
+  import json
+  with open(save_path, 'w') as f:
+    json.dump(code_list, f)
+
   ###### table create
 
   from google.cloud import bigquery
@@ -248,29 +283,4 @@ def calc_cos_similar_occc(
 
   upload_to_gbq(df_simil_gbq)
 
-
-# #######
-#   table_id = f'red_lion.pattern_{kernel_size}_{today}',
-#   errors = client.insert_rows_from_dataframe(table_id, df_simil_gbq)
-#   for chunk in errors:
-#     print(f"encountered {len(chunk)} errors: {chunk}")
-
-#   # def send_to_gbq(df_simil_gbq):
-#   #   table_schema = [{'name':'date','type':'DATE'},
-#   #               {'name':'source_date','type':'DATE'},
-#   #               {'name':'similarity','type':'FLOAT'},
-#   #               {'name':'Code','type':'STRING'},
-#   #               {'name':'source_code','type':'STRING'},
-#   #               ]
-#   #   pandas_gbq.to_gbq(df_simil_gbq, 
-#   #                 f'red_lion.pattern_{kernel_size}_{today}',
-#   #                   project_id='dots-stock', 
-#   #                   if_exists='append',
-#   #                   table_schema=table_schema
-#   #                 )
-
-#   # send_to_gbq(df_simil_gbq)
-#   print(f'size : {df_simil_gbq.shape}')
-#   # df_simil_gbq.to_pickle(cos_similars.path)
-
-
+  # return 'finish'

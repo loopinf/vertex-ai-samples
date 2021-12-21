@@ -5,6 +5,7 @@ def update_hot_stocks():
   import numpy as np
   import pandas as pd
   import pandas_gbq
+  import json
 
   today = pd.Timestamp.now('Asia/Seoul').strftime('%Y%m%d')
 
